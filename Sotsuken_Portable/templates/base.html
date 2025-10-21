@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<!-- base.html -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}災害情報共有アプリ{% endblock %}</title> <!-- 変更 -->
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 共通のスタイルシート -->
+    <link rel="stylesheet" href="css/common.css">
+    {% block head_extra %}
+    {% endblock %}
+</head>
+<body class="bg-gray-100 antialiased">
+    <div class="app-container">
+        <!-- アプリ共通のヘッダー -->
+        <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
+            <h1 id="screen-title" class="text-xl font-bold text-center">{% block header_title %}災害情報共有アプリ{% endblock %}</h1> <!-- 変更 -->
+        </header>
+        <main class="flex-1 overflow-y-auto p-4 pb-20 md:p-8 md:pb-24">
+            {% block content %}
+            {% endblock %}
+        </main>
+        <!-- ... フッターなど ... -->
+    </div>
+    <script src="js/common.js"></script>
+    {% block body_extra %}
+    {% endblock %}
+</body>
+</html>
