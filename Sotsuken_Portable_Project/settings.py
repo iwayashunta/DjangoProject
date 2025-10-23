@@ -60,6 +60,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -127,6 +128,15 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# ログイン成功後にリダイレクトするURL (ホーム画面を 'home' というURL名にすると仮定)
+LOGIN_REDIRECT_URL = 'Sotsuken_Portable:index'
+
+# ログアウト後のリダイレクト先
+LOGOUT_REDIRECT_URL = 'Sotsuken_Portable:login'
+
+# ログインが必要なページにアクセスした際にリダイレクトされるURL
+LOGIN_URL = 'Sotsuken_Portable:login'
 
 
 # Internationalization

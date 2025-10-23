@@ -1,19 +1,20 @@
 <!-- index.html -->
 {% extends "base.html" %}
 
-{% block title %}ホーム{% endblock %}           {# ページタイトルを上書き #}
-{% block header_title %}避難支援ホーム{% endblock %} {# ヘッダータイトルを上書き #}
+{% block title %}ホーム{% endblock %}
+{% block header_title %}避難支援ホーム{% endblock %}
 
 {% block content %}
-    <div id="home-screen" class="screen flex flex-col items-center justify-center h-full">
-        <div class="content-card w-full max-w-md text-center">
-            <h2 class="text-2xl font-bold mb-8 text-gray-800">避難支援ホーム</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="navigate('safety-check-screen', '安否確認・支援要請')" class="bg-blue-500 text-white p-4 rounded-xl hover:bg-blue-600 transition-all font-semibold shadow-lg">安否確認・支援要請</button>
-                <button onclick="navigate('emergency-sos-screen', '緊急SOS発信')" class="bg-red-500 text-white p-4 rounded-xl hover:bg-red-600 transition-all font-semibold shadow-lg">緊急SOS発信</button>
-                <button onclick="navigate('map-screen', 'マップ')" class="bg-green-500 text-white p-4 rounded-xl hover:bg-green-600 transition-all font-semibold shadow-lg">マップ</button>
-                <button onclick="navigate('emergency-common-screen', '緊急画面')" class="bg-yellow-500 text-white p-4 rounded-xl hover:bg-yellow-600 transition-all font-semibold shadow-lg">緊急情報</button>
-            </div>
+<div class="flex flex-col items-center justify-center h-full">
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
+        <h2 class="text-2xl font-bold mb-8 text-gray-800">避難支援ホーム</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <!-- buttonをaタグに変更し、Djangoのurlタグで遷移先を指定 -->
+            <a href="{% url 'Sotsuken_Portable:safety_check' %}" class="bg-blue-500 text-white p-4 rounded-xl hover:bg-blue-600 transition-all font-semibold shadow-lg block">安否確認・支援要請</a>
+            <a href="#" class="bg-red-500 text-white p-4 rounded-xl hover:bg-red-600 transition-all font-semibold shadow-lg block">緊急SOS発信</a>
+            <a href="#" class="bg-green-500 text-white p-4 rounded-xl hover:bg-green-600 transition-all font-semibold shadow-lg block">マップ</a>
+            <a href="#" class="bg-yellow-500 text-white p-4 rounded-xl hover:bg-yellow-600 transition-all font-semibold shadow-lg block">緊急情報</a>
         </div>
     </div>
+</div>
 {% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}登録内容の確認{% endblock %}
+{% block header_title %}登録内容の確認{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center h-full">
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-6 text-center">登録内容の確認</h2>
+        <p class="text-center mb-6">以下の内容でよろしいですか？</p>
+
+        <div class="space-y-4">
+            <div>
+                <p class="font-medium text-gray-600">ユーザー名</p>
+                <p class="text-lg p-3 bg-gray-100 rounded-md">{{ form.username.value }}</p>
+            </div>
+            <div>
+                <p class="font-medium text-gray-600">メールアドレス</p>
+                <p class="text-lg p-3 bg-gray-100 rounded-md">{{ form.email.value }}</p>
+            </div>
+            <div>
+                <p class="font-medium text-gray-600">パスワード</p>
+                <p class="text-lg p-3 bg-gray-100 rounded-md">（セキュリティのため表示されません）</p>
+            </div>
+        </div>
+
+        <div class="flex gap-4 mt-8">
+            {# 「戻る」ボタン #}
+            <form action="{% url 'Sotsuken_Portable:signup' %}" method="get" class="w-1/2">
+                <button type="submit" class="w-full bg-gray-500 text-white p-3 rounded-lg hover:bg-gray-600 font-semibold">
+                    修正する
+                </button>
+            </form>
+
+            {# 「登録」ボタン #}
+            <form method="post" class="w-1/2">
+                {% csrf_token %}
+                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 font-semibold">
+                    登録する
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
