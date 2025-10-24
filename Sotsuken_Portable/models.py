@@ -1,9 +1,42 @@
 import uuid, json
 
+from django.contrib.auth.base_user import BaseUserManager
 # Create your models here.
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 
+
+class UserManager(BaseUserManager):
+    """
+    カスタムユーザーマネージャー
+    """
+
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        """
+        createsuperuserコマンドで実行されるメソッド
+        """
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        # usernameが空にならないように、emailから自動で設定する
+        if not extra_fields.get('username'):
+            extra_fields['username'] = email.split('@')[0] + '_superuser'
+
+        return self.create_user(email, password, **extra_fields)
 
 class User(AbstractUser):
     # ロール定義
@@ -23,6 +56,34 @@ class User(AbstractUser):
     # カスタムフィールド
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='general')
     safety_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unknown')
+
+    # 1. 氏名フィールドを追加
+    full_name = models.CharField(verbose_name='氏名', max_length=150, blank=True)
+
+    # 2. emailフィールドをユニーク制約付きで上書き
+    email = models.EmailField(verbose_name='メールアドレス', unique=True)
+
+    # 3. ログインに使うフィールドを'email'に設定
+    USERNAME_FIELD = 'email'
+
+    # 4. スーパーユーザー作成時に聞かれるフィールドを空に
+    REQUIRED_FIELDS = []
+
+    # 5. usernameのユニーク制約を外すために上書き
+    username = models.CharField(
+        ('username'),
+        max_length=150,
+        unique=False,  # unique=False
+        blank=True,  # <-- blank=True を追加して、空でも許容するようにする
+        help_text=(''),
+        validators=[AbstractUser.username_validator],
+        error_messages={
+            'unique': ("A user with that username already exists."),
+        },
+    )
+
+    # --- カスタムマネージャーをUserモデルに紐付ける ---
+    objects = UserManager()
 
     # オプション：最終位置情報
     last_known_latitude = models.FloatField(null=True, blank=True)

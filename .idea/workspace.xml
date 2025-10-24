@@ -4,19 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="必要になるであろうテーブルを追加（10/21）">
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/safety_check.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/signup.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/signup_confirm.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/signup_done.html" afterDir="false" />
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="ログイン・新規ユーザー登録機能を実装&#10;安否確認・支援要請機能を現在実装中。安否状況の登録の部分が上手くいってないかも。（10/23）">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/login.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable_Project/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable_Project/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,29 +57,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultHtmlFileTemplate": "HTML File",
-    "Django サーバー.DjangoProject.executor": "Run",
-    "JavaScript デバッグ.login.html.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.pycharm.django.structure.promotion.once.per.project": "true",
-    "django.template.preview.state": "SHOW_EDITOR",
-    "git-widget-placeholder": "master",
-    "list.type.of.created.stylesheet": "CSS",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;Django サーバー.DjangoProject.executor&quot;: &quot;Run&quot;,
+    &quot;JavaScript デバッグ.login.html.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
+    &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\221036\PycharmProjects\DjangoProject\Sotsuken_Portable\templates" />
@@ -147,7 +139,8 @@
       <updated>1760931034509</updated>
       <workItem from="1760931035646" duration="4500000" />
       <workItem from="1761178833696" duration="1952000" />
-      <workItem from="1761181646542" duration="7580000" />
+      <workItem from="1761181646542" duration="8620000" />
+      <workItem from="1761271003622" duration="2644000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -173,7 +166,15 @@
       <option name="project" value="LOCAL" />
       <updated>1761028929323</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="ログイン・新規ユーザー登録機能を実装&#10;安否確認・支援要請機能を現在実装中。安否状況の登録の部分が上手くいってないかも。（10/23）">
+      <option name="closed" value="true" />
+      <created>1761189448346</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1761189448346</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -193,6 +194,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="作成" />
     <MESSAGE value="必要になるであろうテーブルを追加（10/21）" />
-    <option name="LAST_COMMIT_MESSAGE" value="必要になるであろうテーブルを追加（10/21）" />
+    <MESSAGE value="ログイン・新規ユーザー登録機能を実装&#10;安否確認・支援要請機能を現在実装中。安否状況の登録の部分が上手くいってないかも。（10/23）" />
+    <option name="LAST_COMMIT_MESSAGE" value="ログイン・新規ユーザー登録機能を実装&#10;安否確認・支援要請機能を現在実装中。安否状況の登録の部分が上手くいってないかも。（10/23）" />
   </component>
 </project>
