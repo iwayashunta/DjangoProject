@@ -28,7 +28,13 @@ urlpatterns = [
 
     path('sos/', views.emergency_sos_view, name='emergency_sos'),
     path('sos/done/', views.emergency_sos_done_view, name='emergency_sos_done'),
-    #path('map', views.map, name='map'),
+    path('map/', views.map_view, name='map'),
 
-    #path('emergency_common', views.emergency_common, name='emergency_common'),
+    path('emergency/', views.emergency_info_view, name='emergency_common'),
+
+    path('menu/', views.user_menu_view, name='user_menu'),
+
+    path('admin-panel/', views.admin_menu_view, name='admin_menu'),
+
+
 ]

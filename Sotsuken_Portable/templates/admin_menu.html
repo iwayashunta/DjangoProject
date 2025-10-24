@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}管理者メニュー{% endblock %}
+{% block header_title %}管理者メニュー{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center h-full">
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
+        <h2 class="text-2xl font-bold mb-8 text-red-700">管理者メニュー</h2>
+        
+        <h3 class="text-lg font-semibold mt-4 mb-2 text-gray-700 border-b pb-1">RPi/現場連携機能</h3>
+        <div class="grid grid-cols-2 gap-4 mt-4">
+            <a href="#" class="bg-indigo-500 text-white p-3 rounded-lg hover:bg-indigo-600">避難所受付データ</a>
+            <a href="#" class="bg-yellow-500 text-white p-3 rounded-lg hover:bg-yellow-600">炊き出し確認データ</a>
+        </div>
+
+        <h3 class="text-lg font-semibold mt-6 mb-2 text-gray-700 border-b pb-1">データ管理機能</h3>
+        <div class="space-y-4 mt-4">
+            <a href="#" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 block">登録ユーザー管理</a>
+            <a href="#" class="w-full bg-red-500 text-white p-3 rounded-lg hover:bg-red-600 block">SOSレポート確認・出力</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

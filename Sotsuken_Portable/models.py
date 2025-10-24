@@ -687,3 +687,31 @@ class RPiData(models.Model):
 
     def __str__(self):
         return f"RPi Data: {self.get_data_type_display()} from {self.device_id} at {self.received_at.strftime('%Y-%m-%d %H:%M')}"
+
+class OfficialAlert(models.Model):
+    """
+    行政などからの公式な緊急情報を管理するモデル。
+    """
+    SEVERITY_CHOICES = [
+        ('info', '情報'),
+        ('warning', '警報'),
+        ('emergency', '緊急'),
+    ]
+
+    title = models.CharField(verbose_name="タイトル", max_length=200)
+    content = models.TextField(verbose_name="内容")
+    severity = models.CharField(
+        verbose_name="重要度",
+        max_length=20,
+        choices=SEVERITY_CHOICES,
+        default='info'
+    )
+    published_at = models.DateTimeField(verbose_name="発表日時", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "公式緊急情報"
+        verbose_name_plural = "公式緊急情報一覧"
+        ordering = ['-published_at']  # 新しい情報が上に来るように
+
+    def __str__(self):
+        return self.title
