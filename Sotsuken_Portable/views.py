@@ -153,4 +153,43 @@ def safety_check_view(request):
 
     return render(request, 'safety_check.html', context)
 
+@login_required
+def emergency_sos_view(request):
+    """
+    緊急SOS発信ページの表示と、SOS情報の受付処理
+    """
+    # POSTリクエスト（SOSボタンが押されて位置情報が送信された）の場合
+    if request.method == 'POST':
+        # フォームから緯度と経度を取得
+        latitude = request.POST.get('latitude')
+        longitude = request.POST.get('longitude')
+
+        # 緯度・経度が正常に取れているかチェック
+        if latitude and longitude:
+            # SOSレポートをデータベースに作成
+            SOSReport.objects.create(
+                reporter=request.user,
+                latitude=latitude,
+                longitude=longitude,
+            )
+            # 完了ページへリダイレクト
+            return redirect('Sotsuken_Portable:emergency_sos_done')
+        else:
+            # もし位置情報が取得できていなければ、エラーメッセージと共に元のページに戻る
+            messages.error(request, '位置情報の取得に失敗しました。再度お試しください。')
+            return render(request, 'emergency_sos.html')
+
+    # GETリクエスト（初めてページを開いた）の場合
+    return render(request, 'emergency_sos.html')
+
+
+@login_required
+def emergency_sos_done_view(request):
+    """
+    SOS発信完了ページを表示するビュー
+    """
+    return render(request, 'emergency_sos_done.html')
+
+
+
 
