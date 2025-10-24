@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required # ログイン必須にするためのデコレータ
 
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm
-from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert
+from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -250,5 +250,42 @@ def admin_menu_view(request):
     管理者向けメニューページを表示するビュー
     """
     return render(request, 'admin_menu.html')
+
+
+@login_required
+def chat_group_list_view(request):
+    """
+    ユーザーが所属するグループの一覧を表示するビュー
+    """
+    # ユーザーがメンバーとして所属しているGroupMemberオブジェクトを取得
+    memberships = request.user.group_memberships.all()
+    # そこからGroupオブジェクトのリストを取得
+    chat_groups = [m.group for m in memberships]
+
+    return render(request, 'chat_group_list.html', {'chat_groups': chat_groups})
+
+
+@login_required
+def chat_room_view(request, group_id):
+    """
+    特定のグループのチャットルームを表示するビュー
+    """
+    try:
+        group = Group.objects.get(id=group_id)
+        # (セキュリティ) ユーザーがこのグループのメンバーか確認
+        if not group.memberships.filter(member=request.user).exists():
+            # メンバーでなければアクセスを拒否
+            return redirect('Sotsuken_Portable:chat_group_list')
+
+        # 過去のメッセージを取得
+        messages = Message.objects.filter(group=group).order_by('timestamp')
+
+        context = {
+            'group': group,
+            'messages': messages,
+        }
+        return render(request, 'chat.html', context)
+    except Group.DoesNotExist:
+        return redirect('Sotsuken_Portable:chat_group_list')
 
 

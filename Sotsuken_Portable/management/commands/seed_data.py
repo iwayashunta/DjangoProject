@@ -1,7 +1,7 @@
 import random
 from django.core.management.base import BaseCommand
 from faker import Faker
-from Sotsuken_Portable.models import User, Group, GroupMember, SafetyStatus, SupportRequest
+from Sotsuken_Portable.models import User, Group, GroupMember, SafetyStatus, SupportRequest, Message
 
 
 class Command(BaseCommand):
@@ -88,5 +88,15 @@ class Command(BaseCommand):
                 details=faker.text(max_nb_chars=100)
             )
         self.stdout.write(self.style.SUCCESS('Support requests created.'))
+
+        # 7. チャットメッセージを生成
+        self.stdout.write('Creating chat messages...')
+        for _ in range(200):  # 200件のメッセージを作成
+            Message.objects.create(
+                group=random.choice(groups),
+                sender=random.choice(users),
+                content=faker.sentence()
+            )
+        self.stdout.write(self.style.SUCCESS('Chat messages created.'))
 
         self.stdout.write(self.style.SUCCESS('Dummy data generation complete!'))

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}チャットグループ選択{% endblock %}
+{% block header_title %}チャットグループ選択{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-xl shadow-lg">
+    <h2 class="text-xl font-bold mb-4">参加中のグループ</h2>
+    <ul class="space-y-2">
+        {% for group in chat_groups %}
+        <li>
+            <a href="{% url 'Sotsuken_Portable:chat_room' group.id %}" class="block p-4 bg-gray-100 hover:bg-blue-100 rounded-lg">
+                {{ group.name }}
+            </a>
+        </li>
+        {% empty %}
+        <li>参加しているグループはありません。</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

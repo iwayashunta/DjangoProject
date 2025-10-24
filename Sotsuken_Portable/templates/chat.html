@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}チャット - {{ group.name }}{% endblock %}
+{% block header_title %}{{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-col h-[75vh]">
+    <!-- メッセージリスト -->
+    <div id="chat-log" class="flex-1 bg-white p-4 rounded-t-xl shadow-inner mb-4 overflow-y-auto space-y-4">
+        {% for msg in messages %}
+        <div class="text-sm {% if msg.sender == user %}text-right{% endif %}">
+            <p class="font-bold text-xs text-gray-500">{{ msg.sender.full_name|default:msg.sender.email }}</p>
+            <p class="{% if msg.sender == user %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %} p-3 rounded-t-xl {% if msg.sender == user %}rounded-bl-xl{% else %}rounded-br-xl{% endif %} inline-block max-w-xs">
+                {{ msg.content }}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- メッセージ入力フォーム -->
+    <form id="chat-form" class="flex">
+        <input type="text" id="chat-message-input" class="flex-1 p-3 border border-gray-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="メッセージを入力...">
+        <button type="submit" id="chat-message-submit" class="bg-blue-600 text-white p-3 rounded-r-xl hover:bg-blue-700 font-semibold">送信</button>
+    </form>
+</div>
+
+{{ group.id|json_script:"group-id" }}
+{{ user.full_name|default:user.email|json_script:"current-user-name" }}
+<script>
+    const groupId = JSON.parse(document.getElementById('group-id').textContent);
+    const currentUserName = JSON.parse(document.getElementById('current-user-name').textContent);
+    
+    const chatLog = document.querySelector('#chat-log');
+    const chatMessageInput = document.querySelector('#chat-message-input');
+
+    // 1. WebSocket接続を作成
+    const chatSocket = new WebSocket(
+        'ws://' + window.location.host + '/ws/chat/group/' + groupId + '/'
+    );
+
+    // 2. メッセージ受信時の処理
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const message = data.message;
+        const sender = data.sender;
+
+        const isMe = (sender === currentUserName);
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'text-sm' + (isMe ? ' text-right' : '');
+        
+        const senderP = document.createElement('p');
+        senderP.className = 'font-bold text-xs text-gray-500';
+        senderP.textContent = sender;
+
+        const contentP = document.createElement('p');
+        contentP.className = (isMe ? 'bg-blue-500 text-white' : 'bg-gray-200') + ' p-3 rounded-t-xl' + (isMe ? ' rounded-bl-xl' : ' rounded-br-xl') + ' inline-block max-w-xs';
+        contentP.textContent = message;
+
+        messageDiv.appendChild(senderP);
+        messageDiv.appendChild(contentP);
+        chatLog.appendChild(messageDiv);
+        
+        // 常に一番下にスクロール
+        chatLog.scrollTop = chatLog.scrollHeight;
+    };
+
+    // 3. 接続クローズ時の処理
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    // 4. 送信ボタンが押された時の処理
+    document.querySelector('#chat-form').onsubmit = function(e) {
+        e.preventDefault();
+        const message = chatMessageInput.value;
+        if (message.trim() !== '') {
+            chatSocket.send(JSON.stringify({
+                'message': message
+            }));
+            chatMessageInput.value = '';
+        }
+    };
+    
+    // 初期表示時に一番下にスクロール
+    chatLog.scrollTop = chatLog.scrollHeight;
+</script>
+{% endblock %}

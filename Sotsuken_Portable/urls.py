@@ -36,5 +36,8 @@ urlpatterns = [
 
     path('admin-panel/', views.admin_menu_view, name='admin_menu'),
 
+    path('chat/', views.chat_group_list_view, name='chat_group_list'),
+    path('chat/group/<int:group_id>/', views.chat_room_view, name='chat_room'),
+
 
 ]

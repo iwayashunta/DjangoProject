@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -163,3 +164,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Google Maps APIキー
 GOOGLE_MAPS_API_KEY = 'AIzaSyDGP_D8Wxg8EtuidVowg8xXeUA1h5f5Ntw'
+
+# ASGI_APPLICATION の設定
+ASGI_APPLICATION = 'Sotsuken_Portable_Project.asgi.application'
+
+# チャネルレイヤーの設定 (開発中はインメモリ、本番ではRedisを推奨)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+        # "BACKEND": "channels_redis.core.RedisChannelLayer",
+        # "CONFIG": {
+        #     "hosts": [("127.0.0.1", 6379)],
+        # },
+    },
+}
