@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="dataSourceStorageLocal" created-in="PY-252.26830.99">
-    <data-source name="Django default" uuid="501c1427-ad6e-45a3-834c-4316665de6ac">
-      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MYSQL" />
-      <user-name>django_user</user-name>
+    <data-source name="Django default" uuid="0ed64091-d39f-494d-80a1-6d38b0e7fa29">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="SQLITE" />
+      <auth-provider>no-auth</auth-provider>
       <schema-mapping />
     </data-source>
   </component>
