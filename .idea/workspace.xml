@@ -4,11 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="ログイン・新規ユーザー登録機能を実装&#10;安否確認・支援要請機能を現在実装中。安否状況の登録の部分が上手くいってないかも。（10/23）">
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="Userモデルの主キーをメールアドレスに修正">
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/management/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/management/commands/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/management/commands/seed_data.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/emergency_sos.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/emergency_sos_done.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -140,7 +146,7 @@
       <workItem from="1760931035646" duration="4500000" />
       <workItem from="1761178833696" duration="1952000" />
       <workItem from="1761181646542" duration="8620000" />
-      <workItem from="1761271003622" duration="2644000" />
+      <workItem from="1761271003622" duration="6022000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -174,7 +180,15 @@
       <option name="project" value="LOCAL" />
       <updated>1761189448346</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Userモデルの主キーをメールアドレスに修正">
+      <option name="closed" value="true" />
+      <created>1761273710659</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1761273710659</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -195,6 +209,7 @@
     <MESSAGE value="作成" />
     <MESSAGE value="必要になるであろうテーブルを追加（10/21）" />
     <MESSAGE value="ログイン・新規ユーザー登録機能を実装&#10;安否確認・支援要請機能を現在実装中。安否状況の登録の部分が上手くいってないかも。（10/23）" />
-    <option name="LAST_COMMIT_MESSAGE" value="ログイン・新規ユーザー登録機能を実装&#10;安否確認・支援要請機能を現在実装中。安否状況の登録の部分が上手くいってないかも。（10/23）" />
+    <MESSAGE value="Userモデルの主キーをメールアドレスに修正" />
+    <option name="LAST_COMMIT_MESSAGE" value="Userモデルの主キーをメールアドレスに修正" />
   </component>
 </project>

@@ -25,8 +25,10 @@ urlpatterns = [
     path('signup/done/', views.signup_done_view, name='signup_done'),
 
     path('safety/', views.safety_check_view, name='safety_check'),
+
+    path('sos/', views.emergency_sos_view, name='emergency_sos'),
+    path('sos/done/', views.emergency_sos_done_view, name='emergency_sos_done'),
     #path('map', views.map, name='map'),
 
-    #path('emergency_sos', views.emergency_sos, name='emergency_sos'),
     #path('emergency_common', views.emergency_common, name='emergency_common'),
 ]
