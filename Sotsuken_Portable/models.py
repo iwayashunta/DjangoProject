@@ -1,5 +1,6 @@
 import uuid, json
 
+from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 # Create your models here.
 from django.contrib.auth.models import AbstractUser, Group, Permission
@@ -557,6 +558,40 @@ class CommunityPost(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Comment(models.Model):
+    """
+    コミュニティ投稿へのリプライ（コメント）を記録するモデル。
+    """
+    # 1. どの投稿へのリプライか (必須)
+    post = models.ForeignKey(
+        CommunityPost,
+        verbose_name="対象の投稿",
+        on_delete=models.CASCADE,  # 親の投稿が削除されたら、リプライも一緒に削除
+        related_name='comments'  # post.comments のように逆参照できるようになる
+    )
+
+    # 2. リプライの投稿者 (必須)
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,  # カスタムUserモデルを安全に参照
+        verbose_name="投稿者",
+        on_delete=models.CASCADE
+    )
+
+    # 3. リプライの内容 (必須)
+    text = models.TextField(verbose_name="コメント内容")
+
+    # 4. 投稿日時 (必須)
+    created_at = models.DateTimeField(verbose_name="投稿日時", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "コメント"
+        verbose_name_plural = "コメント一覧"
+        ordering = ['created_at']  # 古い順に表示
+
+    def __str__(self):
+        return f'{self.author.username}: {self.text[:20]}'
 
 
 class Shelter(models.Model):

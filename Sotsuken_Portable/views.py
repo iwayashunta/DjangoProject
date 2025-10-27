@@ -2,11 +2,17 @@ import json
 
 from django.conf import settings
 from django.contrib import messages
-from django.shortcuts import render, redirect
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required # ログイン必須にするためのデコレータ
+from django.urls import reverse_lazy
+from django.views import generic
+# generic から、使いたいクラスを直接インポートする
+from django.views.generic import ListView, DetailView, CreateView
 
-from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm
-from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message
+from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm
+from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
+    CommunityPost
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -287,5 +293,71 @@ def chat_room_view(request, group_id):
         return render(request, 'chat.html', context)
     except Group.DoesNotExist:
         return redirect('Sotsuken_Portable:chat_group_list')
+
+# 1. 投稿一覧ビュー
+class CommunityPostListView(LoginRequiredMixin, ListView):
+    model = CommunityPost
+    template_name = 'community_list.html'
+    context_object_name = 'post_list' # テンプレートで使う変数名を指定
+    paginate_by = 10 # 1ページに10件まで表示（ページネーション）
+
+
+# 2. 投稿詳細ビュー
+class CommunityPostDetailView(LoginRequiredMixin, generic.View):
+    # GETとPOSTで処理を分けるため、generic.DetailViewからgeneric.Viewに変更
+
+    def get(self, request, *args, **kwargs):
+        """GETリクエスト時の処理（詳細ページの表示）"""
+        post = get_object_or_404(CommunityPost, pk=self.kwargs['pk'])
+        comments = post.comments.all()
+        comment_form = CommentForm()  # 空のコメントフォーム
+
+        context = {
+            'post': post,
+            'comments': comments,
+            'comment_form': comment_form,
+        }
+        return render(request, 'community_detail.html', context)
+
+    def post(self, request, *args, **kwargs):
+        """POSTリクエスト時の処理（コメントの投稿）"""
+        post = get_object_or_404(CommunityPost, pk=self.kwargs['pk'])
+        comment_form = CommentForm(request.POST)
+
+        if comment_form.is_valid():
+            # フォームからインスタンスを作成するが、まだDBには保存しない
+            comment = comment_form.save(commit=False)
+            # authorとpostを紐付ける
+            comment.post = post
+            comment.author = request.user
+            comment.save()
+            # 投稿後は同じページにリダイレクト（PRGパターン）
+            return redirect('Sotsuken_Portable:community_detail', pk=post.pk)
+
+        # フォームが無効だった場合は、エラーメッセージと共に再度ページを表示
+        comments = post.comments.all()
+        context = {
+            'post': post,
+            'comments': comments,
+            'comment_form': comment_form,  # エラー情報を含んだフォーム
+        }
+        return render(request, 'community_detail.html', context)
+
+
+# 3. 新規投稿ビュー
+class CommunityPostCreateView(LoginRequiredMixin, CreateView):
+    model = CommunityPost
+    form_class = CommunityPostForm
+    template_name = 'community_form.html'
+    success_url = reverse_lazy('Sotsuken_Portable:community_list') # 成功時のリダイレクト先
+
+    # フォームが送信されて、内容が正しい場合に呼ばれるメソッド
+    def form_valid(self, form):
+        # フォームの author フィールドに、現在ログインしているユーザーをセット
+        form.instance.author = self.request.user
+        # 親クラスのform_validを呼び出して、オブジェクトをDBに保存
+        return super().form_valid(form)
+
+
 
 
