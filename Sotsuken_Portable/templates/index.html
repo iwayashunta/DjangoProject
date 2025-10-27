@@ -12,8 +12,8 @@
             <!-- buttonをaタグに変更し、Djangoのurlタグで遷移先を指定 -->
             <a href="{% url 'Sotsuken_Portable:safety_check' %}" class="bg-blue-500 text-white p-4 rounded-xl hover:bg-blue-600 transition-all font-semibold shadow-lg block">安否確認・支援要請</a>
             <a href="{% url 'Sotsuken_Portable:emergency_sos' %}" class="bg-red-500 text-white p-4 rounded-xl hover:bg-red-600 transition-all font-semibold shadow-lg block">緊急SOS発信</a>
-            <a href="#" class="bg-green-500 text-white p-4 rounded-xl hover:bg-green-600 transition-all font-semibold shadow-lg block">マップ</a>
-            <a href="#" class="bg-yellow-500 text-white p-4 rounded-xl hover:bg-yellow-600 transition-all font-semibold shadow-lg block">緊急情報</a>
+            <a href="{% url 'Sotsuken_Portable:map' %}" class="bg-green-500 text-white p-4 rounded-xl hover:bg-green-600 transition-all font-semibold shadow-lg block">マップ</a>
+            <a href="{% url 'Sotsuken_Portable:emergency_common' %}" class="bg-yellow-500 text-white p-4 rounded-xl hover:bg-yellow-600 transition-all font-semibold shadow-lg block">緊急情報</a>
         </div>
     </div>
 </div>

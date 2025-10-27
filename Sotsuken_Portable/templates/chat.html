@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}チャット - {{ group.name }}{% endblock %}
+{% block header_title %}{{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-col h-[75vh]">
+    <!-- メッセージリスト -->
+    <div id="chat-log" class="flex-1 bg-white p-4 rounded-t-xl shadow-inner mb-4 overflow-y-auto space-y-4">
+        {# 初期表示の過去ログは、この構成では表示できないため空にしておく #}
+    </div>
+
+    <!-- メッセージ入力フォーム -->
+    <form id="chat-form" class="flex">
+        <input type="text" id="chat-message-input" class="flex-1 p-3 border border-gray-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="メッセージを入力...">
+        <button type="submit" id="chat-message-submit" class="bg-blue-600 text-white p-3 rounded-r-xl hover:bg-blue-700 font-semibold">送信</button>
+    </form>
+</div>
+
+{# Djangoからログイン中のユーザー名をJavaScriptに渡す #}
+{{ user.full_name|default:user.email|json_script:"current-user-name" }}
+
+<script>
+    // --- ここからJavaScriptを全面的に書き換え ---
+
+    // Djangoから渡されたユーザー名を取得
+    const currentUserName = JSON.parse(document.getElementById('current-user-name').textContent);
+
+    const chatLog = document.querySelector('#chat-log');
+    const chatMessageInput = document.querySelector('#chat-message-input');
+    const chatForm = document.querySelector('#chat-form');
+
+    // 1. 独立したWebSocketサーバーに接続
+    const chatSocket = new WebSocket('ws://localhost:8765/');
+
+    // 2. 接続が確立されたら、自分のユーザー名をサーバーに通知
+    chatSocket.onopen = function(e) {
+        console.log('WebSocketに接続しました。');
+        chatSocket.send(JSON.stringify({
+            'type': 'join',
+            'username': currentUserName
+        }));
+    };
+
+    // 3. サーバーからメッセージを受信したときの処理
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const sender = data.sender;
+        const message = data.message;
+
+        const isMe = (sender === currentUserName);
+
+        // HTML要素を組み立ててメッセージを画面に追加
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'text-sm' + (isMe ? ' text-right' : '');
+
+        const senderP = document.createElement('p');
+        senderP.className = 'font-bold text-xs text-gray-500';
+        senderP.textContent = sender;
+
+        const contentP = document.createElement('p');
+        contentP.className = (isMe ? 'bg-blue-500 text-white' : 'bg-gray-200') + ' p-3 rounded-t-xl' + (isMe ? ' rounded-bl-xl' : ' rounded-br-xl') + ' inline-block max-w-xs';
+        contentP.textContent = message;
+
+        messageDiv.appendChild(senderP);
+        messageDiv.appendChild(contentP);
+        chatLog.appendChild(messageDiv);
+
+        // 常に一番下にスクロール
+        chatLog.scrollTop = chatLog.scrollHeight;
+    };
+
+    // 4. 接続が閉じたときの処理
+    chatSocket.onclose = function(e) {
+        console.error('WebSocket接続が切れました。');
+        // ここでユーザーに再接続を促すメッセージなどを表示しても良い
+    };
+
+    // 5. 送信ボタンが押された時の処理
+    chatForm.onsubmit = function(e) {
+        e.preventDefault();
+        const message = chatMessageInput.value;
+        if (message.trim() !== '') {
+            // メッセージをJSON形式でサーバーに送信
+            chatSocket.send(JSON.stringify({
+                'type': 'message',
+                'message': message
+            }));
+            chatMessageInput.value = ''; // 入力欄をクリア
+        }
+    };
+
+</script>
+{% endblock %}

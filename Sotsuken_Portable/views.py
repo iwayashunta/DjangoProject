@@ -1,9 +1,13 @@
+import json
+
+from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required # ログイン必須にするためのデコレータ
 
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm
-from Sotsuken_Portable.models import SafetyStatus, SupportRequest
+from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message
+from Sotsuken_Portable.decorators import admin_required
 
 
 # Create your views here.
@@ -191,5 +195,97 @@ def emergency_sos_done_view(request):
     return render(request, 'emergency_sos_done.html')
 
 
+@login_required
+def map_view(request):
+    shelters = Shelter.objects.all()
+    shelters_data = []
+    for shelter in shelters:
+        shelters_data.append({
+            'name': shelter.name,
+            'lat': shelter.latitude,
+            'lng': shelter.longitude,
+            'address': shelter.address,
+            'capacity': shelter.max_capacity,
+            'occupancy': shelter.current_occupancy,
+        })
+    shelters_json = json.dumps(shelters_data)
+
+    context = {
+        'shelters_json': shelters_json,
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,  # APIキーをテンプレートに渡す
+    }
+
+    return render(request, 'map.html', context)
+
+
+@login_required
+def emergency_info_view(request):
+    """
+    緊急情報ポータルページを表示するビュー
+    """
+    # 1. 行政からの最新情報を取得
+    alerts = OfficialAlert.objects.all()
+
+    # 2. 全ての避難所の情報を取得
+    shelters = Shelter.objects.all()
+
+    context = {
+        'alerts': alerts,
+        'shelters': shelters,
+    }
+
+    return render(request, 'emergency_info.html', context)
+
+
+@login_required
+def user_menu_view(request):
+    """
+    ユーザーメインメニューページを表示するビュー
+    """
+    return render(request, 'user_menu.html')
+
+@admin_required # ← この1行を追加するだけで、このビューは管理者/救助者しかアクセスできなくなる
+def admin_menu_view(request):
+    """
+    管理者向けメニューページを表示するビュー
+    """
+    return render(request, 'admin_menu.html')
+
+
+@login_required
+def chat_group_list_view(request):
+    """
+    ユーザーが所属するグループの一覧を表示するビュー
+    """
+    # ユーザーがメンバーとして所属しているGroupMemberオブジェクトを取得
+    memberships = request.user.group_memberships.all()
+    # そこからGroupオブジェクトのリストを取得
+    chat_groups = [m.group for m in memberships]
+
+    return render(request, 'chat_group_list.html', {'chat_groups': chat_groups})
+
+
+@login_required
+def chat_room_view(request, group_id):
+    """
+    特定のグループのチャットルームを表示するビュー
+    """
+    try:
+        group = Group.objects.get(id=group_id)
+        # (セキュリティ) ユーザーがこのグループのメンバーか確認
+        if not group.memberships.filter(member=request.user).exists():
+            # メンバーでなければアクセスを拒否
+            return redirect('Sotsuken_Portable:chat_group_list')
+
+        # 過去のメッセージを取得
+        messages = Message.objects.filter(group=group).order_by('timestamp')
+
+        context = {
+            'group': group,
+            'messages': messages,
+        }
+        return render(request, 'chat.html', context)
+    except Group.DoesNotExist:
+        return redirect('Sotsuken_Portable:chat_group_list')
 
 

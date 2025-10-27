@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocketチャット</title>
+    <link type="text/css" rel="stylesheet" href="bmesse.css"/>
+</head>
+<body>
+<input type="text" id="idInput" placeholder="ID">
+<button id="joinButton">参加</button><br>
+<label><input type="checkbox" id="gptCheckbox"> GPTに質問する</label>
+<br>
+<div id="your_container">
+    <!-- チャットの外側部分① -->
+    <div id="bms_messages_container">
+            <!-- ヘッダー部分② -->
+            <div id="bms_chat_header">
+                <!--ステータス-->
+                <div id="bms_chat_user_status">
+                    <!--ステータスアイコン-->
+                    <div id="bms_status_icon">●</div>
+                    <!--ユーザー名-->
+                    <div id="bms_chat_user_name">フリーチャット</div>
+                </div>
+            </div>
+
+        <!-- タイムライン部分③ -->
+        <div id="bms_messages">
+        </div>
+
+        <!-- テキストボックス、送信ボタン④ -->
+        <div id="bms_send">
+            <textarea id="bms_send_message"></textarea>
+            <button id="bms_send_btn" disabled>送信</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const idInput = document.getElementById('idInput');
+    const joinButton = document.getElementById('joinButton');
+    const gptCheckbox = document.getElementById('gptCheckbox');
+    const bmsMessages = document.getElementById('bms_messages');
+    const bmsSendButton = document.getElementById('bms_send_btn');
+    const bmsSendMessage = document.getElementById('bms_send_message');
+
+    const webSocket = new WebSocket('ws://localhost:8765/');
+
+    // 参加ボタン
+    joinButton.addEventListener('click', () => {
+        const clientId = idInput.value;
+        webSocket.send("サーバ:" + clientId);
+        idInput.disabled = true;
+        joinButton.disabled = true;
+        bmsSendButton.disabled = false; // 参加後に送信ボタンを有効にする
+    });
+
+    // Tabで送信
+    bmsSendMessage.addEventListener('keydown', (event) => {
+        if (event.key === 'Tab') {
+            event.preventDefault();
+            bmsSendButton.click();
+        }
+    });
+
+    // 送信ボタンで文字を送る
+    bmsSendButton.addEventListener('click', () => {
+        const message = bmsSendMessage.value;
+        const gpt = gptCheckbox.checked;
+        // オブジェクトを作成
+        const data = {
+            message: message,
+            gpt: gpt
+        };
+        webSocket.send(JSON.stringify(data));
+        bmsSendMessage.value = '';
+        gptCheckbox.checked = false;
+    });
+
+    // メッセージを受信
+    webSocket.addEventListener('message', (event) => {
+        const message = JSON.parse(event.data);
+
+        // メッセージを表示
+        const messageContainer = document.createElement('div');
+        const messageContent = document.createElement('div');
+        const messageText = document.createElement('div');
+        const messageName = document.createElement('div');
+
+        messageContainer.classList.add('bms_message');
+        // 追加：クライアントIDによってメッセージの位置を指定
+        messageContainer.classList.add(message.client_id === "サーバ:" + idInput.value ? 'bms_right' : 'bms_left');
+        messageContent.classList.add('bms_message_box');
+        messageText.classList.add('bms_message_content');
+
+        messageText.textContent = message.message;
+
+        messageContent.appendChild(messageText);
+
+        // 名前を表示
+        if (message.client_id !== "サーバ:" + idInput.value) {
+            messageName.classList.add('bms_name_text_left');
+            messageName.textContent = message.client_id;
+            messageContent.appendChild(messageName);
+        }
+
+        messageContainer.appendChild(messageContent);
+
+        bmsMessages.appendChild(messageContainer);
+
+        // bms_clear
+        const clearDiv = document.createElement('div');
+        clearDiv.classList.add('bms_clear');
+        bmsMessages.appendChild(clearDiv);
+
+        // スクロールを一番下に移動
+        bmsMessages.scrollTop = bmsMessages.scrollHeight;
+    });
+</script>
+</body>
+</html>
