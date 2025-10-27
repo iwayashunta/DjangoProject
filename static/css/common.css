@@ -1,91 +1,116 @@
 /* common.css */
 
-/* ベーススタイル（モバイル向け） */
+/* =============================================== */
+/* 1. PC (デスクトップ) 向けのベーススタイル       */
+/* =============================================== */
+
 body {
     margin: 0;
     line-height: 1.5;
     color: #333;
-    -webkit-font-smoothing: antialiased; /* フォントを滑らかに */
-    -moz-osx-font-smoothing: grayscale; /* フォントを滑らかに */
+    background-color: #f3f4f6;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .app-container {
+    /* --- 変更点 --- */
+    max-width: 1440px; /* 以前の1280pxから、よりコンテンツが見やすい幅に調整 */
+    margin: 2rem auto;
     display: flex;
     flex-direction: column;
-    height: 100vh; /* 常にビューポートの高さいっぱいにする */
-    background-color: #f3f4f6;
-    font-family: 'Inter', sans-serif;
-    max-width: 100vw; /* 横スクロール防止 */
-    overflow-x: hidden; /* 横スクロールを隠す */
+    min-height: calc(100vh - 4rem);
+    background-color: white;
+    border-radius: 0.75rem; /* rounded-lg */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb; /* 境界線を少し追加 */
+}
+
+/* ヘッダーのデザインを少し調整 */
+header {
+    flex-shrink: 0;
+    border-bottom: 1px solid #e5e7eb; /* ヘッダーの下に区切り線 */
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
 }
 
 main {
-    flex: 1; /* メインコンテンツが利用可能なスペースを全て占める */
-    overflow-y: auto; /* コンテンツがはみ出たら縦スクロール */
-    -webkit-overflow-scrolling: touch; /* iOSでのスクロールをスムーズに */
+    flex: 1;
+    padding: 2rem;
 }
 
-/* ヘッダー */
-header {
-    flex-shrink: 0; /* ヘッダーが縮まないように */
-}
-
-/* フッターナビゲーション */
+/* PCではフッターナビゲーションは非表示のまま */
 footer {
-    flex-shrink: 0; /* フッターが縮まないように */
+    flex-shrink: 0;
+    display: none;
 }
 
-.footer-nav-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem;
-    color: #6b7280; /* gray-600 */
-    transition: color 0.2s ease-in-out;
-    width: 25%; /* 4つのボタンで均等に幅を分ける */
-    max-width: 80px; /* 大きすぎないように */
-}
-
-.footer-nav-btn:hover {
-    color: #2563eb; /* blue-600 */
-}
-
-/* ページコンテンツの共通スタイル */
+/* コンテンツカードのスタイルは共通 */
 .content-card {
     background-color: white;
-    padding: 1.5rem; /* p-6 */
-    border-radius: 0.75rem; /* rounded-xl */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
-    margin-bottom: 1rem; /* 必要に応じて */
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
 }
 
-/* 各画面を管理する際のスタイル（SPA的にJSで切り替える場合） */
-.screen {
-    display: none; /* デフォルトで非表示 */
-    flex-direction: column; /* 縦並び */
-    height: 100%; /* 親要素の高さに合わせる */
-}
-/* 初期表示したい画面にはJSで display: flex を適用 */
 
-/* PCやタブレットなど、幅の広い画面での調整 */
-@media (min-width: 768px) { /* mdブレークポイント */
-    .app-container {
-        max-width: 480px; /* アプリの幅を制限して、スマホ風に見せる */
-        margin: 0 auto; /* 中央揃え */
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        border-radius: 1rem;
+/* =============================================== */
+/* 2. モバイル端末向けのスタイル (メディアクエリ)  */
+/* =============================================== */
+
+/* 画面幅が 767px 以下の場合に適用 (一般的なタブレット縦向き・スマホ) */
+@media (max-width: 767px) {
+
+    body {
+        /* モバイルでは背景色はコンテナに任せる */
+        background-color: #f3f4f6;
     }
 
-    /* フッターナビゲーションは、より広い画面では異なる配置にする、あるいは非表示にするなども検討 */
-    /* .footer-nav-btn {
-        padding: 0.75rem 1rem;
-    } */
-}
+    .app-container {
+        /* モバイルでは画面いっぱいに広がる */
+        max-width: 100vw;
+        height: 100vh;
+        min-height: 100vh; /* iOSでの高さ問題を考慮 */
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
 
-/* さらに広い画面向け（必要であれば） */
-/* @media (min-width: 1024px) { */
-    /* .app-container {
-        max-width: 600px;
-    } */
-/* } */
+    main {
+        /* モバイル用のパディングに上書き */
+        padding: 1rem;
+        padding-bottom: 6rem; /* フッターにコンテンツが隠れないように余白を確保 */
+        overflow-y: auto; /* 縦スクロールを有効に */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    footer {
+        /* ★ モバイルではフッターナビゲーションを表示する */
+        display: flex;
+        position: fixed; /* 画面下部に固定 */
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        background-color: white;
+        border-top: 1px solid #e5e7eb;
+        z-index: 10;
+    }
+
+    .footer-nav-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem;
+        color: #6b7280;
+        transition: color 0.2s ease-in-out;
+        width: 25%;
+    }
+
+    .footer-nav-btn:hover {
+        color: #2563eb;
+    }
+}
