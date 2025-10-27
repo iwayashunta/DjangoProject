@@ -4,11 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="WebSocket周りはよくわからんですが頑張って調整します（10/24）">
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/websocket.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" afterDir="false" />
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="チャット機能を半分くらい実装しました(10/27)">
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/community_detail.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/community_form.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/community_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/admin_menu.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/admin_menu.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/user_menu.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/user_menu.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,8 +29,8 @@
       <list>
         <option value="CSS File" />
         <option value="JavaScript File" />
-        <option value="HTML File" />
         <option value="Python Script" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
@@ -83,6 +89,7 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\221091\PycharmProjects\DjangoProject\static" />
       <recent name="C:\Users\221091\PycharmProjects\DjangoProject\Sotsuken_Portable" />
       <recent name="C:\Users\221036\PycharmProjects\DjangoProject\Sotsuken_Portable\templates" />
       <recent name="C:\Users\221036\PycharmProjects\DjangoProject\Sotsuken_Portable\templates\myapp" />
@@ -167,7 +174,9 @@
       <workItem from="1761178833696" duration="1952000" />
       <workItem from="1761181646542" duration="8620000" />
       <workItem from="1761271003622" duration="17483000" />
-      <workItem from="1761530116994" duration="2700000" />
+      <workItem from="1761530116994" duration="2754000" />
+      <workItem from="1761533053914" duration="813000" />
+      <workItem from="1761534333401" duration="9686000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -241,7 +250,31 @@
       <option name="project" value="LOCAL" />
       <updated>1761292144328</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="websocketを仮実装（10/27）">
+      <option name="closed" value="true" />
+      <created>1761532885075</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1761532885075</updated>
+    </task>
+    <task id="LOCAL-00011" summary="commonファイルを反映する形に修正（10/27）">
+      <option name="closed" value="true" />
+      <created>1761533865062</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1761533865062</updated>
+    </task>
+    <task id="LOCAL-00012" summary="チャット機能を半分くらい実装しました(10/27)">
+      <option name="closed" value="true" />
+      <created>1761542415085</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1761542415085</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -266,7 +299,10 @@
     <MESSAGE value="ダミーデータを入れるためのライブラリの実装&#10;緊急SOS発信画面を実装（10/24）" />
     <MESSAGE value="ホームメニューと管理者メニューを実装（中身はまだできてないです）&#10;データベース更新したのでマイグレーションしてください（10/24）" />
     <MESSAGE value="WebSocket周りはよくわからんですが頑張って調整します（10/24）" />
-    <option name="LAST_COMMIT_MESSAGE" value="WebSocket周りはよくわからんですが頑張って調整します（10/24）" />
+    <MESSAGE value="websocketを仮実装（10/27）" />
+    <MESSAGE value="commonファイルを反映する形に修正（10/27）" />
+    <MESSAGE value="チャット機能を半分くらい実装しました(10/27)" />
+    <option name="LAST_COMMIT_MESSAGE" value="チャット機能を半分くらい実装しました(10/27)" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

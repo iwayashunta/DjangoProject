@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}コミュニティ掲示板{% endblock %}
+{% block header_title %}コミュニティ掲示板{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-xl shadow-lg">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">投稿一覧</h2>
+        <a href="{% url 'Sotsuken_Portable:community_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">新規投稿</a>
+    </div>
+
+    <div class="space-y-4">
+        {% for post in post_list %}
+        <a href="{% url 'Sotsuken_Portable:community_detail' post.pk %}" class="block p-4 border rounded-lg hover:bg-gray-50">
+            <h3 class="text-lg font-semibold">{{ post.title }}</h3>
+            <p class="text-sm text-gray-600">投稿者: {{ post.author.full_name|default:post.author.email }} | {{ post.posted_at|date:"Y/m/d H:i" }}</p>
+        </a>
+        {% empty %}
+        <p>まだ投稿はありません。</p>
+        {% endfor %}
+    </div>
+    
+
+</div>
+{% endblock %}

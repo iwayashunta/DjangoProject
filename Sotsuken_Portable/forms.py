@@ -1,7 +1,7 @@
 from django.contrib.auth.forms import UserCreationForm
 from django import forms
 
-from .models import User, SafetyStatus, SupportRequest  # カスタムUserモデルをインポート
+from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment  # カスタムUserモデルをインポート
 
 class SignUpForm(UserCreationForm):
     """
@@ -65,3 +65,51 @@ class SupportRequestForm(forms.ModelForm):
                 'placeholder': '具体的な品目や必要人数、期間を簡潔に入力してください。'  # プレースホルダーも追加可能
             }),
         }
+
+class CommunityPostForm(forms.ModelForm):
+    """
+    コミュニティ投稿を作成・編集するためのフォーム
+    """
+    class Meta:
+        model = CommunityPost
+        # フォームでユーザーに入力させるフィールドを指定
+        # authorはビューで自動的に設定するので、ここには含めない
+        fields = ('title', 'content', 'region_tag')
+        labels = {
+            'title': 'タイトル',
+            'content': '内容',
+            'region_tag': '地域タグ (任意、例: 〇〇地区)',
+        }
+        # ウィジェットで入力欄にCSSクラスを適用
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }),
+            'content': forms.Textarea(attrs={
+                'class': 'mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                'rows': 8
+            }),
+            'region_tag': forms.TextInput(attrs={
+                'class': 'mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }),
+        }
+
+class CommentForm(forms.ModelForm):
+    """
+    リプライ（コメント）を投稿するためのフォーム
+    """
+    class Meta:
+        model = Comment
+        # ユーザーに入力させるのは text フィールドのみ
+        fields = ('text',)
+        labels = {
+            'text': '', # ラベルは表示しない（プレースホルダーで示すため）
+        }
+        widgets = {
+            'text': forms.Textarea(attrs={
+                'class': 'mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                'rows': 3,
+                'placeholder': '返信を入力...'
+            }),
+        }
+
