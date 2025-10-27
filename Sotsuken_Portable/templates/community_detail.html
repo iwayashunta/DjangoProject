@@ -5,6 +5,12 @@
 {% block content %}
 <div class="bg-white p-8 rounded-xl shadow-lg">
     <h1 class="text-3xl font-extrabold mb-4">{{ post.title }}</h1>
+    {# ログイン中のユーザーが投稿者本人か、ロールが'admin'の場合に表示 #}
+        {% if user == post.author or user.role == 'admin' %}
+        <a href="{% url 'Sotsuken_Portable:community_delete' post.pk %}" class="ml-4 bg-red-600 text-white text-sm py-1 px-3 rounded-md hover:bg-red-700 flex-shrink-0">
+            削除
+        </a>
+        {% endif %}
     <p class="text-md text-gray-500 mb-6 border-b pb-4">
         投稿者: {{ post.author.full_name|default:post.author.email }} <br>
         投稿日時: {{ post.posted_at|date:"Y/m/d H:i" }}
@@ -35,6 +41,10 @@
         <div class="border-b pb-4">
             <p class="font-semibold">{{ comment.author.full_name|default:comment.author.email }}</p>
             <p class="text-sm text-gray-500 mb-2">{{ comment.created_at|date:"Y/m/d H:i" }}</p>
+            {# 権限チェックをして削除ボタンを表示 #}
+            {% if user == comment.author or user == post.author or user.role == 'admin' %}
+                <a href="{% url 'Sotsuken_Portable:comment_delete' comment.pk %}" class="text-red-600 hover:text-red-800 text-sm">削除</a>
+            {% endif %}
             <p class="text-gray-800">{{ comment.text|linebreaksbr }}</p>
         </div>
         {% empty %}

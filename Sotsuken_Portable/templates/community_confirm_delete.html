@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}投稿の削除確認{% endblock %}
+{% block header_title %}投稿の削除確認{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-xl shadow-lg max-w-lg mx-auto text-center">
+    <h2 class="text-2xl font-bold mb-4">投稿の削除</h2>
+    <p class="text-gray-700 mb-6">
+        本当に「<strong>{{ post.title }}</strong>」を削除しますか？<br>
+        この操作は元に戻せません。
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="flex justify-center gap-4">
+            {# キャンセルボタンは詳細ページに戻る #}
+            <a href="{% url 'Sotsuken_Portable:community_detail' post.pk %}" class="bg-gray-500 text-white py-2 px-6 rounded-lg hover:bg-gray-600">
+                キャンセル
+            </a>
+            <button type="submit" class="bg-red-600 text-white py-2 px-6 rounded-lg hover:bg-red-700">
+                削除する
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -3,16 +3,17 @@ import json
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required # ログイン必須にするためのデコレータ
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views import generic
 # generic から、使いたいクラスを直接インポートする
 from django.views.generic import ListView, DetailView, CreateView
 
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
-    CommunityPost
+    CommunityPost, Comment
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -139,29 +140,30 @@ def safety_check_view(request):
     else:
         # ログインユーザーの現在の安否情報をフォームの初期値に設定
         try:
-            instance = user.safety_status_record
+            my_status = user.safety_status_record
         except SafetyStatus.DoesNotExist:
-            instance = None
-        safety_form = SafetyStatusForm(instance=instance)
+            my_status = None
 
-        # 支援要請フォームは空で初期化
+        if my_status:
+            safety_form = SafetyStatusForm(instance=my_status)
+        else:
+            safety_form = SafetyStatusForm()
+
         support_form = SupportRequestForm()
 
-    # --- テンプレートに渡す表示用データを準備 ---
-    # 他のユーザーの安否リスト (ここでは全ユーザーを対象に)
-    safety_list = SafetyStatus.objects.exclude(user=user).order_by('-last_updated')
+        # --- 表示用データの準備 ---
+        safety_list = SafetyStatus.objects.exclude(user=user).order_by('-last_updated')
+        request_list = SupportRequest.objects.filter(status='pending').order_by('-requested_at')
 
-    # 支援要請リスト (未対応のもの)
-    request_list = SupportRequest.objects.filter(status='pending').order_by('-requested_at')
+        context = {
+            'my_status': my_status,  # <-- 自分の安否情報を追加
+            'safety_form': safety_form,
+            'support_form': support_form,
+            'safety_list': safety_list,
+            'request_list': request_list,
+        }
 
-    context = {
-        'safety_form': safety_form,
-        'support_form': support_form,
-        'safety_list': safety_list,
-        'request_list': request_list,
-    }
-
-    return render(request, 'safety_check.html', context)
+        return render(request, 'safety_check.html', context)
 
 @login_required
 def emergency_sos_view(request):
@@ -358,6 +360,53 @@ class CommunityPostCreateView(LoginRequiredMixin, CreateView):
         # 親クラスのform_validを呼び出して、オブジェクトをDBに保存
         return super().form_valid(form)
 
+
+class CommunityPostDeleteView(LoginRequiredMixin, generic.DeleteView):
+    model = CommunityPost
+    template_name = 'community_confirm_delete.html'  # 確認ページのテンプレート
+    success_url = reverse_lazy('Sotsuken_Portable:community_list')  # 削除成功後のリダイレクト先
+    context_object_name = 'post'
+
+    def dispatch(self, request, *args, **kwargs):
+        """
+        ビューが呼ばれた最初に実行されるメソッド。ここで権限チェックを行う。
+        """
+        # 削除対象の投稿オブジェクトを取得
+        post = self.get_object()
+        # ログイン中のユーザーを取得
+        user = request.user
+
+        # 投稿者本人でもなく、ロールが'admin'でもない場合
+        if post.author != user and user.role != 'admin':
+            # PermissionDenied例外を発生させ、403 Forbiddenページを表示
+            raise PermissionDenied
+
+        # 権限があれば、通常の処理を続ける
+        return super().dispatch(request, *args, **kwargs)
+
+class CommentDeleteView(LoginRequiredMixin, generic.DeleteView):
+    model = Comment
+    template_name = 'comment_confirm_delete.html'
+    context_object_name = 'comment'
+
+    def get_success_url(self):
+        """削除成功後のリダイレクト先を動的に決定する"""
+        # 削除されたコメントが紐づいていた投稿の詳細ページにリダイレクト
+        post = self.object.post
+        return reverse('Sotsuken_Portable:community_detail', kwargs={'pk': post.pk})
+
+    def dispatch(self, request, *args, **kwargs):
+        """権限チェック"""
+        comment = self.get_object()
+        user = request.user
+
+        # 権限チェック：コメント投稿者 or 元の投稿の投稿者 or 管理者
+        if (comment.author != user and
+                comment.post.author != user and
+                user.role != 'admin'):
+            raise PermissionDenied
+
+        return super().dispatch(request, *args, **kwargs)
 
 
 

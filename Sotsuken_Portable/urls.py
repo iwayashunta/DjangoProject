@@ -38,6 +38,10 @@ urlpatterns = [
 
     path('community/', views.CommunityPostListView.as_view(), name='community_list'),
     path('community/post/<int:pk>/', views.CommunityPostDetailView.as_view(), name='community_detail'),
+
+    path('community/post/<int:pk>/delete/', views.CommunityPostDeleteView.as_view(), name='community_delete'),
+
+path('community/comment/<int:pk>/delete/', views.CommentDeleteView.as_view(), name='comment_delete'),
     path('community/new/', views.CommunityPostCreateView.as_view(), name='community_create'),
 
     path('chat/', views.chat_group_list_view, name='chat_group_list'),
