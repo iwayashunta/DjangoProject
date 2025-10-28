@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}グループ管理{% endblock %}
+{% block header_title %}グループ管理{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-xl shadow-lg">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">参加中のグループ</h2>
+        <a href="{% url 'Sotsuken_Portable:group_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">新しいグループを作成</a>
+    </div>
+
+    <div class="space-y-3">
+        {% for group in group_list %}
+        <a href="{% url 'Sotsuken_Portable:group_detail' group.pk %}" class="block p-4 border rounded-lg hover:bg-gray-50">
+            <h3 class="text-lg font-semibold">{{ group.name }}</h3>
+        </a>
+        {% empty %}
+        <p>まだ参加しているグループはありません。</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

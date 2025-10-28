@@ -11,9 +11,10 @@ from django.views import generic
 # generic から、使いたいクラスを直接インポートする
 from django.views.generic import ListView, DetailView, CreateView
 
-from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm
+from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
+    GroupCreateForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
-    CommunityPost, Comment
+    CommunityPost, Comment, GroupMember
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -408,5 +409,45 @@ class CommentDeleteView(LoginRequiredMixin, generic.DeleteView):
 
         return super().dispatch(request, *args, **kwargs)
 
+# 1. 自分が所属するグループ一覧ビュー
+class GroupListView(LoginRequiredMixin, generic.ListView):
+    model = Group
+    template_name = 'group_list.html'
+    context_object_name = 'group_list'
 
+    # 表示するグループを、自分が所属しているものだけに絞り込む
+    def get_queryset(self):
+        return Group.objects.filter(memberships__member=self.request.user)
+
+
+# 2. 新規グループ作成ビュー
+class GroupCreateView(LoginRequiredMixin, generic.CreateView):
+    model = Group
+    form_class = GroupCreateForm
+    template_name = 'group_form.html'
+    success_url = reverse_lazy('Sotsuken_Portable:group_list') # 成功後は一覧ページへ
+
+    def form_valid(self, form):
+        # グループの作成者をログインユーザーに設定
+        form.instance.creator = self.request.user
+        # 親クラスのメソッドを呼び出してグループを保存
+        response = super().form_valid(form)
+        # ★重要: グループ作成者を、自動的にそのグループの最初のメンバー（管理者）として追加
+        GroupMember.objects.create(
+            group=self.object, # self.objectには作成されたGroupインスタンスが入っている
+            member=self.request.user,
+            role='admin' # グループ作成者はグループ管理者に設定
+        )
+        return response
+
+
+# 3. グループ詳細ビュー
+class GroupDetailView(LoginRequiredMixin, generic.DetailView):
+    model = Group
+    template_name = 'group_detail.html'
+    context_object_name = 'group'
+
+    # (セキュリティ) 自分が所属していないグループの詳細ページは見られないようにする
+    def get_queryset(self):
+        return Group.objects.filter(memberships__member=self.request.user)
 

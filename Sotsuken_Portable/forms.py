@@ -1,7 +1,7 @@
 from django.contrib.auth.forms import UserCreationForm
 from django import forms
 
-from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment  # カスタムUserモデルをインポート
+from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment, Group  # カスタムUserモデルをインポート
 
 class SignUpForm(UserCreationForm):
     """
@@ -111,5 +111,16 @@ class CommentForm(forms.ModelForm):
                 'rows': 3,
                 'placeholder': '返信を入力...'
             }),
+        }
+
+class GroupCreateForm(forms.ModelForm):
+    class Meta:
+        model = Group
+        fields = ('name',) # ユーザーに入力させるのはグループ名のみ
+        labels = {
+            'name': '新しいグループ名',
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'w-full p-3 border rounded-lg', 'placeholder': '例: 山田家'})
         }
 
