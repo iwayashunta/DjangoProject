@@ -8,36 +8,30 @@ from django.db import models
 
 
 class UserManager(BaseUserManager):
-    """
-    カスタムユーザーマネージャー
-    """
+    # create_userメソッドを修正
+    def create_user(self, login_id, password=None, **extra_fields):
+        if not login_id:
+            raise ValueError('The Login ID field must be set')
 
-    def create_user(self, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError('The Email field must be set')
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
+        email = extra_fields.get('email')
+        if email:
+            extra_fields['email'] = self.normalize_email(email)
+
+        # usernameにlogin_idをコピーしておく（任意だが互換性のために推奨）
+        extra_fields.setdefault('username', login_id)
+
+        user = self.model(login_id=login_id, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None, **extra_fields):
-        """
-        createsuperuserコマンドで実行されるメソッド
-        """
+    # create_superuserメソッドを修正
+    def create_superuser(self, login_id, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        # ... (is_staff, is_superuserのチェック) ...
 
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
-
-        # usernameが空にならないように、emailから自動で設定する
-        if not extra_fields.get('username'):
-            extra_fields['username'] = email.split('@')[0] + '_superuser'
-
-        return self.create_user(email, password, **extra_fields)
+        return self.create_user(login_id, password, **extra_fields)
 
 class User(AbstractUser):
     # ロール定義
@@ -58,33 +52,32 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='general')
     safety_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unknown')
 
-    # 1. 氏名フィールドを追加
-    full_name = models.CharField(verbose_name='氏名', max_length=150, blank=True)
-
-    # 2. emailフィールドをユニーク制約付きで上書き
-    email = models.EmailField(verbose_name='メールアドレス', unique=True)
-
-    # 3. ログインに使うフィールドを'email'に設定
-    USERNAME_FIELD = 'email'
-
-    # 4. スーパーユーザー作成時に聞かれるフィールドを空に
-    REQUIRED_FIELDS = []
-
-    # 5. usernameのユニーク制約を外すために上書き
-    username = models.CharField(
-        ('username'),
-        max_length=150,
-        unique=False,  # unique=False
-        blank=True,  # <-- blank=True を追加して、空でも許容するようにする
-        help_text=(''),
-        validators=[AbstractUser.username_validator],
-        error_messages={
-            'unique': ("A user with that username already exists."),
-        },
+    # 1. ログインIDフィールドを追加 (ユニーク制約付き)
+    #    ユーザーが自分で決める or システムが自動生成する
+    login_id = models.CharField(
+        verbose_name='ログインID',
+        max_length=50,
+        unique=True,
+        help_text='ログイン時に使用する一意のIDです。'
     )
 
-    # --- カスタムマネージャーをUserモデルに紐付ける ---
-    objects = UserManager()
+    # 2. 氏名フィールド
+    full_name = models.CharField(verbose_name='氏名', max_length=150, blank=True)
+
+    # 3. emailフィールドのユニーク制約は外す（連絡先としてのみ使用）
+    email = models.EmailField(verbose_name='メールアドレス', blank=True)
+
+    # 4. ログインに使うフィールドを 'login_id' に設定
+    USERNAME_FIELD = 'login_id'
+
+    # 5. createsuperuserコマンドで聞かれる項目に 'email' を追加
+    REQUIRED_FIELDS = ['email']
+
+    # 6. usernameのユニーク制約は外したままでOK
+    username = models.CharField(('username'), max_length=150, unique=False, blank=True)
+
+    # --- カスタムマネージャーの修正 ---
+    objects = UserManager()  # UserManagerは後述
 
     # オプション：最終位置情報
     last_known_latitude = models.FloatField(null=True, blank=True)
@@ -112,6 +105,9 @@ class User(AbstractUser):
         related_name="sotsuken_user_permissions_set",  # ユニークな名前に変更
         related_query_name="user",
     )
+
+    def __str__(self):
+        return self.full_name or self.login_id
 
     class Meta:
         # DjangoにカスタムUserモデルを使用することを伝えます

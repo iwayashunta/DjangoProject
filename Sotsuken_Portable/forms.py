@@ -10,7 +10,7 @@ class SignUpForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         # フォームの基になるモデルと、使用するフィールドを指定
         model = User
-        fields = ('full_name', 'email') # ここに登録時に入力させたい項目を追加
+        fields = ('login_id', 'full_name', 'email') # ここに登録時に入力させたい項目を追加
 
 class SafetyStatusForm(forms.ModelForm):
     """
