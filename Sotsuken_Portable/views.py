@@ -7,6 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required # ログイン必須にするためのデコレータ
 from django.urls import reverse_lazy, reverse
+from django.db.models import Q
 from django.views import generic
 # generic から、使いたいクラスを直接インポートする
 from django.views.generic import ListView, DetailView, CreateView
@@ -14,7 +15,7 @@ from django.views.generic import ListView, DetailView, CreateView
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
     GroupCreateForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
-    CommunityPost, Comment, GroupMember
+    CommunityPost, Comment, GroupMember, User
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -297,6 +298,42 @@ def chat_room_view(request, group_id):
     except Group.DoesNotExist:
         return redirect('Sotsuken_Portable:chat_group_list')
 
+
+@login_required
+def dm_user_list_view(request):
+    """
+    DM相手を選択するためのユーザー一覧ページ
+    """
+    # 自分以外の全ユーザーを取得
+    users = User.objects.exclude(pk=request.user.pk)
+    return render(request, 'dm_user_list.html', {'users': users})
+
+
+@login_required
+def dm_room_view(request, user_id):
+    """
+    特定のユーザーとのDMルームページ
+    """
+    try:
+        other_user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return redirect('Sotsuken_Portable:dm_user_list')
+
+    # 自分と相手の間で交わされたメッセージを取得 (groupがNULLのものに限定)
+    messages = Message.objects.filter(
+        group__isnull=True,  # グループチャットのメッセージを除外
+        sender__in=[request.user, other_user],
+        recipient__in=[request.user, other_user]
+    ).order_by('timestamp')
+
+    context = {
+        'other_user': other_user,
+        'messages': messages,
+    }
+    return render(request, 'dm_room.html', context)
+
+
+
 # 1. 投稿一覧ビュー
 class CommunityPostListView(LoginRequiredMixin, ListView):
     model = CommunityPost
@@ -450,4 +487,52 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
     # (セキュリティ) 自分が所属していないグループの詳細ページは見られないようにする
     def get_queryset(self):
         return Group.objects.filter(memberships__member=self.request.user)
+
+
+class GroupDeleteView(LoginRequiredMixin, generic.DeleteView):
+    model = Group
+    template_name = 'group_confirm_delete.html'
+    success_url = reverse_lazy('Sotsuken_Portable:group_list')
+    context_object_name = 'group'
+
+    def dispatch(self, request, *args, **kwargs):
+        """権限チェック: グループ管理者のみ削除可能"""
+        group = self.get_object()
+        user = request.user
+
+        # ログインユーザーが、このグループのメンバーであり、かつ役割が 'admin' であるかを確認
+        is_group_admin = group.memberships.filter(member=user, role='admin').exists()
+
+        if not is_group_admin:
+            raise PermissionDenied
+
+        return super().dispatch(request, *args, **kwargs)
+
+
+class GroupLeaveView(LoginRequiredMixin, generic.View):
+    def post(self, request, *args, **kwargs):
+        group = get_object_or_404(Group, pk=self.kwargs['pk'])
+        user = request.user
+
+        try:
+            membership = GroupMember.objects.get(group=group, member=user)
+        except GroupMember.DoesNotExist:
+            # そもそもメンバーでなければ何もしない
+            messages.error(request, 'あなたはこのグループのメンバーではありません。')
+            return redirect('Sotsuken_Portable:group_list')
+
+        # ★最後の管理者が脱退しようとした場合の考慮
+        is_last_admin = (membership.role == 'admin' and
+                         group.memberships.filter(role='admin').count() == 1)
+
+        if is_last_admin:
+            messages.error(request,
+                           'あなたが最後の管理者であるため、グループから脱退できません。他のメンバーに管理者権限を譲渡してください。')
+            return redirect('Sotsuken_Portable:group_detail', pk=group.pk)
+
+        # メンバーシップを削除して脱退
+        membership.delete()
+        messages.success(request, f'グループ「{group.name}」から脱退しました。')
+        return redirect('Sotsuken_Portable:group_list')
+
 

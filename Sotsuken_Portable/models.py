@@ -460,13 +460,23 @@ class Message(models.Model):
         related_name="group_messages"
     )
 
-    # 5. メッセージタイプ
-    destination_type = models.CharField(
-        verbose_name="宛先タイプ",
-        max_length=20,
-        choices=DESTINATION_TYPE_CHOICES,
-        default='group'
+    # 5. 宛先ユーザー (DMの場合)
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,  # Userモデルを安全に参照
+        verbose_name="宛先ユーザー",
+        on_delete=models.CASCADE,
+        null=True,  # グループチャットの場合はNULLになるので必須
+        blank=True,
+        related_name="received_messages"
     )
+
+    # 5. メッセージタイプ
+    #destination_type = models.CharField(
+        #verbose_name="宛先タイプ",
+        #max_length=20,
+        #choices=DESTINATION_TYPE_CHOICES,
+        #default='group'
+    #)
 
     # 6. 既読フラグ (簡易的な実装)
     # 複雑な既読管理（誰が読んだか）は別の中間テーブル (ReadReceipt) を使いますが、

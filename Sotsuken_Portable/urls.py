@@ -51,5 +51,10 @@ urlpatterns = [
     path('groups/new/', views.GroupCreateView.as_view(), name='group_create'),
     path('groups/<int:pk>/', views.GroupDetailView.as_view(), name='group_detail'),
 
+    path('groups/<int:pk>/delete/', views.GroupDeleteView.as_view(), name='group_delete'),
 
+    path('groups/<int:pk>/leave/', views.GroupLeaveView.as_view(), name='group_leave'),
+
+    path('chat/dm/', views.dm_user_list_view, name='dm_user_list'),
+    path('chat/dm/<int:user_id>/', views.dm_room_view, name='dm_room')
 ]
