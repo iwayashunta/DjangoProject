@@ -4,10 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="ユーザーメニューをつくりました（10/30）">
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/403.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/404.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/500.html" afterDir="false" />
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="エラー画面をつくりました。&#10;みるためにはデバッグモードをFalseにしてALLOWED_HOSTに'127.0.0.1'と'localhost'を追加する必要があります（10/30）">
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/group_invite_qr.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/my_status_qr.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/qr_scanner.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/settings.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/settings.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/user_menu.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/user_menu.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -172,7 +176,7 @@
       <workItem from="1761534333401" duration="14337000" />
       <workItem from="1761626076193" duration="11021000" />
       <workItem from="1761703445687" duration="17408000" />
-      <workItem from="1761783469418" duration="6390000" />
+      <workItem from="1761783469418" duration="11013000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -318,7 +322,15 @@
       <option name="project" value="LOCAL" />
       <updated>1761788467043</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="エラー画面をつくりました。&#10;みるためにはデバッグモードをFalseにしてALLOWED_HOSTに'127.0.0.1'と'localhost'を追加する必要があります（10/30）">
+      <option name="closed" value="true" />
+      <created>1761790524825</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1761790524825</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -352,7 +364,8 @@
     <MESSAGE value="グループ管理機能をつくりました" />
     <MESSAGE value="個人間チャット機能を実装しました&#10;モデルの変更を行ったのでデータベースのマイグレーションを行ってください（10/29）" />
     <MESSAGE value="ユーザーメニューをつくりました（10/30）" />
-    <option name="LAST_COMMIT_MESSAGE" value="ユーザーメニューをつくりました（10/30）" />
+    <MESSAGE value="エラー画面をつくりました。&#10;みるためにはデバッグモードをFalseにしてALLOWED_HOSTに'127.0.0.1'と'localhost'を追加する必要があります（10/30）" />
+    <option name="LAST_COMMIT_MESSAGE" value="エラー画面をつくりました。&#10;みるためにはデバッグモードをFalseにしてALLOWED_HOSTに'127.0.0.1'と'localhost'を追加する必要があります（10/30）" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

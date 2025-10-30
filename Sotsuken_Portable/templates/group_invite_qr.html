@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}グループ招待{% endblock %}
+{% block header_title %}グループ招待QRコード{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 max-w-lg mx-auto">
+    
+    <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+        <!-- ビューから渡されたgroupオブジェクトを使ってグループ名を表示 -->
+        <h3 class="text-lg font-semibold mb-1">「{{ group.name }}」への招待</h3>
+        <p class="text-sm text-gray-500 mb-4">Invite to Group</p>
+        
+        <!-- QRコードが描画されるエリア -->
+        <div id="qr-code-display" class="bg-white w-56 h-56 mx-auto rounded-lg flex items-center justify-center p-2 border-4 border-gray-200">
+            <!-- JavaScriptによって、ここにQRコードが生成されます -->
+        </div>
+
+        <p class="mt-4 text-gray-700">
+            このグループに参加したい人に、このQRコードをスキャンしてもらってください。
+        </p>
+    </div>
+
+    <div class="mt-8 text-center">
+        <a href="{% url 'Sotsuken_Portable:group_detail' group.id %}" class="text-gray-600 hover:text-blue-600 transition-colors">
+            &larr; グループ詳細に戻る
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<!-- QRコード生成ライブラリ (qrcode.js) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // views.pyから渡されたグループ招待情報のJSONデータ
+    const qrData = JSON.parse('{{ qr_data_json|escapejs }}');
+    
+    // このJSONデータを文字列に変換してQRコードを生成
+    new QRCode(document.getElementById('qr-code-display'), {
+        text: JSON.stringify(qrData),
+        width: 200,
+        height: 200,
+        correctLevel : QRCode.CorrectLevel.M
+    });
+});
+</script>
+{% endblock %}

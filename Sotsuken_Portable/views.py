@@ -590,4 +590,66 @@ def user_profile_edit(request):
     return render(request, 'user_profile_edit.html', context)
 
 
+@login_required
+def my_status_qr_view(request):
+    # (前回作成した安否情報をJSONにするロジックは、ほぼそのまま流用)
+    user = request.user
+    qr_data = {}
+    try:
+        safety_status = user.safety_status_record
+        qr_data = {
+            "type": "user_status", # ★QRコードの種類を識別するtypeキーを追加
+            "user_id": user.id,
+            "full_name": user.full_name,
+            "safety_status": safety_status.get_status_display(),
+            "last_updated": safety_status.last_updated.strftime('%Y-%m-%d %H:%M')
+        }
+    except SafetyStatus.DoesNotExist:
+        # 安否情報が未登録の場合のデフォルトデータ
+        qr_data = {
+            "user_id": user.id,
+            "full_name": user.full_name,
+            "safety_status": "未確認",
+            "last_updated": None
+        }
+
+    context = {
+        # 辞書をJSON文字列に変換してテンプレートに渡す
+        'qr_data_json': json.dumps(qr_data)
+    }
+    return render(request, 'my_status_qr.html', context)
+
+
+# --- 2. グループ招待用QRコード用ビュー (新規作成) ---
+@login_required
+def group_invite_qr_view(request, group_id):
+    group = get_object_or_404(Group, id=group_id)
+
+    # ユーザーがこのグループのメンバーであるかどうかの権限チェックを入れるとより安全
+
+    # グループ招待用のデータを作成
+    qr_data = {
+        "type": "group_invite",  # ★QRコードの種類
+        "group_id": group.id,
+        "group_name": group.name,
+        "invitation_code": str(group.invitation_code)  # 念のため文字列に
+    }
+
+    context = {
+        'group': group,
+        'qr_data_json': json.dumps(qr_data)
+    }
+    return render(request, 'group_invite_qr.html', context)
+
+
+# --- 3. QRコードスキャナー用ビュー (新規作成) ---
+@login_required
+def qr_scan_view(request):
+    """
+    QRコードを読み取るためのスキャナーページを表示する。
+    このビューはテンプレートを表示するだけで、特別なロジックは不要。
+    """
+    return render(request, 'qr_scanner.html')
+
+
 

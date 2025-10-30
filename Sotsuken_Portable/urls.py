@@ -17,7 +17,7 @@ urlpatterns = [
          name='login'),
 
     # ログアウト
-    path('logout/', LogoutView.as_view(next_page='index'), name='logout'),
+    path('logout/', LogoutView.as_view(next_page='Sotsuken_Portable:index'), name='logout'),
 
 # ユーザー登録関連のURLパターン
     path('signup/', views.signup_view, name='signup'),
@@ -64,5 +64,12 @@ urlpatterns = [
 # ユーザー情報編集画面のURLを追加
     path('settings/profile/', views.user_profile_edit, name='user_profile_edit'),
 
+    # 1. 自分の安否情報QRコードを表示するページ
+    path('qr/my-status/', views.my_status_qr_view, name='my_status_qr'),
 
+    # 2. グループ招待用のQRコードを表示するページ (グループ詳細ページなどからリンク)
+    path('groups/<int:group_id>/invite-qr/', views.group_invite_qr_view, name='group_invite_qr'),
+
+    # 3. QRコードを読み取るためのスキャナーページ
+    path('qr/scan/', views.qr_scan_view, name='qr_scanner'),
 ]
