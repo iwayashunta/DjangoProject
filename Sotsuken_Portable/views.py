@@ -2,6 +2,7 @@ import json
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, redirect, get_object_or_404
@@ -10,10 +11,10 @@ from django.urls import reverse_lazy, reverse
 from django.db.models import Q
 from django.views import generic
 # generic から、使いたいクラスを直接インポートする
-from django.views.generic import ListView, DetailView, CreateView
+from django.views.generic import ListView, DetailView, CreateView, TemplateView
 
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
-    GroupCreateForm
+    GroupCreateForm, UserUpdateForm, MyPasswordChangeForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
     CommunityPost, Comment, GroupMember, User
 from Sotsuken_Portable.decorators import admin_required
@@ -302,11 +303,21 @@ def chat_room_view(request, group_id):
 @login_required
 def dm_user_list_view(request):
     """
-    DM相手を選択するためのユーザー一覧ページ
+    DM相手と、参加中グループチャットへの入り口ページ
     """
-    # 自分以外の全ユーザーを取得
-    users = User.objects.exclude(pk=request.user.pk)
-    return render(request, 'dm_user_list.html', {'users': users})
+    # 1. 自分以外の全ユーザーを取得 (DM相手用)
+    dm_users = User.objects.exclude(pk=request.user.pk)
+
+    # 2. 自分が所属するグループの一覧を取得 (グループチャット用)
+    chat_groups = Group.objects.filter(memberships__member=request.user)
+
+    context = {
+        'dm_users': dm_users,
+        'chat_groups': chat_groups,
+    }
+
+    # テンプレート名をより実態に合った 'chat_index.html' などに変更しても良い
+    return render(request, 'dm_user_list.html', context)
 
 
 @login_required
@@ -534,5 +545,49 @@ class GroupLeaveView(LoginRequiredMixin, generic.View):
         membership.delete()
         messages.success(request, f'グループ「{group.name}」から脱退しました。')
         return redirect('Sotsuken_Portable:group_list')
+
+@login_required
+def settings_view(request):
+    """
+    設定・プライバシー画面を表示するビュー
+    """
+    return render(request, 'settings.html')
+
+
+@login_required
+def user_profile_edit(request):
+    """
+    ユーザー情報とパスワードの編集を行うビュー
+    """
+    # ユーザー情報更新フォームの処理
+    if 'user_update' in request.POST:
+        user_form = UserUpdateForm(request.POST, instance=request.user)
+        password_form = MyPasswordChangeForm(request.user)  # パスワードフォームは初期化
+        if user_form.is_valid():
+            user_form.save()
+            messages.success(request, 'ユーザー情報を更新しました。')
+            return redirect('Sotsuken_Portable:user_profile_edit')
+
+    # パスワード変更フォームの処理
+    elif 'password_change' in request.POST:
+        password_form = MyPasswordChangeForm(request.user, request.POST)
+        user_form = UserUpdateForm(instance=request.user)  # ユーザーフォームは初期化
+        if password_form.is_valid():
+            user = password_form.save()
+            update_session_auth_hash(request, user)  # パスワード変更後もログインを維持
+            messages.success(request, 'パスワードを変更しました。')
+            return redirect('Sotsuken_Portable:user_profile_edit')
+
+    # GETリクエストの場合（通常の画面表示）
+    else:
+        user_form = UserUpdateForm(instance=request.user)
+        password_form = MyPasswordChangeForm(request.user)
+
+    context = {
+        'user_form': user_form,
+        'password_form': password_form
+    }
+    return render(request, 'user_profile_edit.html', context)
+
 
 

@@ -1,4 +1,4 @@
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
 
 from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment, Group  # カスタムUserモデルをインポート
@@ -123,4 +123,35 @@ class GroupCreateForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={'class': 'w-full p-3 border rounded-lg', 'placeholder': '例: 山田家'})
         }
+
+class UserUpdateForm(forms.ModelForm):
+    """
+    ユーザー情報（氏名、メールアドレス）を更新するためのフォーム
+    """
+    class Meta:
+        model = User
+        fields = ('full_name', 'email')
+        labels = {
+            'full_name': '氏名',
+            'email': 'メールアドレス',
+        }
+
+class MyPasswordChangeForm(PasswordChangeForm):
+    """
+    PasswordChangeFormのラベルとヘルプテキストを日本語化するためのカスタムフォーム
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['old_password'].label = "現在のパスワード"
+        self.fields['new_password1'].label = "新しいパスワード"
+        self.fields['new_password2'].label = "新しいパスワード（確認用）"
+
+        # ↓↓↓ ヘルプテキストを日本語に設定 ↓↓↓
+        self.fields['new_password1'].help_text = (
+            '<ul>'
+            '<li class="text-xs text-gray-500 list-disc list-inside">パスワードは8文字以上である必要があります。</li>'
+            '<li class="text-xs text-gray-500 list-disc list-inside">一般的なパスワードや、数字のみのパスワードは使用できません。</li>'
+            '</ul>'
+        )
+        self.fields['new_password2'].help_text = '確認のため、もう一度同じパスワードを入力してください。'
 

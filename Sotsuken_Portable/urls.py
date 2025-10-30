@@ -1,4 +1,4 @@
-# Sotuken_Portable/urls.py
+# Sotsuken_Portable/urls.py
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 from . import views
@@ -56,5 +56,13 @@ urlpatterns = [
     path('groups/<int:pk>/leave/', views.GroupLeaveView.as_view(), name='group_leave'),
 
     path('chat/dm/', views.dm_user_list_view, name='dm_user_list'),
-    path('chat/dm/<int:user_id>/', views.dm_room_view, name='dm_room')
+    path('chat/dm/<int:user_id>/', views.dm_room_view, name='dm_room'),
+
+    # 設定画面のURLを追加
+    path('settings/', views.settings_view, name='settings'),
+
+# ユーザー情報編集画面のURLを追加
+    path('settings/profile/', views.user_profile_edit, name='user_profile_edit'),
+
+
 ]

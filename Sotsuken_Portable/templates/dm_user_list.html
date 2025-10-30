@@ -1,18 +1,38 @@
 {% extends "base.html" %}
-{% block title %}チャット相手を選択{% endblock %}
-{% block header_title %}チャット相手を選択{% endblock %}
+{% block title %}チャット{% endblock %}
+{% block header_title %}チャット{% endblock %}
 
 {% block content %}
 <div class="bg-white p-6 rounded-xl shadow-lg">
-    <h2 class="text-xl font-bold mb-4">ユーザー一覧</h2>
-    <div class="space-y-2">
-        {% for u in users %}
-        <a href="{% url 'Sotsuken_Portable:dm_room' u.pk %}" class="block p-4 bg-gray-100 hover:bg-blue-100 rounded-lg">
-            {{ u.full_name|default:u.login_id }}
-        </a>
-        {% empty %}
-        <p>他のユーザーが存在しません。</p>
-        {% endfor %}
+
+    <!-- グループチャット セクション -->
+    <div class="mb-8">
+        <h2 class="text-xl font-bold mb-4">グループチャット</h2>
+        <div class="space-y-2">
+            {% for group in chat_groups %}
+            <a href="{% url 'Sotsuken_Portable:chat_room' group.pk %}" class="block p-4 bg-gray-100 hover:bg-blue-100 rounded-lg">
+                {{ group.name }}
+            </a>
+            {% empty %}
+            <p class="text-gray-500">参加しているグループはありません。</p>
+            <a href="{% url 'Sotsuken_Portable:group_list' %}" class="text-blue-600 hover:underline mt-2 inline-block">グループ管理へ</a>
+            {% endfor %}
+        </div>
     </div>
+
+    <!-- 個人チャット (DM) セクション -->
+    <div>
+        <h2 class="text-xl font-bold mb-4">個人チャット (DM)</h2>
+        <div class="space-y-2">
+            {% for u in dm_users %}
+            <a href="{% url 'Sotsuken_Portable:dm_room' u.pk %}" class="block p-4 bg-gray-100 hover:bg-green-100 rounded-lg">
+                {{ u.full_name|default:u.login_id }}
+            </a>
+            {% empty %}
+            <p class="text-gray-500">他のユーザーが存在しません。</p>
+            {% endfor %}
+        </div>
+    </div>
+
 </div>
 {% endblock %}
