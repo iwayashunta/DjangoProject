@@ -1,3 +1,5 @@
+import csv
+import datetime
 import json
 
 from django.conf import settings
@@ -5,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required # ログイン必須にするためのデコレータ
 from django.urls import reverse_lazy, reverse
@@ -422,6 +425,89 @@ def sos_report_list_view(request):
         'report_list': report_list
     }
     return render(request, 'sos_report_list.html', context)
+
+
+# --- SOSレポート 状況更新ビュー ---
+@require_POST
+@admin_required
+def sos_report_update_status_view(request, report_id):
+    report = get_object_or_404(SOSReport, pk=report_id)
+    new_status = request.POST.get('status')
+
+    # SOSReportモデルで定義されている有効なステータスかチェック
+    valid_statuses = [status[0] for status in SOSReport.STATUS_CHOICES]
+    if new_status in valid_statuses:
+        report.status = new_status
+        report.save()
+        messages.success(request, f"レポート(ID:{report.id})の状況を「{report.get_status_display()}」に更新しました。")
+    else:
+        messages.error(request, "無効なステータスです。")
+
+    return redirect('Sotsuken_Portable:sos_report_list')
+
+
+# --- SOSレポート 削除ビュー ---
+# こちらは確認画面を挟むため、GETとPOST両方を受け付ける
+@admin_required
+def sos_report_delete_view(request, report_id):
+    report_to_delete = get_object_or_404(SOSReport, pk=report_id)
+
+    if request.method == 'POST':
+        report_to_delete.delete()
+        messages.success(request, f"レポート(ID:{report_id})を削除しました。")
+        return redirect('Sotsuken_Portable:sos_report_list')
+
+    # GETリクエストの場合は確認ページを表示
+    context = {
+        'report': report_to_delete
+    }
+    return render(request, 'sos_report_confirm_delete.html', context)
+
+@admin_required
+def sos_report_export_csv_view(request):
+    """
+    SOSレポートをCSVファイルとしてエクスポートするビュー
+    """
+    # HTTPレスポンスのヘッダーを設定
+    response = HttpResponse(content_type='text/csv')
+    # 日本語のファイル名が文字化けしないように設定
+    current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"sos_reports_{current_time}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    # ★重要: Excelで日本語が文字化けしないように、BOM付きUTF-8でエンコード
+    response.write('\ufeff'.encode('utf8'))
+
+    # CSVライターを作成
+    writer = csv.writer(response)
+
+    # 1. ヘッダー行を書き込む
+    writer.writerow([
+        'レポートID',
+        '発信日時',
+        '発信者ログインID',
+        '発信者氏名',
+        '緯度',
+        '経度',
+        '対応状況',
+        '状況メモ'
+    ])
+
+    # 2. データ行を書き込む
+    reports = SOSReport.objects.select_related('reporter').all()
+    for report in reports:
+        writer.writerow([
+            report.id,
+            report.reported_at.strftime('%Y-%m-%d %H:%M:%S'),
+            report.reporter.login_id if report.reporter else '',
+            report.reporter.full_name if report.reporter else '(削除されたユーザー)',
+            report.latitude,
+            report.longitude,
+            report.get_status_display(), # 'pending' -> '未対応' のように変換
+            report.situation_notes
+        ])
+
+    return response
 
 @login_required
 def chat_group_list_view(request):

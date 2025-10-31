@@ -49,7 +49,14 @@ urlpatterns = [
 
     path('management/sos-reports/', views.sos_report_list_view, name='sos_report_list'),
 
+    path('management/sos-reports/<int:report_id>/update-status/', views.sos_report_update_status_view, name='sos_report_update_status'),
+
+    path('management/sos-reports/<int:report_id>/delete/', views.sos_report_delete_view, name='sos_report_delete'),
+
+    path('management/sos-reports/export-csv/', views.sos_report_export_csv_view, name='sos_report_export_csv'),
+
     path('community/', views.CommunityPostListView.as_view(), name='community_list'),
+
     path('community/post/<int:pk>/', views.CommunityPostDetailView.as_view(), name='community_detail'),
 
     path('community/post/<int:pk>/delete/', views.CommunityPostDeleteView.as_view(), name='community_delete'),

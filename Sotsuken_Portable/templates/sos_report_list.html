@@ -9,10 +9,11 @@
         <div class="bg-white p-6 rounded-xl shadow-lg">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold">SOSレポートリスト</h3>
-                <!-- CSV出力ボタン (一旦、見た目だけ用意) -->
-                <button disabled class="bg-gray-400 text-white p-2 rounded-lg text-sm font-semibold cursor-not-allowed">
+                <!-- CSV出力ボタン -->
+                <a href="{% url 'Sotsuken_Portable:sos_report_export_csv' %}"
+                   class="bg-blue-600 text-white p-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
                     全レポートをCSV出力
-                </button>
+                </a>
             </div>
 
             <div class="overflow-x-auto">
@@ -23,6 +24,7 @@
                         <th class="p-2 text-left">発信者</th>
                         <th class="p-2 text-left">位置情報 (緯度, 経度)</th>
                         <th class="p-2 text-center">対応状況</th>
+                        <th class="p-2 text-center">操作</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -52,18 +54,38 @@
                                     {{ report.latitude|floatformat:6 }}, {{ report.longitude|floatformat:6 }}
                                 </a>
                             </td>
+                            <!-- ▼▼▼ 対応状況 変更フォーム ▼▼▼ -->
                             <td class="p-2 text-center">
-                            <span class="px-3 py-1 text-sm rounded-full font-semibold
-                                {% if report.status == 'pending' %} bg-red-100 text-red-800
-                                {% elif report.status == 'resolved' %} bg-green-100 text-green-800
-                                {% else %} bg-yellow-100 text-yellow-800 {% endif %}">
-                                {{ report.get_status_display }}
-                            </span>
+                                <form action="{% url 'Sotsuken_Portable:sos_report_update_status' report.id %}"
+                                      method="post" class="flex items-center justify-center gap-2">
+                                    {% csrf_token %}
+                                    <select name="status"
+                                            class="border border-gray-300 rounded-md px-2 py-1 text-sm bg-white">
+                                        {% for status_value, status_display in report.STATUS_CHOICES %}
+                                            <option value="{{ status_value }}"
+                                                    {% if report.status == status_value %}selected{% endif %}>
+                                                {{ status_display }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit"
+                                            class="bg-green-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-green-700">
+                                        更新
+                                    </button>
+                                </form>
+                            </td>
+
+                            <!-- ▼▼▼ 操作ボタン ▼▼▼ -->
+                            <td class="p-2 text-center">
+                                <a href="{% url 'Sotsuken_Portable:sos_report_delete' report.id %}"
+                                   class="inline-block bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-red-700">
+                                    削除
+                                </a>
                             </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="4" class="p-4 text-center text-gray-500">SOSレポートはありません。</td>
+                            <td colspan="5" class="p-4 text-center text-gray-500">SOSレポートはありません。</td>
                         </tr>
                     {% endfor %}
                     </tbody>

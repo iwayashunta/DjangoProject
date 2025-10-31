@@ -4,14 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="QRコードを生成、読み取ることができるようにしました。&#10;ユーザー管理画面を作成しました（10/31）">
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/shelter_confirm_delete.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/shelter_edit.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/shelter_management.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/sos_report_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/admin_menu.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/admin_menu.html" afterDir="false" />
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="避難所管理画面,SOSレポート管理画面を作成しています（10/31）">
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/sos_report_confirm_delete.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/sos_report_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/sos_report_list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/views.py" afterDir="false" />
     </list>
@@ -179,7 +174,7 @@
       <workItem from="1761626076193" duration="11021000" />
       <workItem from="1761703445687" duration="17408000" />
       <workItem from="1761783469418" duration="11341000" />
-      <workItem from="1761876576489" duration="12903000" />
+      <workItem from="1761876576489" duration="14362000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -349,7 +344,15 @@
       <option name="project" value="LOCAL" />
       <updated>1761888936214</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="避難所管理画面,SOSレポート管理画面を作成しています（10/31）">
+      <option name="closed" value="true" />
+      <created>1761894310726</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1761894310726</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -386,7 +389,8 @@
     <MESSAGE value="エラー画面をつくりました。&#10;みるためにはデバッグモードをFalseにしてALLOWED_HOSTに'127.0.0.1'と'localhost'を追加する必要があります（10/30）" />
     <MESSAGE value="QRコード周りの機能を作成中です。&#10;スキャナーが上手く動いてないです（10/30）" />
     <MESSAGE value="QRコードを生成、読み取ることができるようにしました。&#10;ユーザー管理画面を作成しました（10/31）" />
-    <option name="LAST_COMMIT_MESSAGE" value="QRコードを生成、読み取ることができるようにしました。&#10;ユーザー管理画面を作成しました（10/31）" />
+    <MESSAGE value="避難所管理画面,SOSレポート管理画面を作成しています（10/31）" />
+    <option name="LAST_COMMIT_MESSAGE" value="避難所管理画面,SOSレポート管理画面を作成しています（10/31）" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
