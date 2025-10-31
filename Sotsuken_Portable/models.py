@@ -626,8 +626,8 @@ class Shelter(models.Model):
     )
 
     # 3. 位置情報 (緯度・経度/必須)
-    latitude = models.FloatField(verbose_name="緯度")
-    longitude = models.FloatField(verbose_name="経度")
+    latitude = models.FloatField(verbose_name="緯度", null=True, blank=True)
+    longitude = models.FloatField(verbose_name="経度", null=True, blank=True)
 
     # 4. 最大収容人数 (必須)
     max_capacity = models.IntegerField(

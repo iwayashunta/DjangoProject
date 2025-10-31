@@ -1,7 +1,7 @@
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
 
-from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment, Group  # カスタムUserモデルをインポート
+from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment, Group, Shelter  # カスタムUserモデルをインポート
 
 class SignUpForm(UserCreationForm):
     """
@@ -154,4 +154,20 @@ class MyPasswordChangeForm(PasswordChangeForm):
             '</ul>'
         )
         self.fields['new_password2'].help_text = '確認のため、もう一度同じパスワードを入力してください。'
+
+class ShelterForm(forms.ModelForm):
+    class Meta:
+        model = Shelter
+        # フォームに表示するフィールドを指定
+        fields = ['name', 'address', 'max_capacity', 'is_pet_friendly', 'opening_status']
+        # フォームのラベルを日本語で分かりやすく設定
+        labels = {
+            'name': '避難所名',
+            'address': '住所',
+            #'latitude': '緯度',  # 一旦消してます
+            #'longitude': '経度', # 一旦消してます
+            'max_capacity': '最大収容人数',
+            'is_pet_friendly': 'ペット受け入れ可',
+            'opening_status': '開設状況',
+        }
 

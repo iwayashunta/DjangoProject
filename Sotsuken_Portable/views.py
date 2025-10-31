@@ -15,7 +15,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import ListView, DetailView, CreateView, TemplateView
 
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
-    GroupCreateForm, UserUpdateForm, MyPasswordChangeForm
+    GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
     CommunityPost, Comment, GroupMember, User
 from Sotsuken_Portable.decorators import admin_required
@@ -329,6 +329,99 @@ def user_change_role_view(request, user_id):
 
     return redirect('Sotsuken_Portable:user_management')
 
+
+@admin_required
+def shelter_management_view(request):
+    """
+    避難所の一覧表示と新規登録を行うビュー
+    """
+    # 新規登録フォームの処理 (POSTリクエスト)
+    if request.method == 'POST':
+        form = ShelterForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '新しい避難所を登録しました。')
+            return redirect('Sotsuken_Portable:shelter_management')
+        # エラーがある場合は、エラー情報を含んだフォームがそのまま下に渡される
+
+    # 通常の画面表示 (GETリクエスト) またはフォームエラー時
+    else:
+        form = ShelterForm()
+
+    # 登録済みの全避難所を取得
+    shelter_list = Shelter.objects.all().order_by('name')
+
+    context = {
+        'form': form,
+        'shelter_list': shelter_list
+    }
+    return render(request, 'shelter_management.html', context)
+
+
+# --- 避難所編集ビュー ---
+@admin_required
+def shelter_edit_view(request, shelter_id):
+    """
+    既存の避難所情報を編集するビュー
+    """
+    shelter_instance = get_object_or_404(Shelter, pk=shelter_id)
+
+    # POSTリクエスト（フォームが送信された）の場合
+    if request.method == 'POST':
+        # 既存のインスタンスに、送信されたデータを上書きする形でフォームを作成
+        form = ShelterForm(request.POST, instance=shelter_instance)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"避難所「{shelter_instance.name}」の情報を更新しました。")
+            return redirect('Sotsuken_Portable:shelter_management')
+
+    # GETリクエスト（編集ページを初めて開いた）の場合
+    else:
+        # 既存のインスタンスの情報をフォームにセットして表示
+        form = ShelterForm(instance=shelter_instance)
+
+    context = {
+        'form': form,
+        'shelter': shelter_instance  # テンプレートで避難所名などを表示するために渡す
+    }
+    return render(request, 'shelter_edit.html', context)
+
+
+# --- 避難所削除ビュー ---
+@admin_required
+def shelter_delete_view(request, shelter_id):
+    """
+    避難所を削除するビュー（確認ページ付き）
+    """
+    shelter_to_delete = get_object_or_404(Shelter, pk=shelter_id)
+
+    # POSTリクエストの場合（削除実行）
+    if request.method == 'POST':
+        deleted_shelter_name = shelter_to_delete.name
+        shelter_to_delete.delete()
+        messages.success(request, f"避難所「{deleted_shelter_name}」を削除しました。")
+        return redirect('Sotsuken_Portable:shelter_management')
+
+    # GETリクエストの場合（確認画面の表示）
+    context = {
+        'shelter': shelter_to_delete
+    }
+    return render(request, 'shelter_confirm_delete.html', context)
+
+
+@admin_required
+def sos_report_list_view(request):
+    """
+    SOSレポートの一覧を表示するビュー
+    """
+    # select_related('reporter') を使って、SOSReportと発信者(User)の情報を効率的に一括取得
+    # 新しいレポートが上に来るように、 reported_at の降順で並び替え
+    report_list = SOSReport.objects.select_related('reporter').order_by('-reported_at')
+
+    context = {
+        'report_list': report_list
+    }
+    return render(request, 'sos_report_list.html', context)
 
 @login_required
 def chat_group_list_view(request):

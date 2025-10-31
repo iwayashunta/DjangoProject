@@ -42,6 +42,13 @@ urlpatterns = [
 
     path('management/users/<int:user_id>/change-role/', views.user_change_role_view, name='user_change_role'),
 
+    path('management/shelters/', views.shelter_management_view, name='shelter_management'),
+
+    path('management/shelters/<int:shelter_id>/edit/', views.shelter_edit_view, name='shelter_edit'),
+    path('management/shelters/<int:shelter_id>/delete/', views.shelter_delete_view, name='shelter_delete'),
+
+    path('management/sos-reports/', views.sos_report_list_view, name='sos_report_list'),
+
     path('community/', views.CommunityPostListView.as_view(), name='community_list'),
     path('community/post/<int:pk>/', views.CommunityPostDetailView.as_view(), name='community_detail'),
 
