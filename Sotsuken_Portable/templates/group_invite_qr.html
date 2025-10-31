@@ -36,12 +36,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // views.pyから渡されたグループ招待情報のJSONデータ
-    const qrData = JSON.parse('{{ qr_data_json|escapejs }}');
-    
-    // このJSONデータを文字列に変換してQRコードを生成
+    // views.pyから渡された招待URL
+    const inviteUrl = '{{ qr_data_url }}'; // JSON.parseは不要
+
     new QRCode(document.getElementById('qr-code-display'), {
-        text: JSON.stringify(qrData),
+        text: inviteUrl, // データはURLそのもの
         width: 200,
         height: 200,
         correctLevel : QRCode.CorrectLevel.M

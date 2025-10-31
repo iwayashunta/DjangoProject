@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required # ログイン必須�
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q
 from django.views import generic
+from django.views.decorators.http import require_POST
 # generic から、使いたいクラスを直接インポートする
 from django.views.generic import ListView, DetailView, CreateView, TemplateView
 
@@ -261,6 +262,72 @@ def admin_menu_view(request):
     管理者向けメニューページを表示するビュー
     """
     return render(request, 'admin_menu.html')
+
+@admin_required
+def user_management_view(request):
+    """
+    登録ユーザーの一覧と安否情報を表示する管理者向けビュー
+    """
+    # select_related を使って、User と SafetyStatus を効率的に一括取得
+    user_list = User.objects.select_related('safety_status_record').order_by('login_id')
+
+    context = {
+        'user_list': user_list
+    }
+    return render(request, 'user_management.html', context)
+
+
+@admin_required
+def user_delete_view(request, user_id):
+    """
+    ユーザーを削除するビュー（確認画面付き）
+    """
+    # 削除対象のユーザーオブジェクトを取得。存在しなければ404エラー。
+    user_to_delete = get_object_or_404(User, pk=user_id)
+
+    # POSTリクエストの場合（削除実行）
+    if request.method == 'POST':
+        # 自分自身を削除しようとしていないかチェック（安全対策）
+        if user_to_delete == request.user:
+            messages.error(request, "自分自身のアカウントは削除できません。")
+            return redirect('Sotsuken_Portable:user_management')
+
+        # ユーザーを削除
+        deleted_user_login_id = user_to_delete.login_id
+        user_to_delete.delete()
+
+        messages.success(request, f"ユーザー「{deleted_user_login_id}」を削除しました。")
+        return redirect('Sotsuken_Portable:user_management')
+
+    # GETリクエストの場合（確認画面の表示）
+    context = {
+        'user_to_delete': user_to_delete
+    }
+    return render(request, 'user_confirm_delete.html', context)
+
+@require_POST # このビューはPOSTリクエストしか受け付けない
+@admin_required
+def user_change_role_view(request, user_id):
+    """
+    ユーザーのロールを変更する処理を行うビュー
+    """
+    user_to_change = get_object_or_404(User, pk=user_id)
+    new_role = request.POST.get('role') # テンプレートから送られてきた新しいロールを取得
+
+    # 有効なロールかどうかの簡単なチェック
+    valid_roles = [role[0] for role in User.ROLE_CHOICES]
+    if new_role in valid_roles:
+        # 自分自身のロールは変更できないようにする（安全対策）
+        if user_to_change == request.user:
+            messages.error(request, "自分自身のロールは変更できません。")
+        else:
+            user_to_change.role = new_role
+            user_to_change.save()
+            messages.success(request, f"ユーザー「{user_to_change.login_id}」のロールを「{user_to_change.get_role_display()}」に変更しました。")
+    else:
+        messages.error(request, "無効なロールが指定されました。")
+
+    return redirect('Sotsuken_Portable:user_management')
 
 
 @login_required
@@ -592,31 +659,21 @@ def user_profile_edit(request):
 
 @login_required
 def my_status_qr_view(request):
-    # (前回作成した安否情報をJSONにするロジックは、ほぼそのまま流用)
     user = request.user
     qr_data = {}
     try:
         safety_status = user.safety_status_record
         qr_data = {
-            "type": "user_status", # ★QRコードの種類を識別するtypeキーを追加
-            "user_id": user.id,
-            "full_name": user.full_name,
-            "safety_status": safety_status.get_status_display(),
-            "last_updated": safety_status.last_updated.strftime('%Y-%m-%d %H:%M')
+            "t": "us",  # type: user_status
+            "uid": user.id,
+            "fn": user.full_name,
+            "ss": safety_status.status, # 'safe' や 'help' などの内部コード
+            "lu": safety_status.last_updated.strftime('%Y%m%d%H%M') # ハイフン等も削除
         }
     except SafetyStatus.DoesNotExist:
-        # 安否情報が未登録の場合のデフォルトデータ
-        qr_data = {
-            "user_id": user.id,
-            "full_name": user.full_name,
-            "safety_status": "未確認",
-            "last_updated": None
-        }
+        qr_data = {"t": "us", "uid": user.id, "fn": user.full_name, "ss": "unknown"}
 
-    context = {
-        # 辞書をJSON文字列に変換してテンプレートに渡す
-        'qr_data_json': json.dumps(qr_data)
-    }
+    context = {'qr_data_json': json.dumps(qr_data, ensure_ascii=False)}
     return render(request, 'my_status_qr.html', context)
 
 
@@ -625,19 +682,15 @@ def my_status_qr_view(request):
 def group_invite_qr_view(request, group_id):
     group = get_object_or_404(Group, id=group_id)
 
-    # ユーザーがこのグループのメンバーであるかどうかの権限チェックを入れるとより安全
-
-    # グループ招待用のデータを作成
-    qr_data = {
-        "type": "group_invite",  # ★QRコードの種類
-        "group_id": group.id,
-        "group_name": group.name,
-        "invitation_code": str(group.invitation_code)  # 念のため文字列に
-    }
+    # 招待用URLを生成
+    # 例: http://127.0.0.1:8000/groups/join-by-code/xxxxxxxx-xxxx.../
+    invite_url = request.build_absolute_uri(
+        reverse('Sotsuken_Portable:group_join_by_code', kwargs={'invitation_code': group.invitation_code})
+    )
 
     context = {
         'group': group,
-        'qr_data_json': json.dumps(qr_data)
+        'qr_data_url': invite_url  # JSONではなくURLをテンプレートに渡す
     }
     return render(request, 'group_invite_qr.html', context)
 
@@ -650,6 +703,32 @@ def qr_scan_view(request):
     このビューはテンプレートを表示するだけで、特別なロジックは不要。
     """
     return render(request, 'qr_scanner.html')
+
+
+@login_required
+def join_group_by_code_view(request, invitation_code):
+    """
+    招待コードを使ってグループに参加する処理を行うビュー
+    """
+    try:
+        # 招待コードに一致するグループを検索
+        group = Group.objects.get(invitation_code=invitation_code)
+
+        # 既に参加済みでないかチェック
+        is_member = GroupMember.objects.filter(group=group, member=request.user).exists()
+        if is_member:
+            messages.warning(request, f"あなたは既に「{group.name}」のメンバーです。")
+        else:
+            # メンバーとして追加
+            GroupMember.objects.create(group=group, member=request.user, role='member')
+            messages.success(request, f"「{group.name}」に参加しました！")
+
+        # グループの詳細ページにリダイレクト
+        return redirect('Sotsuken_Portable:group_detail', pk=group.pk)
+
+    except Group.DoesNotExist:
+        messages.error(request, "無効な招待コードです。")
+        return redirect('Sotsuken_Portable:group_list')  # エラー時はグループ一覧へ
 
 
 

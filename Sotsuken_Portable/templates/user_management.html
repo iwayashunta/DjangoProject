@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}登録ユーザー管理{% endblock %}
+{% block header_title %}登録ユーザー管理{% endblock %}
+
+{% block content %}
+    <div class.="p-4 md:p-8">
+        <div class="bg-white p-6 rounded-xl shadow-lg overflow-x-auto">
+            <h3 class="text-lg font-semibold mb-4">ユーザーリスト</h3>
+            <table class="w-full text-left min-w-[600px]">
+                <thead>
+                <tr class="border-b-2">
+                    <th class="p-2 font-semibold">ログインID</th>
+                    <th class="p-2 font-semibold">氏名</th>
+                    <th class="p-2 font-semibold">メールアドレス</th>
+                    <th class="p-2 font-semibold text-center">安否状況</th>
+                    <th class="p-2 font-semibold text-center">操作</th> <!-- ← 新しく列を追加 -->
+                </tr>
+                </thead>
+                <tbody>
+                {% for user in user_list %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 font-mono">{{ user.login_id }}</td>
+                        <td class="p-2">{{ user.full_name|default:"-" }}</td>
+                        <td class="p-2">{{ user.email|default:"-" }}</td>
+                        <!-- ▼▼▼ ロール変更フォーム部分 ▼▼▼ -->
+                        <td class="p-2 text-center">
+                            {% if user == request.user %}
+                                {# 自分自身のロールは表示するだけ #}
+                                <span class="font-semibold">{{ user.get_role_display }}</span>
+                            {% else %}
+                                {# 他のユーザーはフォームにする #}
+                                <form action="{% url 'Sotsuken_Portable:user_change_role' user.id %}" method="post"
+                                      class="flex items-center justify-center gap-2">
+                                    {% csrf_token %}
+                                    <select name="role" class="border border-gray-300 rounded-md px-2 py-1 text-sm">
+                                        {% for role_value, role_display in user.ROLE_CHOICES %}
+                                            <option value="{{ role_value }}"
+                                                    {% if user.role == role_value %}selected{% endif %}>
+                                                {{ role_display }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit"
+                                            class="bg-green-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-green-700 transition-colors">
+                                        更新
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </td>
+                        <td class="p-2 text-center">
+                            {% with status=user.safety_status_record %}
+                                {% if status %}
+                                    {# 安否状況に応じて背景色と文字色を動的に変更 #}
+                                    <span class="px-3 py-1 text-sm rounded-full font-semibold
+                                    {% if status.status == 'safe' %} bg-green-100 text-green-800
+                                    {% elif status.status == 'help' %} bg-yellow-100 text-yellow-800
+                                    {% else %} bg-gray-200 text-gray-800 {% endif %}">
+                                    {{ status.get_status_display }}
+                                </span>
+                                {% else %}
+                                    <span class="px-3 py-1 text-sm rounded-full font-semibold bg-gray-200 text-gray-800">
+                                    未登録
+                                </span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="p-2 text-center">
+                            {% if user != request.user %}
+                                <a href="{% url 'Sotsuken_Portable:user_delete' user.id %}"
+                                   class="inline-block bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-red-700 transition-colors">
+                                    削除
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="p-4 text-center text-gray-500">登録されているユーザーはいません。</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block body_extra %}
+    <script>
+        // 30秒ごとにページを自動リフレッシュして、簡易的なリアルタイム更新を実現
+        setTimeout(function () {
+            window.location.reload();
+        }, 30000); // 30000ミリ秒 = 30秒
+    </script>
+{% endblock %}

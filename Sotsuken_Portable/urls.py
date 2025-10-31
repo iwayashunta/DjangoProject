@@ -36,6 +36,12 @@ urlpatterns = [
 
     path('admin-panel/', views.admin_menu_view, name='admin_menu'),
 
+    path('management/users/', views.user_management_view, name='user_management'),
+
+    path('management/users/<int:user_id>/delete/', views.user_delete_view, name='user_delete'),
+
+    path('management/users/<int:user_id>/change-role/', views.user_change_role_view, name='user_change_role'),
+
     path('community/', views.CommunityPostListView.as_view(), name='community_list'),
     path('community/post/<int:pk>/', views.CommunityPostDetailView.as_view(), name='community_detail'),
 
@@ -61,7 +67,7 @@ urlpatterns = [
     # 設定画面のURLを追加
     path('settings/', views.settings_view, name='settings'),
 
-# ユーザー情報編集画面のURLを追加
+    # ユーザー情報編集画面のURLを追加
     path('settings/profile/', views.user_profile_edit, name='user_profile_edit'),
 
     # 1. 自分の安否情報QRコードを表示するページ
@@ -72,4 +78,8 @@ urlpatterns = [
 
     # 3. QRコードを読み取るためのスキャナーページ
     path('qr/scan/', views.qr_scan_view, name='qr_scanner'),
+
+    path('groups/join-by-code/<uuid:invitation_code>/', views.join_group_by_code_view, name='group_join_by_code'),
+
+
 ]

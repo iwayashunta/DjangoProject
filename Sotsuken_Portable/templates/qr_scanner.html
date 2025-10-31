@@ -44,47 +44,55 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ★★★ スキャン成功時の処理 ★★★
     const onScanSuccess = (decodedText, decodedResult) => {
-        stopScan(); // スキャンを停止
-        
-        try {
-            const scannedData = JSON.parse(decodedText);
+    stopScan();
 
-            // QRコードの 'type' キーの値を見て、処理を振り分ける
-            if (scannedData.type === 'user_status') {
-                // --- 安否情報QRコードの場合 ---
-                const message = `安否情報を読み取りました:\n` +
-                                `------------------------\n` +
-                                `氏名: ${scannedData.full_name}\n` +
-                                `状況: ${scannedData.safety_status}\n` +
-                                `更新: ${scannedData.last_updated || 'N/A'}`;
-                alert(message);
-                // ここでDM画面へのリンクを表示するなどの拡張が可能
-
-            } else if (scannedData.type === 'group_invite') {
-                // --- グループ招待QRコードの場合 ---
-                const confirmJoin = confirm(
-                    `グループ招待を読み取りました:\n` +
-                    `------------------------\n` +
-                    `グループ名: 「${scannedData.group_name}」\n\n` +
-                    `このグループに参加しますか？`
-                );
-
-                if (confirmJoin) {
-                    // 「OK」が押されたら、グループ参加処理を行うURLに移動する
-                    // (※このURLとビューは別途作成する必要があります)
-                    alert(`「${scannedData.group_name}」への参加処理を実行します。（ダミー）`);
-                    // window.location.href = `/groups/join-by-code/${scannedData.invitation_code}/`;
-                }
-
-            } else {
-                // --- 知らないタイプのQRコードの場合 ---
-                alert(`非対応のQRコードです。\nデータ: ${JSON.stringify(scannedData)}`);
-            }
-        
-        } catch (e) {
-            // JSONではない、ただのURLやテキストの場合
-            alert(`読み取ったデータ:\n${decodedText}`);
+    // まず、URL形式（グループ招待）かどうかをチェック
+    if (decodedText.includes('/groups/join-by-code/')) {
+        const confirmJoin = confirm(
+            `グループ招待用のURLを読み取りました。\n\nこの招待を受けてグループに参加しますか？`
+        );
+        if (confirmJoin) {
+            window.location.href = decodedText; // そのままURLに移動する
         }
+        return; // 処理を終了
+    }
+
+    // 次に、JSON形式（安否情報など）かどうかを試す
+    try {
+        const data = JSON.parse(decodedText);
+        if (data.t === 'us') { // t: 'us' (user_status) なら
+
+            // 短縮コードを日本語に戻すための対応表
+            const statusMap = {
+                'safe': '無事',
+                'help': '要支援',
+                'unknown': '未確認'
+            };
+            const statusText = statusMap[data.ss] || '不明';
+
+            const message = `安否情報を読み取りました:\n` +
+                            `------------------------\n` +
+                            `氏名: ${data.fn}\n` +
+                            `状況: ${statusText}\n` +
+                            `更新日時: ${data.lu || 'N/A'}`; // lu: last_updated
+            alert(message);
+
+        } else {
+            alert(`非対応のQRデータです。`);
+        }
+    } catch (e) {
+        // どちらでもない、ただのテキストの場合
+        alert(`読み取ったデータ:\n${decodedText}`);
+    }
+};
+    /**
+     * スキャン失敗時のコールバック関数
+     * (QRコードがカメラに映っていないフレームごとに呼ばれるので、
+     *  基本的には何もしなくてOK)
+     */
+    const onScanFailure = (error) => {
+        // 意図的に空のままにします。
+        // console.warn(`QR error = ${error}`); // デバッグしたい場合はこの行を有効化
     };
 
     // スキャンを開始する処理
