@@ -95,5 +95,8 @@ urlpatterns = [
 
     path('groups/join-by-code/<uuid:invitation_code>/', views.join_group_by_code_view, name='group_join_by_code'),
 
+    # ユーザーIDのQRコードを表示するページ
+    path('qr/user-id/', views.user_id_qr_view, name='user_id_qr'),
+
 
 ]

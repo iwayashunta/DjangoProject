@@ -22,6 +22,8 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    path('api/', include('api.urls')), # ← /api/ で始まるURLは、api.urls.py に処理を任せる
     path('', include('Sotsuken_Portable.urls')),  # myappのURLを含める
 ]
 

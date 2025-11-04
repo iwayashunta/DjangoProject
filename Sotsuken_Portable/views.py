@@ -910,4 +910,18 @@ def join_group_by_code_view(request, invitation_code):
         return redirect('Sotsuken_Portable:group_list')  # エラー時はグループ一覧へ
 
 
+# --- ユーザーID QRコード用ビュー (新規作成) ---
+@login_required
+def user_id_qr_view(request):
+    """
+    ログインユーザーのID (pk) をQRコードとして表示するためのビュー
+    """
+    # テンプレートに渡すデータはユーザーIDの文字列だけ
+    # JSON化は不要
+    user_id = str(request.user.id)
+
+    context = {
+        'user_id_str': user_id
+    }
+    return render(request, 'user_id_qr.html', context)
 

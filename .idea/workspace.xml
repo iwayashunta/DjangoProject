@@ -4,11 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="避難所管理画面,SOSレポート管理画面を作成しています（10/31）">
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/sos_report_confirm_delete.html" afterDir="false" />
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="SOSレポート確認・出力画面を実装しました。CSSが中央揃えしてくれません（10/31）">
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/user_id_qr.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/sos_report_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/sos_report_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/user_menu.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/user_menu.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable_Project/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable_Project/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,8 +26,8 @@
       <list>
         <option value="CSS File" />
         <option value="JavaScript File" />
-        <option value="Python Script" />
         <option value="HTML File" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -174,7 +177,8 @@
       <workItem from="1761626076193" duration="11021000" />
       <workItem from="1761703445687" duration="17408000" />
       <workItem from="1761783469418" duration="11341000" />
-      <workItem from="1761876576489" duration="14362000" />
+      <workItem from="1761876576489" duration="15542000" />
+      <workItem from="1762221386725" duration="3544000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -352,7 +356,15 @@
       <option name="project" value="LOCAL" />
       <updated>1761894310726</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="SOSレポート確認・出力画面を実装しました。CSSが中央揃えしてくれません（10/31）">
+      <option name="closed" value="true" />
+      <created>1761895789589</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1761895789589</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -390,7 +402,8 @@
     <MESSAGE value="QRコード周りの機能を作成中です。&#10;スキャナーが上手く動いてないです（10/30）" />
     <MESSAGE value="QRコードを生成、読み取ることができるようにしました。&#10;ユーザー管理画面を作成しました（10/31）" />
     <MESSAGE value="避難所管理画面,SOSレポート管理画面を作成しています（10/31）" />
-    <option name="LAST_COMMIT_MESSAGE" value="避難所管理画面,SOSレポート管理画面を作成しています（10/31）" />
+    <MESSAGE value="SOSレポート確認・出力画面を実装しました。CSSが中央揃えしてくれません（10/31）" />
+    <option name="LAST_COMMIT_MESSAGE" value="SOSレポート確認・出力画面を実装しました。CSSが中央揃えしてくれません（10/31）" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

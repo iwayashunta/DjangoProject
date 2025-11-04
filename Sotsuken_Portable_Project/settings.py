@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'Sotsuken_Portable',
     #'Sotsuken_Portable.apps.SotsukenPortableConfig',
+    'api',
 ]
 
 MIDDLEWARE = [
