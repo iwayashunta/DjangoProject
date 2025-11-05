@@ -13,7 +13,7 @@
                 <div class="text-sm {% if msg.sender == user %}text-right{% endif %}">
                     <p class="font-bold text-xs text-gray-500">{{ msg.sender.full_name|default:msg.sender.login_id }}</p>
                     <p class="{% if msg.sender == user %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %} p-3 rounded-t-xl {% if msg.sender == user %}rounded-bl-xl{% else %}rounded-br-xl{% endif %} inline-block max-w-xs text-left">
-                        {{ msg.content }} {# Messageモデルのフィールド名に合わせてください #}
+                        {{ msg.content|urlize|linebreaksbr }} {# Messageモデルのフィールド名に合わせてください #}
                     </p>
                 </div>
             {% endfor %}
@@ -88,7 +88,15 @@
                 (isMe ? ' rounded-bl-xl' : ' rounded-br-xl') +
                 ' inline-block max-w-xs text-left';
 
-            contentP.textContent = message;
+            function urlify(text) {
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                // リンクをaタグに変換し、改行を<br>タグに変換する
+                return text
+                    .replace(urlRegex, '<a href="$&" target="_blank" class="text-white underline hover:text-blue-200">$&</a>')
+                    .replace(/\n/g, '<br>');
+            }
+
+            contentP.innerHTML = urlify(message);
 
             messageDiv.appendChild(senderP);
             messageDiv.appendChild(contentP);
