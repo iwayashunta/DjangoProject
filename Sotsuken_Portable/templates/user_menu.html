@@ -10,27 +10,27 @@
         <div class="grid grid-cols-2 gap-4">
             
             {# チャット機能へのリンク #}
-            <a href="{% url 'Sotsuken_Portable:chat_group_list' %}" class="bg-purple-500 text-white p-4 rounded-xl hover:bg-purple-600 transition-all font-semibold shadow-lg block">
+            <a href="{% url 'Sotsuken_Portable:dm_user_list' %}" class="bg-purple-500 text-white p-4 rounded-xl hover:bg-purple-600 transition-all font-semibold shadow-lg block">
                 チャット
             </a>
 
-            {# コミュニティ機能へのリンク (未実装のため #) #}
+            {# コミュニティ機能へのリンク #}
             <a href="{% url 'Sotsuken_Portable:community_list' %}" class="bg-pink-500 text-white p-4 rounded-xl hover:bg-pink-600 transition-all font-semibold shadow-lg block">
                 コミュニティ
             </a>
 
-            {# グループ管理機能へのリンク (未実装のため #) #}
-            <a href="#" class="bg-teal-500 text-white p-4 rounded-xl hover:bg-teal-600 transition-all font-semibold shadow-lg block">
+            {# グループ管理機能へのリンク #}
+            <a href="{% url 'Sotsuken_Portable:group_list' %}" class="bg-teal-500 text-white p-4 rounded-xl hover:bg-teal-600 transition-all font-semibold shadow-lg block">
                 グループ管理
             </a>
 
-            {# QRコード機能へのリンク (未実装のため #) #}
-            <a href="#" class="bg-orange-500 text-white p-4 rounded-xl hover:bg-orange-600 transition-all font-semibold shadow-lg block">
+            {# QRコード機能へのリンク #}
+            <a href="{% url 'Sotsuken_Portable:user_id_qr' %}" class="bg-orange-500 text-white p-4 rounded-xl hover:bg-orange-600 transition-all font-semibold shadow-lg block">
                 QRコード
             </a>
 
-            {# 設定機能へのリンク (未実装のため #) #}
-            <a href="#" class="bg-gray-600 text-white p-4 rounded-xl hover:bg-gray-700 transition-all font-semibold shadow-lg block col-span-2">
+            {# 設定機能へのリンク #}
+            <a href="{% url 'Sotsuken_Portable:settings' %}" class="bg-gray-600 text-white p-4 rounded-xl hover:bg-gray-700 transition-all font-semibold shadow-lg block col-span-2">
                 設定
             </a>
             

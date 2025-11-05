@@ -22,9 +22,11 @@
             {% csrf_token %} {# CSRF対策のための必須タグ #}
 
             <div class="mb-4">
-                <label for="id_username" class="block text-gray-700 font-medium">メールアドレス：</label>
+                <label for="id_username" class="block text-gray-700 font-medium">ユーザーID：</label>
+
                 <input type="text" name="username" id="id_username" required
-                       class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                       class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       autocomplete="username"> {# autocomplete属性を追加すると親切 #}
             </div>
 
             <div class="mb-6">

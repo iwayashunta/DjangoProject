@@ -9,8 +9,8 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-import os
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,7 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Sotsuken_Portable.apps.SotsukenPortableConfig',
+    'Sotsuken_Portable',
+    #'Sotsuken_Portable.apps.SotsukenPortableConfig',
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -143,9 +145,9 @@ LOGIN_URL = 'Sotsuken_Portable:login'
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ja'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Tokyo'
 
 USE_I18N = True
 
@@ -156,6 +158,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
@@ -172,10 +175,14 @@ GOOGLE_MAPS_API_KEY = 'AIzaSyDGP_D8Wxg8EtuidVowg8xXeUA1h5f5Ntw'
 # ASGI_APPLICATION の設定
 ASGI_APPLICATION = 'Sotsuken_Portable_Project.asgi.application'
 
+ASGI_THREADS = 1
+
 # チャネルレイヤーの設定 (開発中はインメモリ、本番ではRedisを推奨)
 CHANNEL_LAYERS = {
     "default": {
+        # 開発中はこれでOK
         "BACKEND": "channels.layers.InMemoryChannelLayer"
+        # 本番環境にデプロイする際は、Redisを使うようにこちらを有効化する
         # "BACKEND": "channels_redis.core.RedisChannelLayer",
         # "CONFIG": {
         #     "hosts": [("127.0.0.1", 6379)],

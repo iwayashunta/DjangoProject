@@ -1,54 +1,60 @@
 import random
 from django.core.management.base import BaseCommand
 from faker import Faker
-from Sotsuken_Portable.models import User, Group, GroupMember, SafetyStatus, SupportRequest, Message
+# ↓ login_idを使うようにモデルをインポート
+from Sotsuken_Portable.models import User, Group, GroupMember
 
+
+# ↓ 不要なモデルのインポートはコメントアウト
+# from Sotsuken_Portable.models import SafetyStatus, SupportRequest, Message
 
 class Command(BaseCommand):
-    help = 'Generates dummy data for the application'
+    help = 'Generates dummy data for users and groups'
 
     def handle(self, *args, **kwargs):
-        # 乱数シードを固定する
-        # この値を同じにしておけば、誰が実行しても同じデータが生成される
+        # 乱数シードを固定
         SEED_VALUE = 1234
         random.seed(SEED_VALUE)
         Faker.seed(SEED_VALUE)
-        # 0. 実行前の確認
-        self.stdout.write(
-            self.style.WARNING('This command will delete all existing data. Do you want to continue? (yes/no)'))
-        confirmation = input()
-        if confirmation.lower() != 'yes':
+
+        # 実行前の確認
+        self.stdout.write(self.style.WARNING('This will delete existing user and group data. Continue? (yes/no)'))
+        if input().lower() != 'yes':
             self.stdout.write(self.style.ERROR('Operation cancelled.'))
             return
 
-        # 1. 既存のデータを削除
+        # 1. 既存のデータを削除 (削除対象を絞る)
         self.stdout.write('Deleting old data...')
-        # 依存関係を考慮して、関連モデルから削除
         GroupMember.objects.all().delete()
-        SupportRequest.objects.all().delete()
-        SafetyStatus.objects.all().delete()
+        # SupportRequest.objects.all().delete() # コメントアウト
+        # SafetyStatus.objects.all().delete()   # コメントアウト
+        # Message.objects.all().delete()        # コメントアウト
         Group.objects.all().delete()
-        User.objects.exclude(is_superuser=True).delete()  # スーパーユーザーは削除しない
+        User.objects.exclude(is_superuser=True).delete()
 
-        # Fakerインスタンスを作成（日本語のデータを生成）
         faker = Faker('ja_JP')
 
-        # 2. ユーザーを生成 (例: 50人)
+        # 2. ユーザーを生成 (login_id を使うように修正)
         self.stdout.write('Creating new users...')
         users = []
-        for _ in range(50):
+        for i in range(50):
+            # login_idを生成 (例: user001, user002, ...)
+            login_id = f'user{i + 1:03}'
             full_name = faker.name()
-            email = faker.email()
+            email = faker.unique.email()  # faker.email()だと重複する可能性があるので unique.email() を使う
+
             user = User.objects.create_user(
-                email=email,
-                password='password123',  # 全員同じパスワードで作成
+                login_id=login_id,  # login_id を指定
+                password='password123',
                 full_name=full_name,
-                username=email.split('@')[0]  # usernameにも仮の値を入れておく
+                email=email,
+                # username にも仮の値を入れておく
+                username=login_id
             )
             users.append(user)
         self.stdout.write(self.style.SUCCESS(f'{len(users)} users created.'))
 
-        # 3. グループを生成 (例: 5つ)
+        # 3. グループを生成
         self.stdout.write('Creating groups...')
         groups = []
         for _ in range(5):
@@ -61,42 +67,30 @@ class Command(BaseCommand):
         # 4. ユーザーをグループに参加させる
         self.stdout.write('Adding users to groups...')
         for user in users:
-            # 各ユーザーを1つか2つのグループにランダムで参加させる
             num_groups = random.randint(1, 2)
             groups_to_join = random.sample(groups, num_groups)
             for group in groups_to_join:
                 GroupMember.objects.create(group=group, member=user)
         self.stdout.write(self.style.SUCCESS('Users added to groups.'))
 
-        # 5. 各ユーザーの安否状況を生成
-        self.stdout.write('Creating safety statuses...')
-        for user in users:
-            SafetyStatus.objects.create(
-                user=user,
-                status=random.choice(['safe', 'help', 'unknown']),
-                message=faker.sentence()
-            )
-        self.stdout.write(self.style.SUCCESS('Safety statuses created.'))
+        # --- 以下のデータ生成は一旦コメントアウト ---
+        # # 5. 各ユーザーの安否状況を生成
+        # self.stdout.write('Creating safety statuses...')
+        # for user in users:
+        #     SafetyStatus.objects.create(...)
+        # self.stdout.write(self.style.SUCCESS('Safety statuses created.'))
 
-        # 6. 支援要請を生成 (例: 15件)
-        self.stdout.write('Creating support requests...')
-        for _ in range(15):
-            SupportRequest.objects.create(
-                requester=random.choice(users),
-                category=random.choice([c[0] for c in SupportRequest.CATEGORY_CHOICES]),
-                priority=random.choice([p[0] for p in SupportRequest.PRIORITY_CHOICES]),
-                details=faker.text(max_nb_chars=100)
-            )
-        self.stdout.write(self.style.SUCCESS('Support requests created.'))
+        # # 6. 支援要請を生成
+        # self.stdout.write('Creating support requests...')
+        # for _ in range(15):
+        #     SupportRequest.objects.create(...)
+        # self.stdout.write(self.style.SUCCESS('Support requests created.'))
 
-        # 7. チャットメッセージを生成
-        self.stdout.write('Creating chat messages...')
-        for _ in range(200):  # 200件のメッセージを作成
-            Message.objects.create(
-                group=random.choice(groups),
-                sender=random.choice(users),
-                content=faker.sentence()
-            )
-        self.stdout.write(self.style.SUCCESS('Chat messages created.'))
+        # # 7. チャットメッセージを生成
+        # self.stdout.write('Creating chat messages...')
+        # for _ in range(200):
+        #     Message.objects.create(...)
+        # self.stdout.write(self.style.SUCCESS('Chat messages created.'))
+        # --- ここまで ---
 
-        self.stdout.write(self.style.SUCCESS('Dummy data generation complete!'))
+        self.stdout.write(self.style.SUCCESS('Dummy data generation for users and groups is complete!'))

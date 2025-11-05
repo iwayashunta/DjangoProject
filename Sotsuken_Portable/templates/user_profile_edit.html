@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ユーザー情報編集{% endblock %}
+
+{% block header_title %}ユーザー情報編集{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 max-w-2xl mx-auto">
+
+    <!-- メッセージ表示エリア -->
+    {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+                <div class="p-4 rounded-md {% if message.tags == 'success' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- ユーザー情報変更フォーム -->
+    <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+        <h3 class="text-lg font-semibold mb-4 border-b pb-2">ユーザー情報</h3>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+
+            <!-- 氏名フィールド -->
+            <div>
+                <label for="{{ user_form.full_name.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ user_form.full_name.label }}</label>
+                <input type="text" name="{{ user_form.full_name.name }}" id="{{ user_form.full_name.id_for_label }}" value="{{ user_form.full_name.value|default:'' }}"
+                       class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                {% if user_form.full_name.errors %}
+                    <div class="mt-1 text-sm text-red-600">{{ user_form.full_name.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- メールアドレスフィールド -->
+            <div>
+                <label for="{{ user_form.email.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ user_form.email.label }}</label>
+                <input type="email" name="{{ user_form.email.name }}" id="{{ user_form.email.id_for_label }}" value="{{ user_form.email.value|default:'' }}"
+                       class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                {% if user_form.email.errors %}
+                    <div class="mt-1 text-sm text-red-600">{{ user_form.email.errors }}</div>
+                {% endif %}
+            </div>
+
+            <button type="submit" name="user_update" class="mt-4 w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition-colors">
+                ユーザー情報を更新
+            </button>
+        </form>
+    </div>
+
+    <!-- パスワード変更フォーム -->
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <h3 class="text-lg font-semibold mb-4 border-b pb-2">パスワード変更</h3>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+
+            <!-- 各フィールドを手動でレンダリング -->
+            {% for field in password_form %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}" id="{{ field.id_for_label }}"
+                       class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+
+                {% if field.help_text %}
+                    <div class="mt-2 text-sm text-gray-600">{{ field.help_text|safe }}</div>
+                {% endif %}
+
+                {% if field.errors %}
+                    <div class="mt-1 text-sm text-red-600">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" name="password_change" class="mt-4 w-full bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600 transition-colors">
+                パスワードを変更
+            </button>
+        </form>
+    </div>
+
+    <!-- 設定画面へ戻るリンク -->
+    <div class="mt-8 text-center">
+        <a href="{% url 'Sotsuken_Portable:settings' %}" class="text-gray-600 hover:text-blue-600 transition-colors">
+            &larr; 設定画面に戻る
+        </a>
+    </div>
+
+</div>
+{% endblock %}

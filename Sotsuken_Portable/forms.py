@@ -1,7 +1,7 @@
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
 
-from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment  # カスタムUserモデルをインポート
+from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment, Group, Shelter  # カスタムUserモデルをインポート
 
 class SignUpForm(UserCreationForm):
     """
@@ -10,7 +10,7 @@ class SignUpForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         # フォームの基になるモデルと、使用するフィールドを指定
         model = User
-        fields = ('full_name', 'email') # ここに登録時に入力させたい項目を追加
+        fields = ('login_id', 'full_name', 'email') # ここに登録時に入力させたい項目を追加
 
 class SafetyStatusForm(forms.ModelForm):
     """
@@ -111,5 +111,63 @@ class CommentForm(forms.ModelForm):
                 'rows': 3,
                 'placeholder': '返信を入力...'
             }),
+        }
+
+class GroupCreateForm(forms.ModelForm):
+    class Meta:
+        model = Group
+        fields = ('name',) # ユーザーに入力させるのはグループ名のみ
+        labels = {
+            'name': '新しいグループ名',
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'w-full p-3 border rounded-lg', 'placeholder': '例: 山田家'})
+        }
+
+class UserUpdateForm(forms.ModelForm):
+    """
+    ユーザー情報（氏名、メールアドレス）を更新するためのフォーム
+    """
+    class Meta:
+        model = User
+        fields = ('full_name', 'email')
+        labels = {
+            'full_name': '氏名',
+            'email': 'メールアドレス',
+        }
+
+class MyPasswordChangeForm(PasswordChangeForm):
+    """
+    PasswordChangeFormのラベルとヘルプテキストを日本語化するためのカスタムフォーム
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['old_password'].label = "現在のパスワード"
+        self.fields['new_password1'].label = "新しいパスワード"
+        self.fields['new_password2'].label = "新しいパスワード（確認用）"
+
+        # ↓↓↓ ヘルプテキストを日本語に設定 ↓↓↓
+        self.fields['new_password1'].help_text = (
+            '<ul>'
+            '<li class="text-xs text-gray-500 list-disc list-inside">パスワードは8文字以上である必要があります。</li>'
+            '<li class="text-xs text-gray-500 list-disc list-inside">一般的なパスワードや、数字のみのパスワードは使用できません。</li>'
+            '</ul>'
+        )
+        self.fields['new_password2'].help_text = '確認のため、もう一度同じパスワードを入力してください。'
+
+class ShelterForm(forms.ModelForm):
+    class Meta:
+        model = Shelter
+        # フォームに表示するフィールドを指定
+        fields = ['name', 'address', 'max_capacity', 'is_pet_friendly', 'opening_status']
+        # フォームのラベルを日本語で分かりやすく設定
+        labels = {
+            'name': '避難所名',
+            'address': '住所',
+            #'latitude': '緯度',  # 一旦消してます
+            #'longitude': '経度', # 一旦消してます
+            'max_capacity': '最大収容人数',
+            'is_pet_friendly': 'ペット受け入れ可',
+            'opening_status': '開設状況',
         }
 

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}サーバーエラー{% endblock %}
+
+{% block header_title %}500 Server Error{% endblock %}
+
+{% block content %}
+<div class="text-center p-8">
+    <h2 class="text-2xl font-bold mb-4">サーバーで問題が発生しました。</h2>
+    <p class="text-gray-600 mb-8">
+        ご不便をおかけして申し訳ありません。<br>
+        しばらくしてから再度お試しいただくか、管理者にお問い合わせください。
+    </p>
+    <a href="{% url 'Sotsuken_Portable:index' %}" class="inline-block bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+        ホームに戻る
+    </a>
+</div>
+{% endblock %}

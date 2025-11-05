@@ -16,9 +16,9 @@
 
         <h3 class="text-lg font-semibold mt-6 mb-2 text-gray-700 border-b pb-1">データ管理機能</h3>
         <div class="space-y-4 mt-4">
-            <a href="#" class="w-full bg-orange-500 text-white p-3 rounded-lg mb-4 hover:bg-orange-600 block">避難所管理</a>
-            <a href="#" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 block">登録ユーザー管理</a>
-            <a href="#" class="w-full bg-red-500 text-white p-3 rounded-lg hover:bg-red-600 block">SOSレポート確認・出力</a>
+            <a href="{% url 'Sotsuken_Portable:shelter_management' %}" class="w-full bg-orange-500 text-white p-3 rounded-lg mb-4 hover:bg-orange-600 block">避難所管理</a>
+            <a href="{% url 'Sotsuken_Portable:user_management' %}" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 block">登録ユーザー管理</a>
+            <a href="{% url 'Sotsuken_Portable:sos_report_list' %}" class="w-full bg-red-500 text-white p-3 rounded-lg hover:bg-red-600 block">SOSレポート確認・出力</a>
         </div>
     </div>
 </div>

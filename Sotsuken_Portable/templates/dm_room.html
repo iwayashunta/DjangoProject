@@ -1,27 +1,20 @@
 {% extends "base.html" %}
-{% block title %}チャット - {{ group.name }}{% endblock %}
-{% block header_title %}{{ group.name }}{% endblock %}
+{% block title %}チャット - {{ other_user.full_name|default:other_user.login_id }}{% endblock %}
+{% block header_title %}{{ other_user.full_name|default:other_user.login_id }}{% endblock %}
 
 {% block content %}
     <div class="flex flex-col h-[75vh]">
-        <!-- メッセージリスト -->
         <div id="chat-log" class="flex-1 bg-white p-4 rounded-t-xl shadow-inner mb-4 overflow-y-auto space-y-4">
-
-            {# --- ここから修正・追加 --- #}
-            {# ビューから渡された過去のメッセージをループで表示 #}
+            {# 過去ログの表示 (Messageモデルのフィールド名に合わせる) #}
             {% for msg in messages %}
                 <div class="text-sm {% if msg.sender == user %}text-right{% endif %}">
                     <p class="font-bold text-xs text-gray-500">{{ msg.sender.full_name|default:msg.sender.login_id }}</p>
                     <p class="{% if msg.sender == user %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %} p-3 rounded-t-xl {% if msg.sender == user %}rounded-bl-xl{% else %}rounded-br-xl{% endif %} inline-block max-w-xs text-left">
-                        {{ msg.content|urlize|linebreaksbr }} {# Messageモデルのフィールド名に合わせてください #}
+                        {{ msg.content|urlize|linebreaksbr }}
                     </p>
                 </div>
             {% endfor %}
-            {# --- ここまで修正・追加 --- #}
-
         </div>
-
-        <!-- メッセージ入力フォーム -->
         <form id="chat-form" class="flex">
             <input type="text" id="chat-message-input"
                    class="flex-1 p-3 border border-gray-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -32,22 +25,23 @@
         </form>
     </div>
 
-    {{ group.id|json_script:"group-id" }}
+    {# --- JavaScriptに渡すデータを変更 --- #}
+    {{ other_user.id|json_script:"other-user-id" }}
     {{ user.full_name|default:user.login_id|json_script:"current-user-name" }}
 
     <script>
-        const groupId = JSON.parse(document.getElementById('group-id').textContent);
+        const otherUserId = JSON.parse(document.getElementById('other-user-id').textContent);
         const currentUserName = JSON.parse(document.getElementById('current-user-name').textContent);
-
+        
         const chatLog = document.querySelector('#chat-log');
-        const chatMessageInput = document.querySelector('#chat-message-input');
         const chatForm = document.querySelector('#chat-form');
+        const chatMessageInput = document.querySelector('#chat-message-input');
 
-        // --- WebSocket関連のロジックは変更なし ---
+        // ★ 接続先URLを変更
         const chatSocket = new WebSocket(
-            'ws://' + window.location.host + '/ws/chat/group/' + groupId + '/'
+            'ws://' + window.location.host + '/ws/chat/dm/' + otherUserId + '/'
         );
-
+        
         chatSocket.onopen = function (e) {
             console.log('Chat socket connected successfully');
         };
@@ -105,12 +99,9 @@
             chatLog.scrollTop = chatLog.scrollHeight;
         }
 
-        // --- ここから修正・追加 ---
-        // ページ読み込み完了時に、チャットログを一番下までスクロールさせる
-        window.onload = function () {
+
+        window.onload = function() {
             chatLog.scrollTop = chatLog.scrollHeight;
         };
-        // --- ここまで修正・追加 ---
-
     </script>
 {% endblock %}

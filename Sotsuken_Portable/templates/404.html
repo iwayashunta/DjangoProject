@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ページが見つかりません{% endblock %}
+
+{% block header_title %}404 Not Found{% endblock %}
+
+{% block content %}
+<div class="text-center p-8">
+    <h2 class="text-2xl font-bold mb-4">お探しのページは見つかりませんでした。</h2>
+    <p class="text-gray-600 mb-8">
+        URLが間違っているか、ページが移動または削除された可能性があります。
+    </p>
+    <a href="{% url 'Sotsuken_Portable:index' %}" class="inline-block bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+        ホームに戻る
+    </a>
+</div>
+{% endblock %}

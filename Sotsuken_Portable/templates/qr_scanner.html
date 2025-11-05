@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}QRコードスキャナー{% endblock %}
+{% block header_title %}QRコードスキャナー{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 max-w-lg mx-auto">
+    <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+        <h3 class="text-lg font-semibold mb-4">QRコードを読み取る</h3>
+        
+        <div id="scanner-ui-container">
+            <p id="scan-instruction" class="text-gray-600 mb-4">下のボタンを押して、カメラでQRコードをスキャンしてください。</p>
+            <button id="start-qr-scan-button" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors font-semibold">
+                カメラを起動
+            </button>
+        </div>
+
+        <!-- スキャナーが表示されるエリア (普段は非表示) -->
+        <div id="qr-scanner-container" class="mt-4 border-4 rounded-lg overflow-hidden" style="display: none;">
+            <div id="qr-reader" style="width: 100%;"></div>
+        </div>
+        
+        <!-- スキャン停止ボタン (普段は非表示) -->
+        <button id="stop-qr-scan-button" class="w-full bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors font-semibold mt-4" style="display: none;">
+            スキャンを停止
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<!-- QRコード読み取りライブラリ (html5-qrcode) -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startButton = document.getElementById('start-qr-scan-button');
+    const stopButton = document.getElementById('stop-qr-scan-button');
+    const scannerContainer = document.getElementById('qr-scanner-container');
+    const scannerUiContainer = document.getElementById('scanner-ui-container');
+
+    const html5QrCode = new Html5Qrcode("qr-reader");
+
+    // ★★★ スキャン成功時の処理 ★★★
+    const onScanSuccess = (decodedText, decodedResult) => {
+    stopScan();
+
+    // まず、URL形式（グループ招待）かどうかをチェック
+    if (decodedText.includes('/groups/join-by-code/')) {
+        const confirmJoin = confirm(
+            `グループ招待用のURLを読み取りました。\n\nこの招待を受けてグループに参加しますか？`
+        );
+        if (confirmJoin) {
+            window.location.href = decodedText; // そのままURLに移動する
+        }
+        return; // 処理を終了
+    }
+
+    // 次に、JSON形式（安否情報など）かどうかを試す
+    try {
+        const data = JSON.parse(decodedText);
+        if (data.t === 'us') { // t: 'us' (user_status) なら
+
+            // 短縮コードを日本語に戻すための対応表
+            const statusMap = {
+                'safe': '無事',
+                'help': '要支援',
+                'unknown': '未確認'
+            };
+            const statusText = statusMap[data.ss] || '不明';
+
+            const message = `安否情報を読み取りました:\n` +
+                            `------------------------\n` +
+                            `氏名: ${data.fn}\n` +
+                            `状況: ${statusText}\n` +
+                            `更新日時: ${data.lu || 'N/A'}`; // lu: last_updated
+            alert(message);
+
+        } else {
+            alert(`非対応のQRデータです。`);
+        }
+    } catch (e) {
+        // どちらでもない、ただのテキストの場合
+        alert(`読み取ったデータ:\n${decodedText}`);
+    }
+};
+    /**
+     * スキャン失敗時のコールバック関数
+     * (QRコードがカメラに映っていないフレームごとに呼ばれるので、
+     *  基本的には何もしなくてOK)
+     */
+    const onScanFailure = (error) => {
+        // 意図的に空のままにします。
+        // console.warn(`QR error = ${error}`); // デバッグしたい場合はこの行を有効化
+    };
+
+    // スキャンを開始する処理
+    function startScan() {
+        // UIの表示を切り替え
+        scannerContainer.style.display = 'block';
+        stopButton.style.display = 'block';
+        startButton.style.display = 'none';
+
+        // カメラを起動してスキャンを開始
+        html5QrCode.start(
+            { facingMode: "environment" }, // 背面カメラを使用
+            {
+                fps: 10, // 1秒あたりのスキャン回数
+                qrbox: { width: 250, height: 250 } // スキャン範囲のUIサイズ
+            },
+            onScanSuccess,
+            onScanFailure
+        ).catch(err => {
+            alert('カメラの起動に失敗しました。カメラのアクセスを許可してください。');
+            console.error("Unable to start scanning.", err);
+            stopScan(); // 失敗時もUIを元に戻す
+        });
+    }
+
+    // スキャンを停止する処理
+    function stopScan() {
+        html5QrCode.stop().then(ignore => {
+            // UIの表示を元に戻す
+            scannerContainer.style.display = 'none';
+            stopButton.style.display = 'none';
+            startButton.style.display = 'block';
+        }).catch(err => {
+            console.error("Unable to stop scanning.", err);
+        });
+    }
+
+    startButton.addEventListener('click', startScan);
+    stopButton.addEventListener('click', stopScan);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} - グループ詳細{% endblock %}
+{% block header_title %}{{ group.name }}{% endblock %}
+
+{% block content %}
+    <div class="space-y-8">
+
+        <div class="bg-purple-50 p-6 rounded-xl shadow-lg text-center border border-purple-300">
+            <h2 class="text-xl font-bold mb-4 text-purple-800">グループチャット</h2>
+            <p class="text-gray-700 mb-4">このグループのメンバーとリアルタイムで会話できます。</p>
+            <a href="{% url 'Sotsuken_Portable:chat_room' group.pk %}"
+               class="w-full md:w-auto bg-purple-600 text-white py-3 px-8 rounded-lg hover:bg-purple-700 font-semibold inline-block text-lg">
+                チャットルームに入る
+            </a>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-bold mb-4">メンバー一覧</h2>
+            <ul class="list-disc pl-5 space-y-2">
+                {% for membership in group.memberships.all %}
+                    <li>
+                        {{ membership.member.full_name|default:membership.member.login_id }}
+                        {% if membership.role == 'admin' %}
+                            <span class="text-xs bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded-full ml-2">管理者</span>{% endif %}
+                        {% if membership.member == user %}
+                            <span class="text-xs bg-green-100 text-green-800 font-semibold px-2 py-0.5 rounded-full ml-2">あなた</span>{% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+            <h2 class="text-2xl font-bold mb-4">メンバーを招待</h2>
+            <p class="mb-4">このグループの招待コードを使って、メンバーを招待できます。</p>
+            <div class="p-4 bg-gray-100 rounded-lg inline-block border">
+                <p class="text-2xl font-mono tracking-widest">{{ group.invitation_code }}</p>
+            </div>
+            <a href="{% url 'Sotsuken_Portable:group_invite_qr' group.pk %}"
+               class="mt-4 inline-block bg-gray-300 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-400 font-semibold">
+                招待用QRコードを表示</a>
+            <!-- ↓↓↓ 新しく追加するボタン ↓↓↓ -->
+            <button id="copy-invite-link-btn" class="flex-1 bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600">
+                招待リンクをコピー
+            </button>
+        </div>
+        <!-- コピー成功時に表示するメッセージ（普段は非表示） -->
+        <p id="copy-success-msg" class="text-green-600 text-sm mt-2 text-center" style="display: none;">
+            招待リンクをクリップボードにコピーしました！
+        </p>
+    </div>
+
+    {% for membership in group.memberships.all %}
+        {% if membership.member == user and membership.role == 'admin' %}
+            <div class="mt-8 pt-8 border-t border-red-200">
+                <h3 class="text-xl font-bold text-red-700 mb-4 text-center">管理者メニュー</h3>
+                <div class="text-center">
+                    <a href="{% url 'Sotsuken_Portable:group_delete' group.pk %}"
+                       class="bg-red-600 text-white py-2 px-6 rounded-lg hover:bg-red-700 inline-block">
+                        このグループを削除する
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    {# --- 一般メンバー向けの脱退ボタン --- #}
+    <div class="mt-8 pt-8 border-t">
+        <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">グループ設定</h3>
+        <form method="post" action="{% url 'Sotsuken_Portable:group_leave' group.pk %}"
+              onsubmit="return confirm('本当にこのグループから脱退しますか？');">
+            {% csrf_token %}
+            <div class="text-center">
+                <button type="submit" class="text-red-600 hover:underline">
+                    このグループから脱退する
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% block body_extra %}
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const copyBtn = document.getElementById('copy-invite-link-btn');
+                const successMsg = document.getElementById('copy-success-msg');
+
+                copyBtn.addEventListener('click', function () {
+                    // QRコード用ビューと同じロジックで招待URLを生成
+                    const inviteUrl = new URL("{% url 'Sotsuken_Portable:group_join_by_code' group.invitation_code %}", window.location.origin).href;
+
+                    // クリップボードにURLをコピー
+                    navigator.clipboard.writeText(inviteUrl).then(function () {
+                        // 成功時の処理
+                        successMsg.style.display = 'block';
+                        // 2秒後にメッセージを非表示にする
+                        setTimeout(() => {
+                            successMsg.style.display = 'none';
+                        }, 2000);
+                    }, function (err) {
+                        // 失敗時の処理
+                        alert('リンクのコピーに失敗しました。');
+                        console.error('Could not copy text: ', err);
+                    });
+                });
+            });
+        </script>
+    {% endblock %}
+{% endblock %}

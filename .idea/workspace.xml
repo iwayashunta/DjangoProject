@@ -4,17 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="チャット機能を半分くらい実装しました(10/27)">
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/community_detail.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/community_form.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/community_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/admin_menu.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/admin_menu.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/user_menu.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/user_menu.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/views.py" afterDir="false" />
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="連携機能実装のための初期設定など&#10;ついでにユーザーIDをQRコードとして表示する形に変更しました（11/4）">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/dm_room.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/dm_room.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/group_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/group_detail.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,8 +23,8 @@
       <list>
         <option value="CSS File" />
         <option value="JavaScript File" />
-        <option value="Python Script" />
         <option value="HTML File" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -163,6 +157,9 @@
       </set>
     </attachedChunks>
   </component>
+  <component name="StructureViewState">
+    <option name="selectedTab" value="論理" />
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="デフォルトタスク">
       <changelist id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="" />
@@ -176,7 +173,13 @@
       <workItem from="1761271003622" duration="17483000" />
       <workItem from="1761530116994" duration="2754000" />
       <workItem from="1761533053914" duration="813000" />
-      <workItem from="1761534333401" duration="9686000" />
+      <workItem from="1761534333401" duration="14337000" />
+      <workItem from="1761626076193" duration="11021000" />
+      <workItem from="1761703445687" duration="17408000" />
+      <workItem from="1761783469418" duration="11341000" />
+      <workItem from="1761876576489" duration="15542000" />
+      <workItem from="1762221386725" duration="15213000" />
+      <workItem from="1762308109621" duration="8600000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -274,7 +277,119 @@
       <option name="project" value="LOCAL" />
       <updated>1761542415085</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="コミュニティ機能を実装、ついでにリプライぶら下げられるようにしました（10/27）">
+      <option name="closed" value="true" />
+      <created>1761546362339</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1761546362339</updated>
+    </task>
+    <task id="LOCAL-00014" summary="コミュニティ機能を実装(投稿・削除・返信機能)&#10;安否確認機能で自分の状況を確認できるよう修正（10/27）">
+      <option name="closed" value="true" />
+      <created>1761550199876</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1761550199876</updated>
+    </task>
+    <task id="LOCAL-00015" summary="ユーザーIDでログインする仕様にしました&#10;データベースのマイグレーションが必要となります">
+      <option name="closed" value="true" />
+      <created>1761628656997</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1761628656997</updated>
+    </task>
+    <task id="LOCAL-00016" summary="グループ管理機能をつくりました">
+      <option name="closed" value="true" />
+      <created>1761630261595</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1761630261595</updated>
+    </task>
+    <task id="LOCAL-00017" summary="個人間チャット機能を実装しました&#10;モデルの変更を行ったのでデータベースのマイグレーションを行ってください（10/29）">
+      <option name="closed" value="true" />
+      <created>1761717993940</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1761717993940</updated>
+    </task>
+    <task id="LOCAL-00018" summary="ユーザーメニューをつくりました（10/30）">
+      <option name="closed" value="true" />
+      <created>1761788467043</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1761788467043</updated>
+    </task>
+    <task id="LOCAL-00019" summary="エラー画面をつくりました。&#10;みるためにはデバッグモードをFalseにしてALLOWED_HOSTに'127.0.0.1'と'localhost'を追加する必要があります（10/30）">
+      <option name="closed" value="true" />
+      <created>1761790524825</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1761790524825</updated>
+    </task>
+    <task id="LOCAL-00020" summary="QRコード周りの機能を作成中です。&#10;スキャナーが上手く動いてないです（10/30）">
+      <option name="closed" value="true" />
+      <created>1761794801646</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1761794801646</updated>
+    </task>
+    <task id="LOCAL-00021" summary="QRコードを生成、読み取ることができるようにしました。&#10;ユーザー管理画面を作成しました（10/31）">
+      <option name="closed" value="true" />
+      <created>1761888936214</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1761888936214</updated>
+    </task>
+    <task id="LOCAL-00022" summary="避難所管理画面,SOSレポート管理画面を作成しています（10/31）">
+      <option name="closed" value="true" />
+      <created>1761894310726</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1761894310726</updated>
+    </task>
+    <task id="LOCAL-00023" summary="SOSレポート確認・出力画面を実装しました。CSSが中央揃えしてくれません（10/31）">
+      <option name="closed" value="true" />
+      <created>1761895789589</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1761895789589</updated>
+    </task>
+    <task id="LOCAL-00024" summary="連携機能実装のための初期設定など&#10;ついでにユーザーIDをQRコードとして表示する形に変更しました（11/4）">
+      <option name="closed" value="true" />
+      <created>1762225319536</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1762225319536</updated>
+    </task>
+    <task id="LOCAL-00025" summary="連携機能実装のための初期設定など&#10;ついでにユーザーIDをQRコードとして表示する形に変更しました（11/4）">
+      <option name="closed" value="true" />
+      <created>1762234976105</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1762234976105</updated>
+    </task>
+    <task id="LOCAL-00026" summary="連携機能実装のための初期設定など&#10;ついでにユーザーIDをQRコードとして表示する形に変更しました（11/4）">
+      <option name="closed" value="true" />
+      <created>1762234989407</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1762234989407</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -302,7 +417,19 @@
     <MESSAGE value="websocketを仮実装（10/27）" />
     <MESSAGE value="commonファイルを反映する形に修正（10/27）" />
     <MESSAGE value="チャット機能を半分くらい実装しました(10/27)" />
-    <option name="LAST_COMMIT_MESSAGE" value="チャット機能を半分くらい実装しました(10/27)" />
+    <MESSAGE value="コミュニティ機能を実装、ついでにリプライぶら下げられるようにしました（10/27）" />
+    <MESSAGE value="コミュニティ機能を実装(投稿・削除・返信機能)&#10;安否確認機能で自分の状況を確認できるよう修正（10/27）" />
+    <MESSAGE value="ユーザーIDでログインする仕様にしました&#10;データベースのマイグレーションが必要となります" />
+    <MESSAGE value="グループ管理機能をつくりました" />
+    <MESSAGE value="個人間チャット機能を実装しました&#10;モデルの変更を行ったのでデータベースのマイグレーションを行ってください（10/29）" />
+    <MESSAGE value="ユーザーメニューをつくりました（10/30）" />
+    <MESSAGE value="エラー画面をつくりました。&#10;みるためにはデバッグモードをFalseにしてALLOWED_HOSTに'127.0.0.1'と'localhost'を追加する必要があります（10/30）" />
+    <MESSAGE value="QRコード周りの機能を作成中です。&#10;スキャナーが上手く動いてないです（10/30）" />
+    <MESSAGE value="QRコードを生成、読み取ることができるようにしました。&#10;ユーザー管理画面を作成しました（10/31）" />
+    <MESSAGE value="避難所管理画面,SOSレポート管理画面を作成しています（10/31）" />
+    <MESSAGE value="SOSレポート確認・出力画面を実装しました。CSSが中央揃えしてくれません（10/31）" />
+    <MESSAGE value="連携機能実装のための初期設定など&#10;ついでにユーザーIDをQRコードとして表示する形に変更しました（11/4）" />
+    <option name="LAST_COMMIT_MESSAGE" value="連携機能実装のための初期設定など&#10;ついでにユーザーIDをQRコードとして表示する形に変更しました（11/4）" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
