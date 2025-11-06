@@ -1,4 +1,5 @@
 # api/views.py
+from django.db import transaction
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404  # get_object_or_404 を追記
 from django.views.decorators.csrf import csrf_exempt
@@ -6,7 +7,7 @@ from django.views.decorators.http import require_POST, require_GET
 import json
 
 from Sotsuken_Portable.models import RPiData, User, Shelter, DistributionItem, \
-    DistributionRecord  # User, Shelter をインポート
+    DistributionRecord, FieldReportLog  # User, Shelter をインポート
 
 
 @csrf_exempt
@@ -68,6 +69,34 @@ def shelter_checkin_api(request):
     except Exception as e:
         # その他の予期せぬエラー
         return JsonResponse({'status': 'error', 'message': f"サーバー内部でエラーが発生しました: {str(e)}"}, status=500)
+
+
+@require_GET
+def shelter_list_api(request):
+    """
+    登録されている全ての避難所のリストをJSONで返すAPIビュー
+    """
+    try:
+        shelters = Shelter.objects.all().order_by('name')
+
+        shelter_list = [
+            {
+                "id": shelter.id,
+                "name": shelter.name,
+                "address": shelter.address,
+                "max_capacity": shelter.max_capacity,
+            }
+            for shelter in shelters
+        ]
+
+        return JsonResponse(
+            {'status': 'success', 'shelters': shelter_list},
+            json_dumps_params={'ensure_ascii': False}
+        )
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500,
+                            json_dumps_params={'ensure_ascii': False})
 
 
 @csrf_exempt
@@ -157,3 +186,43 @@ def distribution_item_list_api(request):
     except Exception as e:
         # 何らかのエラーが発生した場合
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500, json_dumps_params={'ensure_ascii': False})
+
+
+@csrf_exempt
+@require_POST
+@transaction.atomic  # データベース操作を安全に行うためのデコレータ
+def field_report_api(request):
+    """
+    現場デバイスからの状況報告を受け付けるAPIビュー
+    """
+    try:
+        data = json.loads(request.body)
+
+        # 必須データのチェック
+        required_keys = ["shelter_id", "current_evacuees", "medical_needs", "food_stock", "timestamp", "device_id"]
+        if not all(key in data for key in required_keys):
+            return JsonResponse({'status': 'error', 'message': '必須データが不足しています。'}, status=400)
+
+        # 1. 報告をログとして保存
+        shelter_instance = get_object_or_404(Shelter, pk=data['shelter_id'])
+
+        new_log = FieldReportLog.objects.create(
+            shelter=shelter_instance,
+            current_evacuees=data['current_evacuees'],
+            medical_needs=data['medical_needs'],
+            food_stock=data['food_stock'],
+            original_timestamp=data['timestamp'],
+            reported_by_device=data['device_id'],
+        )
+
+        # 2. (重要) 避難所マスタの情報を最新の報告内容で更新する
+        #    例えば、Shelterモデルの current_occupancy を更新する
+        shelter_instance.current_occupancy = data['current_evacuees']
+        shelter_instance.save()
+
+        return JsonResponse({'status': 'success', 'message': f'レポート(ID:{new_log.id})を受け付けました。'}, status=201)
+
+    except Shelter.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': '指定された避難所IDが見つかりません。'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

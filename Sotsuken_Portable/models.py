@@ -775,3 +775,33 @@ class DistributionRecord(models.Model):
     class Meta:
         # 同じユーザーが同じアイテムを複数回記録できないようにユニーク制約
         unique_together = ('user', 'item')
+
+
+class FieldReportLog(models.Model):
+    """
+    現場デバイス(RPi)から送信された、現場状況報告の履歴を記録するモデル。
+    """
+    # どの避難所からの報告か
+    shelter = models.ForeignKey(Shelter, verbose_name="報告元避難所", on_delete=models.SET_NULL, null=True)
+
+    # 報告内容
+    current_evacuees = models.PositiveIntegerField(verbose_name="報告時の避難者数")
+    medical_needs = models.PositiveIntegerField(verbose_name="報告時の要介護者数")
+    food_stock = models.CharField(verbose_name="報告時の食料残量", max_length=10)  # 'safe', 'warning', 'critical'
+
+    # 報告が作成された元のタイムスタンプ (ラズパイ側で記録された日時)
+    original_timestamp = models.DateTimeField(verbose_name="現場での報告日時")
+
+    # この記録を中央サーバーが受信した日時
+    received_at = models.DateTimeField(verbose_name="サーバー受信日時", auto_now_add=True)
+
+    # どのデバイスからの報告か
+    reported_by_device = models.CharField(verbose_name="報告デバイスID", max_length=100, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.original_timestamp.strftime('%Y-%m-%d %H:%M')} - {self.shelter.name if self.shelter else '不明な避難所'}"
+
+    class Meta:
+        verbose_name = "現場状況報告ログ"
+        verbose_name_plural = "現場状況報告ログ"
+        ordering = ['-original_timestamp']

@@ -10,5 +10,9 @@ urlpatterns = [
 
     path('distribution-items/', views.distribution_item_list_api, name='distribution_item_list'),
 
+    path('field-report/', views.field_report_api, name='field_report'),
+
+    path('shelters/', views.shelter_list_api, name='shelter_list'),
+
 
 ]

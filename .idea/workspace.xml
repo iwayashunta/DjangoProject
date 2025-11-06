@@ -4,12 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="招待リンクを発行、チャット内で踏めるようにしました（11/5）">
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="チャット機能の文字をちょっと大きくしました（11/06）">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/dm_room.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/dm_room.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/views.py" afterDir="false" />
     </list>
@@ -183,7 +180,8 @@
       <workItem from="1761876576489" duration="15542000" />
       <workItem from="1762221386725" duration="15213000" />
       <workItem from="1762308109621" duration="14178000" />
-      <workItem from="1762388247578" duration="2578000" />
+      <workItem from="1762388247578" duration="4570000" />
+      <workItem from="1762394566685" duration="341000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -401,7 +399,15 @@
       <option name="project" value="LOCAL" />
       <updated>1762322368771</updated>
     </task>
-    <option name="localTasksCounter" value="28" />
+    <task id="LOCAL-00028" summary="チャット機能の文字をちょっと大きくしました（11/06）">
+      <option name="closed" value="true" />
+      <created>1762391033613</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1762391033613</updated>
+    </task>
+    <option name="localTasksCounter" value="29" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -442,7 +448,8 @@
     <MESSAGE value="SOSレポート確認・出力画面を実装しました。CSSが中央揃えしてくれません（10/31）" />
     <MESSAGE value="連携機能実装のための初期設定など&#10;ついでにユーザーIDをQRコードとして表示する形に変更しました（11/4）" />
     <MESSAGE value="招待リンクを発行、チャット内で踏めるようにしました（11/5）" />
-    <option name="LAST_COMMIT_MESSAGE" value="招待リンクを発行、チャット内で踏めるようにしました（11/5）" />
+    <MESSAGE value="チャット機能の文字をちょっと大きくしました（11/06）" />
+    <option name="LAST_COMMIT_MESSAGE" value="チャット機能の文字をちょっと大きくしました（11/06）" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
