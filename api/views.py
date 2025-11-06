@@ -2,10 +2,11 @@
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404  # get_object_or_404 を追記
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 import json
 
-from Sotsuken_Portable.models import RPiData, User, Shelter  # User, Shelter をインポート
+from Sotsuken_Portable.models import RPiData, User, Shelter, DistributionItem, \
+    DistributionRecord  # User, Shelter をインポート
 
 
 @csrf_exempt
@@ -67,3 +68,92 @@ def shelter_checkin_api(request):
     except Exception as e:
         # その他の予期せぬエラー
         return JsonResponse({'status': 'error', 'message': f"サーバー内部でエラーが発生しました: {str(e)}"}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def check_distribution_api(request):
+    try:
+        data = json.loads(request.body)
+        login_id = data.get('login_id')
+        item_id = data.get('item_id')
+        device_id = data.get('device_id')
+
+        # 'action' パラメータで、判定のみか、記録まで行うかを制御
+        action = data.get('action', 'check')  # デフォルトは 'check'
+
+        if not all([login_id, item_id]):
+            return JsonResponse({'status': 'error', 'message': 'login_idとitem_idは必須です。'}, status=400)
+
+        user = get_object_or_404(User, login_id=login_id)
+        item = get_object_or_404(DistributionItem, pk=item_id)
+
+        # 過去の配布記録を検索
+        record = DistributionRecord.objects.filter(user=user, item=item).first()
+
+        if record:
+            # 既に記録がある場合
+            return JsonResponse({
+                'status': 'already_distributed',
+                'can_distribute': False,
+                'message': f"配布済みです (日時: {record.distributed_at.strftime('%Y-%m-%d %H:%M')})"
+            })
+
+        # 記録がない場合
+        if action == 'record':
+            # 記録まで行うアクションの場合、新規に記録を作成
+            DistributionRecord.objects.create(
+                user=user,
+                item=item,
+                recorded_by_device=device_id
+            )
+            return JsonResponse({
+                'status': 'recorded',
+                'can_distribute': True,  # 配布可能だったので、記録した
+                'message': '新規に配布を記録しました。'
+            })
+        else:
+            # 判定のみのアクションの場合
+            return JsonResponse({
+                'status': 'can_distribute',
+                'can_distribute': True,
+                'message': '配布可能です。'
+            })
+
+    except (User.DoesNotExist, DistributionItem.DoesNotExist):
+        return JsonResponse({'status': 'error', 'message': '指定されたユーザーまたは物資が存在しません。'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@require_GET
+def distribution_item_list_api(request):
+    """
+    登録されている全ての配布物資のリストをJSONで返すAPIビュー
+    """
+    try:
+        # 全てのDistributionItemオブジェクトを取得
+        items = DistributionItem.objects.all().order_by('name')
+
+        # テンプレートに渡すのではなく、APIフレンドリーな辞書のリストに変換
+        item_list = [
+            {
+                "id": item.id,
+                "name": item.name,
+                "description": item.description,
+            }
+            for item in items
+        ]
+
+        # JSONレスポンスとして返す
+        return JsonResponse({
+            'status': 'success',
+            'items': item_list
+        },
+
+            json_dumps_params={'ensure_ascii': False}
+        )
+
+    except Exception as e:
+        # 何らかのエラーが発生した場合
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500, json_dumps_params={'ensure_ascii': False})

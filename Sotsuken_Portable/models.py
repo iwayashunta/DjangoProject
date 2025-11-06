@@ -756,3 +756,22 @@ class OfficialAlert(models.Model):
 
     def __str__(self):
         return self.title
+
+class DistributionItem(models.Model):
+    """配布する物資の種類を管理するモデル（例：朝食、水、毛布）"""
+    name = models.CharField(verbose_name="物資名", max_length=100, unique=True)
+    description = models.TextField(verbose_name="説明", blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+class DistributionRecord(models.Model):
+    """誰が、いつ、何を受け取ったかの記録"""
+    user = models.ForeignKey(User, verbose_name="受け取りユーザー", on_delete=models.CASCADE)
+    item = models.ForeignKey(DistributionItem, verbose_name="受け取り物資", on_delete=models.CASCADE)
+    distributed_at = models.DateTimeField(verbose_name="配布日時", auto_now_add=True)
+    recorded_by_device = models.CharField(verbose_name="記録デバイスID", max_length=100, blank=True, null=True)
+
+    class Meta:
+        # 同じユーザーが同じアイテムを複数回記録できないようにユニーク制約
+        unique_together = ('user', 'item')

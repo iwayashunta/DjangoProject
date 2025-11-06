@@ -5,4 +5,10 @@ app_name = 'api'
 
 urlpatterns = [
     path('shelter-checkin/', views.shelter_checkin_api, name='shelter_checkin'),
+
+    path('check-distribution/', views.check_distribution_api, name='check_distribution'),
+
+    path('distribution-items/', views.distribution_item_list_api, name='distribution_item_list'),
+
+
 ]
