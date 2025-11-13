@@ -809,3 +809,18 @@ class FieldReportLog(models.Model):
 class OnlineUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     channel_name = models.CharField(max_length=255)
+
+class Manual(models.Model):
+    """
+    マニュアルを管理するモデル
+    """
+    title = models.CharField(max_length=200, verbose_name="タイトル")
+    pdf_file = models.FileField(upload_to='manuals/', verbose_name="PDFファイル")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = "マニュアル"
+        verbose_name_plural = "マニュアル"

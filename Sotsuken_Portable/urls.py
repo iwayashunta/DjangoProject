@@ -98,5 +98,7 @@ urlpatterns = [
     # ユーザーIDのQRコードを表示するページ
     path('qr/user-id/', views.user_id_qr_view, name='user_id_qr'),
 
+    path('manuals/', views.manual_list, name='manual_list'),
+
 
 ]

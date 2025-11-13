@@ -22,7 +22,7 @@ from django.views.generic import ListView, DetailView, CreateView, TemplateView
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
-    CommunityPost, Comment, GroupMember, User
+    CommunityPost, Comment, GroupMember, User, Manual
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -945,4 +945,15 @@ def user_id_qr_view(request):
         'login_id_str': login_id_str
     }
     return render(request, 'user_id_qr.html', context)
+
+@login_required
+def manual_list(request):
+    """
+    マニュアル一覧を表示するビュー
+    """
+    manuals = Manual.objects.all().order_by('-created_at')
+    context = {
+        'manuals': manuals,
+    }
+    return render(request, 'manual_list.html', context)
 
