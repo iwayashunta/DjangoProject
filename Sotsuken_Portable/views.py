@@ -2,6 +2,8 @@ import csv
 import datetime
 import json
 
+from asgiref.sync import async_to_sync
+from channels.layers import channel_layers
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
@@ -588,6 +590,22 @@ def dm_room_view(request, user_id):
         'messages': messages,
     }
     return render(request, 'dm_room.html', context)
+
+
+def _internal_post_message(sender_user, group_id, message):
+    try:
+        channel_layer = channel_layers['default']
+        chat_data = {
+            'type': 'chat_message',
+            'message': message,
+            'sender': sender_user.full_name or sender_user.login_id,
+        }
+        target_group_name = f'chat_{group_id}'
+
+        async_to_sync(channel_layer.group_send)(target_group_name, chat_data)
+        return True, "Success"
+    except Exception as e:
+        return False, str(e)
 
 
 

@@ -4,11 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="チャット機能の文字をちょっと大きくしました（11/06）">
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="allowed_hosts = '*'を追加">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/consumers.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/consumers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/manage.py" beforeDir="false" afterPath="$PROJECT_DIR$/manage.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -181,7 +186,10 @@
       <workItem from="1762221386725" duration="15213000" />
       <workItem from="1762308109621" duration="14178000" />
       <workItem from="1762388247578" duration="4570000" />
-      <workItem from="1762394566685" duration="341000" />
+      <workItem from="1762394566685" duration="5425000" />
+      <workItem from="1762826347111" duration="461000" />
+      <workItem from="1762827679212" duration="14361000" />
+      <workItem from="1762993391913" duration="3654000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -407,7 +415,23 @@
       <option name="project" value="LOCAL" />
       <updated>1762391033613</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="避難所リストAPIを作成しました（11/06）">
+      <option name="closed" value="true" />
+      <created>1762395043923</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1762395043923</updated>
+    </task>
+    <task id="LOCAL-00030" summary="allowed_hosts = '*'を追加">
+      <option name="closed" value="true" />
+      <created>1762993459119</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1762993459119</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -425,7 +449,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="作成" />
     <MESSAGE value="必要になるであろうテーブルを追加（10/21）" />
     <MESSAGE value="ログイン・新規ユーザー登録機能を実装&#10;安否確認・支援要請機能を現在実装中。安否状況の登録の部分が上手くいってないかも。（10/23）" />
     <MESSAGE value="Userモデルの主キーをメールアドレスに修正" />
@@ -449,7 +472,9 @@
     <MESSAGE value="連携機能実装のための初期設定など&#10;ついでにユーザーIDをQRコードとして表示する形に変更しました（11/4）" />
     <MESSAGE value="招待リンクを発行、チャット内で踏めるようにしました（11/5）" />
     <MESSAGE value="チャット機能の文字をちょっと大きくしました（11/06）" />
-    <option name="LAST_COMMIT_MESSAGE" value="チャット機能の文字をちょっと大きくしました（11/06）" />
+    <MESSAGE value="避難所リストAPIを作成しました（11/06）" />
+    <MESSAGE value="allowed_hosts = '*'を追加" />
+    <option name="LAST_COMMIT_MESSAGE" value="allowed_hosts = '*'を追加" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

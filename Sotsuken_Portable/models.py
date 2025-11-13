@@ -805,3 +805,7 @@ class FieldReportLog(models.Model):
         verbose_name = "現場状況報告ログ"
         verbose_name_plural = "現場状況報告ログ"
         ordering = ['-original_timestamp']
+
+class OnlineUser(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    channel_name = models.CharField(max_length=255)

@@ -14,5 +14,11 @@ urlpatterns = [
 
     path('shelters/', views.shelter_list_api, name='shelter_list'),
 
+    path('get-user-groups/', views.get_user_groups_api, name='get_user_groups'),
+
+    path('post-group-message/', views.post_group_message_api, name='post_group_message'),
+
+    path('groups/<int:group_id>/messages/', views.get_group_messages_api, name='get_group_messages'),
+
 
 ]

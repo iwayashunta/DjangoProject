@@ -1,13 +1,16 @@
 # api/views.py
+import json
+
+from asgiref.sync import async_to_sync
+from channels.layers import channel_layers
 from django.db import transaction
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404  # get_object_or_404 を追記
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
-import json
 
 from Sotsuken_Portable.models import RPiData, User, Shelter, DistributionItem, \
-    DistributionRecord, FieldReportLog  # User, Shelter をインポート
+    DistributionRecord, FieldReportLog, Message, GroupMember, OnlineUser  # User, Shelter をインポート
 
 
 @csrf_exempt
@@ -185,7 +188,8 @@ def distribution_item_list_api(request):
 
     except Exception as e:
         # 何らかのエラーが発生した場合
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500, json_dumps_params={'ensure_ascii': False})
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500,
+                            json_dumps_params={'ensure_ascii': False})
 
 
 @csrf_exempt
@@ -224,5 +228,150 @@ def field_report_api(request):
 
     except Shelter.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': '指定された避難所IDが見つかりません。'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@require_GET
+def get_user_groups_api(request):
+    """
+    指定されたユーザーが所属するグループのリストを返すAPIビュー
+    """
+    # 簡易的な認証: HTTPヘッダーから login_id を取得
+    login_id = request.headers.get('X-User-Login-Id')
+
+    if not login_id:
+        return JsonResponse({'status': 'error', 'message': 'X-User-Login-Idヘッダーが必要です。'}, status=401)
+
+    try:
+        user = User.objects.get(login_id=login_id)
+
+        # ユーザーが所属するグループを取得
+        memberships = user.group_memberships.all()
+        groups = [m.group for m in memberships]
+
+        group_list = [
+            {
+                "id": group.id,
+                "name": group.name,
+            }
+            for group in groups
+        ]
+
+        return JsonResponse(
+            {'status': 'success', 'groups': group_list},
+            json_dumps_params={'ensure_ascii': False}
+        )
+
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': '指定されたユーザーが見つかりません。'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def post_group_message_api(request):
+    """
+    現場デバイスからグループチャットへのメッセージ投稿を受け付けるAPI
+    """
+    # 簡易認証
+    login_id = request.headers.get('X-User-Login-Id')
+    if not login_id:
+        return JsonResponse({'status': 'error', 'message': 'X-User-Login-Idヘッダーが必要です。'}, status=401)
+
+    try:
+        user = User.objects.get(login_id=login_id)
+        data = json.loads(request.body)
+        group_id = data.get('group_id')
+        message = data.get('message')
+
+        # デバッグ用ログ出力
+        print(f"[API DEBUG] Received message for group_id: {group_id}")
+        print(f"[API DEBUG] Message content: {message}")
+        target_group_name = f'chat_{group_id}'
+        print(f"[API DEBUG] Sending to channel group: {target_group_name}")
+
+        if not all([group_id, message]):
+            return JsonResponse({'status': 'error', 'message': 'group_idとmessageは必須です。'}, status=400)
+
+        # 1. 送信先のグループに所属しているメンバーを取得
+        target_members = GroupMember.objects.filter(group_id=group_id)
+        target_user_ids = [member.member_id for member in target_members]
+
+        # 2. その中で、現在オンライン（WebSocketに接続中）のユーザーを探す
+        online_users = OnlineUser.objects.filter(user_id__in=target_user_ids)
+
+        if not online_users:
+            # 誰もオンラインでなければ、何もしない（DBへの保存は別途行う）
+            print(f"[API WARN] Group {group_id} has no online users.")
+            # (メッセージをDBに保存する処理はここに入れる)
+            return JsonResponse({'status': 'success', 'message': 'メッセージを保存しました（オンラインユーザーなし）。'})
+
+        channel_layer = channel_layers['default']
+        chat_data = {
+            'type': 'chat_message',
+            'message': message,
+            'sender': user.full_name or user.login_id,
+        }
+
+        # 3. オンラインのユーザー一人ひとりに、直接メッセージを送信する
+        for online_user in online_users:
+            print(f"[API DEBUG] Sending direct message to channel: {online_user.channel_name}")
+            async_to_sync(channel_layer.send)(
+                online_user.channel_name,
+                chat_data
+            )
+
+        # (メッセージをDBに保存する処理も忘れずに)
+        try:
+            # メッセージをデータベースのMessageテーブルに保存
+            Message.objects.create(
+                sender=user,
+                group_id=group_id,
+                content=message
+            )
+        except Exception as e:
+            # DB保存に失敗しても、リアルタイム送信は試みる
+            print(f"!!! DB SAVE ERROR in post_group_message_api: {e}")
+
+        return JsonResponse({'status': 'success', 'message': 'メッセージをオンラインユーザーに送信しました。'})
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@require_GET
+def get_group_messages_api(request, group_id):
+    """
+    指定されたグループの最新のメッセージ履歴を返すAPI
+    """
+    try:
+        # 認証チェック（簡易版）
+        login_id = request.headers.get('X-User-Login-Id')
+        if not login_id:
+            return JsonResponse({'status': 'error', 'message': '認証ヘッダーが必要です。'}, status=401)
+
+        # ユーザーがそのグループのメンバーかどうかの権限チェック（重要）
+        user = User.objects.get(login_id=login_id)
+        if not user.group_memberships.filter(group_id=group_id).exists():
+            return JsonResponse({'status': 'error', 'message': 'このグループへのアクセス権がありません。'}, status=403)
+
+        # 最新50件のメッセージを取得
+        messages = Message.objects.filter(group_id=group_id).order_by('-timestamp')[:50]
+
+        message_list = [
+            {
+                "sender": msg.sender.full_name or msg.sender.login_id,
+                "content": msg.content,
+                "timestamp": msg.timestamp.isoformat(),
+            }
+            for msg in reversed(messages)  # 古い順に戻してリスト化
+        ]
+
+        return JsonResponse(
+            {'status': 'success', 'messages': message_list},
+            json_dumps_params={'ensure_ascii': False}
+        )
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
