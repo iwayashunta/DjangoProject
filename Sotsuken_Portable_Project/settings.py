@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-9us3f5=%62u!r8_g8aaczg+(314l^%&-g&2l-btd7g(wm@1$l7
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -181,11 +181,11 @@ ASGI_THREADS = 1
 CHANNEL_LAYERS = {
     "default": {
         # 開発中はこれでOK
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
+        # "BACKEND": "channels.layers.InMemoryChannelLayer"
         # 本番環境にデプロイする際は、Redisを使うようにこちらを有効化する
-        # "BACKEND": "channels_redis.core.RedisChannelLayer",
-        # "CONFIG": {
-        #     "hosts": [("127.0.0.1", 6379)],
-        # },
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
     },
 }
