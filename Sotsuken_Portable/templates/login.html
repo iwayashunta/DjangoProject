@@ -18,7 +18,7 @@
             <p class="text-red-500 text-sm mb-4 text-center">ユーザー名またはパスワードが正しくありません。</p>
         {% endif %}
 
-        <form method="post" action="{% url 'Sotsuken_Portable:login' %}">
+        <form method="post" action="{% url 'Sotsuken_Portable:login' %}" autocomplete="off">
             {% csrf_token %} {# CSRF対策のための必須タグ #}
 
             <div class="mb-4">
@@ -26,7 +26,7 @@
 
                 <input type="text" name="username" id="id_username" required
                        class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                       autocomplete="username"> {# autocomplete属性を追加すると親切 #}
+                       {# autocomplete="username" #}> {# autocomplete属性を追加すると親切 #}
             </div>
 
             <div class="mb-6">
