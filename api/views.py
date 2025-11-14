@@ -25,7 +25,7 @@ def shelter_checkin_api(request):
 
         # 2. JSONデータから必要な値を取得する
         login_id = data.get('login_id')  # QRコードから読み取った login_id
-        shelter_id = data.get('shelter_id')  # ラズパイ側で設定された避難所のID
+        shelter_id = data.get('shelter_management_id')  # ラズパイ側で設定された避難所のID
         device_id = data.get('device_id')  # ラズパイ自体のID
 
         # 3. 必須データが揃っているかチェック
@@ -203,12 +203,12 @@ def field_report_api(request):
         data = json.loads(request.body)
 
         # 必須データのチェック
-        required_keys = ["shelter_id", "current_evacuees", "medical_needs", "food_stock", "timestamp", "device_id"]
+        required_keys = ["shelter_management_id", "current_evacuees", "medical_needs", "food_stock", "timestamp", "device_id"]
         if not all(key in data for key in required_keys):
             return JsonResponse({'status': 'error', 'message': '必須データが不足しています。'}, status=400)
 
         # 1. 報告をログとして保存
-        shelter_instance = get_object_or_404(Shelter, pk=data['shelter_id'])
+        shelter_instance = get_object_or_404(Shelter, pk=data['shelter_management_id'])
 
         new_log = FieldReportLog.objects.create(
             shelter=shelter_instance,
@@ -373,5 +373,65 @@ def get_group_messages_api(request, group_id):
             {'status': 'success', 'messages': message_list},
             json_dumps_params={'ensure_ascii': False}
         )
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+@transaction.atomic  # 複数のDB操作を安全に行う
+def shelter_checkin_sync_api(request):
+    """
+    (データ同期用) ラズパイから未同期のチェックイン・チェックアウト記録を受け付けるAPI
+    """
+    try:
+        data = json.loads(request.body)
+
+        # 1. 必須データのチェック
+        required_keys = ["login_id", "shelter_management_id", "checkin_type", "timestamp", "device_id"]
+        if not all(key in data for key in required_keys):
+            return JsonResponse({'status': 'error', 'message': '必須データが不足しています。'}, status=400)
+
+        # 2. 関連データの存在チェック
+        user = get_object_or_404(User, login_id=data['login_id'])
+        shelter = get_object_or_404(Shelter, management_id=data['shelter_management_id'])
+
+        # checkin_type の値が正しいかチェック
+        if data['checkin_type'] not in ['checkin', 'checkout']:
+            return JsonResponse({'status': 'error', 'message': '無効なcheckin_typeです。'}, status=400)
+
+        # 3. ログとしてまず保存する (field_report_api と同じ思想)
+        #    これにより、何が送られてきたかの記録が確実に残る
+        log_record = RPiData.objects.create(
+            data_type=f"sync_{data['checkin_type']}",  # 'sync_checkin' or 'sync_checkout'
+            device_id=data['device_id'],
+            payload=data,
+            original_timestamp=data['timestamp']  # 元のタイムスタンプを記録
+        )
+
+        # 4. 避難所の現在の収容人数を更新
+        if data['checkin_type'] == 'checkin':
+            shelter.current_occupancy += 1
+        else:  # 'checkout' の場合
+            # 0未満にならないように制御
+            if shelter.current_occupancy > 0:
+                shelter.current_occupancy -= 1
+        shelter.save()
+
+        # 5. (重要) ユーザーの安否ステータスや最終確認場所を更新する
+        #    これがユーザーの安否確認の中核機能となる
+        user.safety_status = 'safe'  # 例: チェックインなら「無事」に
+        user.last_known_location = shelter.name  # 最後の確認場所を更新
+        user.last_seen_at = data['timestamp']  # 最後の確認日時を更新
+        user.save()
+
+        return JsonResponse({
+            'status': 'success',
+            'message': f"ID:{user.login_id} の {data['checkin_type']} 記録(ID:{log_record.id})を受け付けました。"
+        }, status=201)
+
+    except (User.DoesNotExist, Shelter.DoesNotExist):
+        return JsonResponse({'status': 'error', 'message': '指定されたユーザーIDまたは避難所IDが見つかりません。'},
+                            status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

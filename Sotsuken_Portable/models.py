@@ -612,6 +612,14 @@ class Shelter(models.Model):
         ('preparating', '開設準備中'),
     ]
 
+    # 避難所ID
+    management_id = models.CharField(
+        verbose_name="避難所管理ID",
+        max_length=50,
+        unique=True,  # このIDは絶対に重複してはならない
+        help_text="例: TKY-SHIBUYA-01 のように、システム全体でユニークなIDを設定してください。"
+    )
+
     # 1. 避難所名 (必須)
     name = models.CharField(
         verbose_name="避難所名",

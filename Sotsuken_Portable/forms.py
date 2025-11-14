@@ -1,3 +1,4 @@
+import self
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
 
@@ -159,15 +160,24 @@ class ShelterForm(forms.ModelForm):
     class Meta:
         model = Shelter
         # フォームに表示するフィールドを指定
-        fields = ['name', 'address', 'max_capacity', 'is_pet_friendly', 'opening_status']
+        fields = ['management_id', 'name', 'address', 'max_capacity', 'current_occupancy', 'is_pet_friendly', 'opening_status']
         # フォームのラベルを日本語で分かりやすく設定
         labels = {
+            'management_id': '避難所管理ID',
             'name': '避難所名',
             'address': '住所',
             #'latitude': '緯度',  # 一旦消してます
             #'longitude': '経度', # 一旦消してます
             'max_capacity': '最大収容人数',
+            'current_occupancy': '現在の避難者数',
             'is_pet_friendly': 'ペット受け入れ可',
             'opening_status': '開設状況',
         }
+
+        help_texts = {
+            'management_id': '他の避難所と絶対に重複しない、半角英数字のIDを入力してください。例: TKY-SHIBUYA-01',
+            'current_occupancy': 'この値は現場レポートによっても自動更新されます。',
+        }
+
+
 

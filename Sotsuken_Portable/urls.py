@@ -44,8 +44,8 @@ urlpatterns = [
 
     path('management/shelters/', views.shelter_management_view, name='shelter_management'),
 
-    path('management/shelters/<int:shelter_id>/edit/', views.shelter_edit_view, name='shelter_edit'),
-    path('management/shelters/<int:shelter_id>/delete/', views.shelter_delete_view, name='shelter_delete'),
+    path('management/shelters/<str:management_id>/edit/', views.shelter_edit_view, name='shelter_edit'),
+    path('management/shelters/<str:management_id>/delete/', views.shelter_delete_view, name='shelter_delete'),
 
     path('management/sos-reports/', views.sos_report_list_view, name='sos_report_list'),
 
@@ -100,5 +100,7 @@ urlpatterns = [
 
     path('manuals/', views.manual_list, name='manual_list'),
 
+    path('management/rpi-checkin-logs/', views.rpi_checkin_log_view, name='rpi_checkin_logs'),
+    path('management/distribution-logs/', views.distribution_log_view, name='distribution_logs'),
 
 ]

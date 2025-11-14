@@ -4,12 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="災害発生時用のマニュアルを読めるようにしました（11/13）">
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="オートコンプリート機能を無効化（11/14）">
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/distribution_log.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/rpi_data_log.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/community_form.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/community_form.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/dm_room.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/dm_room.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/admin_menu.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/admin_menu.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/shelter_management.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/shelter_management.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -187,7 +193,7 @@
       <workItem from="1762827679212" duration="14361000" />
       <workItem from="1762993391913" duration="4733000" />
       <workItem from="1763000940274" duration="3895000" />
-      <workItem from="1763085896119" duration="2869000" />
+      <workItem from="1763085896119" duration="13386000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -453,7 +459,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763004858840</updated>
     </task>
-    <option name="localTasksCounter" value="34" />
+    <task id="LOCAL-00034" summary="オートコンプリート機能を無効化（11/14）">
+      <option name="closed" value="true" />
+      <created>1763088859183</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1763088859183</updated>
+    </task>
+    <option name="localTasksCounter" value="35" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -471,7 +485,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Userモデルの主キーをメールアドレスに修正" />
     <MESSAGE value="ダミーデータを入れるためのライブラリの実装&#10;緊急SOS発信画面を実装（10/24）" />
     <MESSAGE value="ホームメニューと管理者メニューを実装（中身はまだできてないです）&#10;データベース更新したのでマイグレーションしてください（10/24）" />
     <MESSAGE value="WebSocket周りはよくわからんですが頑張って調整します（10/24）" />
@@ -496,7 +509,8 @@
     <MESSAGE value="allowed_hosts = '*'を追加" />
     <MESSAGE value="ラズパイ側とグループチャットをつなげられるようにしました（11/13）" />
     <MESSAGE value="災害発生時用のマニュアルを読めるようにしました（11/13）" />
-    <option name="LAST_COMMIT_MESSAGE" value="災害発生時用のマニュアルを読めるようにしました（11/13）" />
+    <MESSAGE value="オートコンプリート機能を無効化（11/14）" />
+    <option name="LAST_COMMIT_MESSAGE" value="オートコンプリート機能を無効化（11/14）" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

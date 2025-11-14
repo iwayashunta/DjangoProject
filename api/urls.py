@@ -20,5 +20,7 @@ urlpatterns = [
 
     path('groups/<int:group_id>/messages/', views.get_group_messages_api, name='get_group_messages'),
 
+    path('shelter-checkin-sync/', views.shelter_checkin_sync_api, name='shelter_checkin_sync_api'),
+
 
 ]

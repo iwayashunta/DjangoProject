@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}{}{% endblock %}
+{% block header_title %}{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 max-w-6xl mx-auto">
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <h3 class="text-xl font-semibold mb-4 text-gray-800">{{ title }}</h3>
+        
+        <p class="mb-4 text-sm text-gray-600">
+            ラズベリーパイから中央サーバーに連携されたデータの生ログです。<br>
+            データ同期が正しく行われているかの確認に使用します。
+        </p>
+
+        <div class="overflow-x-auto border rounded-lg">
+            <table class="w-full min-w-[800px]">
+                <thead class="bg-gray-50">
+                    <tr class="border-b">
+                        <th class="p-3 text-left text-sm font-semibold text-gray-600">連携日時</th>
+                        <th class="p-3 text-left text-sm font-semibold text-gray-600">連携タイプ</th>
+                        <th class="p-3 text-left text-sm font-semibold text-gray-600">避難所管理ID</th>
+                        <th class="p-3 text-left text-sm font-semibold text-gray-600">対象者ログインID</th>
+                        <th class="p-3 text-left text-sm font-semibold text-gray-600">デバイスID</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for log in logs %} {# ビューから渡された'logs'をループ #}
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 text-sm text-gray-700 font-mono">{{ log.received_at|date:"Y/m/d H:i:s" }}</td>
+                        <td class="p-3 text-sm">
+                            {# data_typeに応じてバッジの色を変える #}
+                            {% if "checkin" in log.data_type %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">入所</span>
+                            {% elif "checkout" in log.data_type %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">退所</span>
+                            {% else %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">{{ log.data_type }}</span>
+                            {% endif %}
+                        </td>
+                        {# RPiDataのpayloadはJSONなので、ドット(.)で中身にアクセス #}
+                        <td class="p-3 text-sm text-gray-700 font-semibold">{{ log.payload.shelter_management_id | default:"(情報なし)" }}</td>
+                        <td class="p-3 text-sm text-gray-700">{{ log.payload.login_id | default:"(情報なし)" }}</td>
+                        <td class="p-3 text-sm text-gray-500 font-mono">{{ log.device_id }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="p-4 text-center text-gray-500">連携されたログデータはまだありません。</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-6 text-center">
+            <a href="{% url 'Sotsuken_Portable:admin_menu' %}" class="bg-gray-500 text-white py-2 px-6 rounded-lg hover:bg-gray-600 transition-all">管理者メニューに戻る</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

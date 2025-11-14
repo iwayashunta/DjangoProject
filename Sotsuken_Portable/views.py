@@ -22,7 +22,7 @@ from django.views.generic import ListView, DetailView, CreateView, TemplateView
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
-    CommunityPost, Comment, GroupMember, User, Manual
+    CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -365,11 +365,11 @@ def shelter_management_view(request):
 
 # --- 避難所編集ビュー ---
 @admin_required
-def shelter_edit_view(request, shelter_id):
+def shelter_edit_view(request, management_id):
     """
     既存の避難所情報を編集するビュー
     """
-    shelter_instance = get_object_or_404(Shelter, pk=shelter_id)
+    shelter_instance = get_object_or_404(Shelter, management_id=management_id)
 
     # POSTリクエスト（フォームが送信された）の場合
     if request.method == 'POST':
@@ -394,11 +394,11 @@ def shelter_edit_view(request, shelter_id):
 
 # --- 避難所削除ビュー ---
 @admin_required
-def shelter_delete_view(request, shelter_id):
+def shelter_delete_view(request, management_id):
     """
     避難所を削除するビュー（確認ページ付き）
     """
-    shelter_to_delete = get_object_or_404(Shelter, pk=shelter_id)
+    shelter_to_delete = get_object_or_404(Shelter, management_id=management_id)
 
     # POSTリクエストの場合（削除実行）
     if request.method == 'POST':
@@ -956,4 +956,30 @@ def manual_list(request):
         'manuals': manuals,
     }
     return render(request, 'manual_list.html', context)
+
+
+@login_required
+# @user_passes_test(lambda u: u.is_superuser)  # 管理者のみに制限する場合
+def rpi_checkin_log_view(request):
+    # チェックイン系のログのみを抽出
+    logs = RPiData.objects.filter(
+        data_type__in=['shelter_checkin', 'sync_checkin', 'sync_checkout']
+    ).order_by('-received_at')
+
+    context = {
+        'logs': logs,
+        'title': '避難所受付データ連携ログ'
+    }
+    return render(request, 'rpi_data_log.html', context)
+
+
+# --- 2. 炊き出し配布記録の確認 ---
+@login_required
+def distribution_log_view(request):
+    records = DistributionRecord.objects.all().order_by('-distributed_at')
+
+    context = {
+        'records': records,
+    }
+    return render(request, 'distribution_log.html', context)
 
