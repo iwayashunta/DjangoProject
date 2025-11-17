@@ -208,7 +208,7 @@ def field_report_api(request):
             return JsonResponse({'status': 'error', 'message': '必須データが不足しています。'}, status=400)
 
         # 1. 報告をログとして保存
-        shelter_instance = get_object_or_404(Shelter, pk=data['shelter_management_id'])
+        shelter_instance = get_object_or_404(Shelter, management_id=data['shelter_management_id'])
 
         new_log = FieldReportLog.objects.create(
             shelter=shelter_instance,
