@@ -718,6 +718,13 @@ class RPiData(models.Model):
         auto_now_add=True
     )
 
+    # 元の記録日時 (ラズパイ側で記録された日時)
+    original_timestamp = models.DateTimeField(
+        verbose_name="元の記録日時",
+        blank=True,
+        null=True  # 過去のデータにはこの値がない可能性があるのでnullを許容
+    )
+
     # 5. データ取得時の位置情報
     latitude = models.FloatField(verbose_name="緯度", null=True, blank=True)
     longitude = models.FloatField(verbose_name="経度", null=True, blank=True)

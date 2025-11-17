@@ -1,4 +1,3 @@
-import self
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
 
