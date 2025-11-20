@@ -6,11 +6,12 @@ from .models import User, Group, GroupMember, SafetyStatus, SupportRequest, Offi
 
 class CustomUserAdmin(UserAdmin):
     # 管理サイトの一覧画面に表示する項目
-    list_display = ('username', 'full_name', 'is_staff', 'is_active')
+    list_display = ('username', 'full_name', 'email', 'role', 'safety_status', 'is_staff')
     # 管理サイトの編集画面のフィールド構成
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Personal info', {'fields': ('full_name', 'email')}),
+        ('災害用カスタム情報', {'fields': ('role', 'safety_status', 'last_known_latitude', 'last_known_longitude')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
@@ -18,7 +19,7 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('username', 'password', 'password2'), # パスワード確認欄を追加
+            'fields': ('username', 'password', 'password2', 'full_name', 'email', 'role'), # パスワード確認欄を追加
         }),
     )
     # 検索対象のフィールド
