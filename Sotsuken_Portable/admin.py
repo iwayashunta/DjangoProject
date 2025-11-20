@@ -1,12 +1,25 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.forms import UserCreationForm
 
 from .models import User, Group, GroupMember, SafetyStatus, SupportRequest, OfficialAlert, Shelter, Comment, \
     DistributionItem, DistributionRecord, CommunityPost, Manual
 
+
+class CustomUserCreationForm(UserCreationForm):
+    class Meta:
+        model = User
+        fields = ('username',)
+
+
 class CustomUserAdmin(UserAdmin):
+    # ★★★ 2. 作成したフォームをここで指定 ★★★
+    add_form = CustomUserCreationForm
+
+    # --- 以下、ご提示いただいた設定 ---
     # 管理サイトの一覧画面に表示する項目
     list_display = ('username', 'full_name', 'email', 'role', 'safety_status', 'is_staff')
+
     # 管理サイトの編集画面のフィールド構成
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
@@ -15,13 +28,15 @@ class CustomUserAdmin(UserAdmin):
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
+
     # ユーザー作成時に必須とするフィールド
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('username', 'password', 'password2', 'full_name', 'email', 'role'), # パスワード確認欄を追加
+            'fields': ('username', 'password1', 'password2'),
         }),
     )
+
     # 検索対象のフィールド
     search_fields = ('username', 'full_name')
     # 並び替えの基準

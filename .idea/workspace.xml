@@ -6,6 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="同期機能の細かい部分の修正など（11/20）">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/rpi_data_log.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/rpi_data_log.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -188,7 +190,7 @@
       <workItem from="1763347404932" duration="8321000" />
       <workItem from="1763431681377" duration="13536000" />
       <workItem from="1763519637893" duration="5296000" />
-      <workItem from="1763597989730" duration="6126000" />
+      <workItem from="1763597989730" duration="11108000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -494,7 +496,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763602119508</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="同期機能の細かい部分の修正など（11/20）">
+      <option name="closed" value="true" />
+      <created>1763608245464</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1763608245464</updated>
+    </task>
+    <option name="localTasksCounter" value="40" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
