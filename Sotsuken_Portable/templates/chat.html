@@ -11,7 +11,7 @@
             {# ビューから渡された過去のメッセージをループで表示 #}
             {% for msg in messages %}
                 <div class="text-base {% if msg.sender == user %}text-right{% endif %}">
-                    <p class="font-bold text-sm text-gray-500">{{ msg.sender.full_name|default:msg.sender.login_id }}</p>
+                    <p class="font-bold text-sm text-gray-500">{{ msg.sender.full_name|default:msg.sender.username }}</p>
                     <p class="{% if msg.sender == user %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %} p-3 rounded-t-xl {% if msg.sender == user %}rounded-bl-xl{% else %}rounded-br-xl{% endif %} inline-block max-w-xs text-left">
                         {{ msg.content|urlize|linebreaksbr }} {# Messageモデルのフィールド名に合わせてください #}
                     </p>
@@ -33,7 +33,7 @@
     </div>
 
     {{ group.id|json_script:"group-id" }}
-    {{ user.full_name|default:user.login_id|json_script:"current-user-name" }}
+    {{ user.full_name|default:user.username|json_script:"current-user-name" }}
 
     <script>
         const groupId = JSON.parse(document.getElementById('group-id').textContent);

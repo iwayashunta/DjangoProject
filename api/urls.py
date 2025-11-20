@@ -22,5 +22,7 @@ urlpatterns = [
 
     path('shelter-checkin-sync/', views.shelter_checkin_sync_api, name='shelter_checkin_sync_api'),
 
+    path('register-field-user/', views.register_field_user_api, name='register_field_user_api'),
+
 
 ]

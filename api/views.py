@@ -24,17 +24,17 @@ def shelter_checkin_api(request):
         data = json.loads(request.body)
 
         # 2. JSONデータから必要な値を取得する
-        login_id = data.get('login_id')  # QRコードから読み取った login_id
+        username = data.get('username')  # QRコードから読み取った username
         shelter_management_id = data.get('shelter_management_id')   # ラズパイ側で設定された避難所のID
         device_id = data.get('device_id')  # ラズパイ自体のID
 
         # 3. 必須データが揃っているかチェック
-        if not all([login_id, shelter_management_id, device_id]):
-            return HttpResponseBadRequest("必要なデータが不足しています。(login_id, shelter_id, device_id)")
+        if not all([username, shelter_management_id, device_id]):
+            return HttpResponseBadRequest("必要なデータが不足しています。(username, shelter_id, device_id)")
 
-        # 4. 受け取った `login_id` を使って、データベースから該当するユーザーオブジェクトを取得
-        #    - もし存在しない `login_id` なら、ここで 404 Not Found エラー相当の処理が走る
-        user = get_object_or_404(User, login_id=login_id)
+        # 4. 受け取った `username` を使って、データベースから該当するユーザーオブジェクトを取得
+        #    - もし存在しない `username` なら、ここで 404 Not Found エラー相当の処理が走る
+        user = get_object_or_404(User, username=username)
 
         # 5. RPiDataモデルに保存する
         #    - `payload` には、元のJSONデータをそのまま保存する
@@ -53,7 +53,7 @@ def shelter_checkin_api(request):
         # 7. 成功したことをJSONで返す
         return JsonResponse({
             'status': 'success',
-            'message': f"ユーザー「{user.login_id}」(氏名: {user.full_name or '未登録'}) のチェックインを受け付けました。",
+            'message': f"ユーザー「{user.username}」(氏名: {user.full_name or '未登録'}) のチェックインを受け付けました。",
             'record_id': rpi_data_record.id,
             'user_id': user.id  # ←【ご質問の点】ここで取得したユーザーオブジェクトのidを返すことは可能
         })
@@ -62,9 +62,9 @@ def shelter_checkin_api(request):
         # JSONの形式が不正な場合や、必須キーがない場合
         return JsonResponse({'status': 'error', 'message': '無効なデータ形式です。'}, status=400)
     except User.DoesNotExist:
-        # login_id に一致するユーザーが見つからなかった場合
+        # username に一致するユーザーが見つからなかった場合
         return JsonResponse(
-            {'status': 'error', 'message': f"指定されたログインID「{login_id}」のユーザーは存在しません。"}, status=404)
+            {'status': 'error', 'message': f"指定されたログインID「{username}」のユーザーは存在しません。"}, status=404)
     except Shelter.DoesNotExist:
         # shelter_id に一致する避難所が見つからなかった場合
         return JsonResponse({'status': 'error', 'message': f"指定された避難所ID「{shelter_management_id}」は存在しません。"},
@@ -107,17 +107,17 @@ def shelter_list_api(request):
 def check_distribution_api(request):
     try:
         data = json.loads(request.body)
-        login_id = data.get('login_id')
+        username = data.get('username')
         item_id = data.get('item_id')
         device_id = data.get('device_id')
 
         # 'action' パラメータで、判定のみか、記録まで行うかを制御
         action = data.get('action', 'check')  # デフォルトは 'check'
 
-        if not all([login_id, item_id]):
-            return JsonResponse({'status': 'error', 'message': 'login_idとitem_idは必須です。'}, status=400)
+        if not all([username, item_id]):
+            return JsonResponse({'status': 'error', 'message': 'usernameとitem_idは必須です。'}, status=400)
 
-        user = get_object_or_404(User, login_id=login_id)
+        user = get_object_or_404(User, username=username)
         item = get_object_or_404(DistributionItem, pk=item_id)
 
         # 過去の配布記録を検索
@@ -237,14 +237,14 @@ def get_user_groups_api(request):
     """
     指定されたユーザーが所属するグループのリストを返すAPIビュー
     """
-    # 簡易的な認証: HTTPヘッダーから login_id を取得
-    login_id = request.headers.get('X-User-Login-Id')
+    # 簡易的な認証: HTTPヘッダーから username を取得
+    username = request.headers.get('X-User-Login-Id')
 
-    if not login_id:
+    if not username:
         return JsonResponse({'status': 'error', 'message': 'X-User-Login-Idヘッダーが必要です。'}, status=401)
 
     try:
-        user = User.objects.get(login_id=login_id)
+        user = User.objects.get(username=username)
 
         # ユーザーが所属するグループを取得
         memberships = user.group_memberships.all()
@@ -276,12 +276,12 @@ def post_group_message_api(request):
     現場デバイスからグループチャットへのメッセージ投稿を受け付けるAPI
     """
     # 簡易認証
-    login_id = request.headers.get('X-User-Login-Id')
-    if not login_id:
+    username = request.headers.get('X-User-Login-Id')
+    if not username:
         return JsonResponse({'status': 'error', 'message': 'X-User-Login-Idヘッダーが必要です。'}, status=401)
 
     try:
-        user = User.objects.get(login_id=login_id)
+        user = User.objects.get(username=username)
         data = json.loads(request.body)
         group_id = data.get('group_id')
         message = data.get('message')
@@ -312,7 +312,7 @@ def post_group_message_api(request):
         chat_data = {
             'type': 'chat_message',
             'message': message,
-            'sender': user.full_name or user.login_id,
+            'sender': user.full_name or user.username,
         }
 
         # 3. オンラインのユーザー一人ひとりに、直接メッセージを送信する
@@ -348,12 +348,12 @@ def get_group_messages_api(request, group_id):
     """
     try:
         # 認証チェック（簡易版）
-        login_id = request.headers.get('X-User-Login-Id')
-        if not login_id:
+        username = request.headers.get('X-User-Login-Id')
+        if not username:
             return JsonResponse({'status': 'error', 'message': '認証ヘッダーが必要です。'}, status=401)
 
         # ユーザーがそのグループのメンバーかどうかの権限チェック（重要）
-        user = User.objects.get(login_id=login_id)
+        user = User.objects.get(username=username)
         if not user.group_memberships.filter(group_id=group_id).exists():
             return JsonResponse({'status': 'error', 'message': 'このグループへのアクセス権がありません。'}, status=403)
 
@@ -362,7 +362,7 @@ def get_group_messages_api(request, group_id):
 
         message_list = [
             {
-                "sender": msg.sender.full_name or msg.sender.login_id,
+                "sender": msg.sender.full_name or msg.sender.username,
                 "content": msg.content,
                 "timestamp": msg.timestamp.isoformat(),
             }
@@ -388,12 +388,12 @@ def shelter_checkin_sync_api(request):
         data = json.loads(request.body)
 
         # 1. 必須データのチェック
-        required_keys = ["login_id", "shelter_management_id", "checkin_type", "timestamp", "device_id"]
+        required_keys = ["username", "shelter_management_id", "checkin_type", "timestamp", "device_id"]
         if not all(key in data for key in required_keys):
             return JsonResponse({'status': 'error', 'message': '必須データが不足しています。'}, status=400)
 
         # 2. 関連データの存在チェック
-        user = get_object_or_404(User, login_id=data['login_id'])
+        user = get_object_or_404(User, username=data['username'])
         shelter = get_object_or_404(Shelter, management_id=data['shelter_management_id'])
 
         # checkin_type の値が正しいかチェック
@@ -427,7 +427,7 @@ def shelter_checkin_sync_api(request):
 
         return JsonResponse({
             'status': 'success',
-            'message': f"ID:{user.login_id} の {data['checkin_type']} 記録(ID:{log_record.id})を受け付けました。"
+            'message': f"ID:{user.username} の {data['checkin_type']} 記録(ID:{log_record.id})を受け付けました。"
         }, status=201)
 
     except (User.DoesNotExist, Shelter.DoesNotExist):
@@ -435,3 +435,45 @@ def shelter_checkin_sync_api(request):
                             status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def register_field_user_api(request):
+    try:
+        data = json.loads(request.body)
+        username = data.get('username')
+        password = data.get('password') # ★キー名を'password'に変更することを推奨
+        full_name = data.get('full_name')
+
+
+        missing_fields = []
+        if not username: missing_fields.append('username')
+        if not password: missing_fields.append('password')
+        if not full_name: missing_fields.append('full_name')
+
+        if missing_fields:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'必須項目が不足しています: {", ".join(missing_fields)}'
+            }, status=400)
+
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({'status': 'error', 'message': f'ログインID「{username}」は既に使用されています。'}, status=409)
+
+        # ★★★★★ ここを修正 ★★★★★
+        # User.objects.create() の代わりに User.objects.create_user() を使う
+        new_user = User.objects.create_user(
+            username=username,
+            password=password, # 生のパスワードを渡すと、内部で自動的にハッシュ化される
+            full_name=full_name
+        )
+        # ★★★★★ ここまで ★★★★★
+
+        return JsonResponse({'status': 'success', 'message': 'ユーザーの本登録が完了しました。'}, status=201)
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+
+

@@ -40,7 +40,7 @@
                         </td>
                         {# RPiDataのpayloadはJSONなので、ドット(.)で中身にアクセス #}
                         <td class="p-3 text-sm text-gray-700 font-semibold">{{ log.payload.shelter_management_id | default:"(情報なし)" }}</td>
-                        <td class="p-3 text-sm text-gray-700">{{ log.payload.login_id | default:"(情報なし)" }}</td>
+                        <td class="p-3 text-sm text-gray-700">{{ log.payload.username | default:"(情報なし)" }}</td>
                         <td class="p-3 text-sm text-gray-500 font-mono">{{ log.device_id }}</td>
                     </tr>
                     {% empty %}

@@ -1,7 +1,7 @@
 import random
 from django.core.management.base import BaseCommand
 from faker import Faker
-# ↓ login_idを使うようにモデルをインポート
+# ↓ usernameを使うようにモデルをインポート
 from Sotsuken_Portable.models import User, Group, GroupMember
 
 
@@ -34,22 +34,22 @@ class Command(BaseCommand):
 
         faker = Faker('ja_JP')
 
-        # 2. ユーザーを生成 (login_id を使うように修正)
+        # 2. ユーザーを生成 (username を使うように修正)
         self.stdout.write('Creating new users...')
         users = []
         for i in range(50):
-            # login_idを生成 (例: user001, user002, ...)
-            login_id = f'user{i + 1:03}'
+            # usernameを生成 (例: user001, user002, ...)
+            username = f'user{i + 1:03}'
             full_name = faker.name()
             email = faker.unique.email()  # faker.email()だと重複する可能性があるので unique.email() を使う
 
             user = User.objects.create_user(
-                login_id=login_id,  # login_id を指定
+                username=username,  # username を指定
                 password='password123',
                 full_name=full_name,
                 email=email,
                 # username にも仮の値を入れておく
-                username=login_id
+                username=username
             )
             users.append(user)
         self.stdout.write(self.style.SUCCESS(f'{len(users)} users created.'))

@@ -1,16 +1,11 @@
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment, Group, Shelter  # カスタムUserモデルをインポート
 
-class SignUpForm(UserCreationForm):
-    """
-    ユーザー登録用のフォーム
-    """
-    class Meta(UserCreationForm.Meta):
-        # フォームの基になるモデルと、使用するフィールドを指定
-        model = User
-        fields = ('login_id', 'full_name', 'email') # ここに登録時に入力させたい項目を追加
+
 
 class SafetyStatusForm(forms.ModelForm):
     """
@@ -177,6 +172,51 @@ class ShelterForm(forms.ModelForm):
             'management_id': '他の避難所と絶対に重複しない、半角英数字のIDを入力してください。例: TKY-SHIBUYA-01',
             'current_occupancy': 'この値は現場レポートによっても自動更新されます。',
         }
+
+
+class SignUpForm(UserCreationForm):
+    """
+    ユーザー登録用のフォーム (厳格なパスワード検証付き)
+    AbstractUserの'username'を'ログインID'として使用する
+    """
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        # AbstractUserの'username'と、カスタムフィールド'full_name', 'email'を使用
+        fields = ('username', 'full_name', 'email')
+
+    def __init__(self, *args, **kwargs):
+        """
+        フォームの初期化メソッドで、フィールドのラベルを変更する
+        """
+        super().__init__(*args, **kwargs)
+        # 'username'フィールドのラベルを「ログインID」に変更
+        self.fields['username'].label = 'ログインID'
+        self.fields['username'].help_text = 'ログイン時に使用する一意のIDです。'
+
+    def clean_password2(self):
+        """
+        パスワードの強度検証を追加する
+        """
+        # self.cleaned_dataから直接パスワードを取得
+        password = self.cleaned_data.get("password")
+        password2 = self.cleaned_data.get("password2")
+
+        # パスワード1と2が入力されていて、かつ一致するかをまずチェック
+        if password and password2 and password != password2:
+            raise forms.ValidationError("パスワードが一致しません。")
+
+        # settings.py の AUTH_PASSWORD_VALIDATORS を使って強度を検証
+        # passwordがNoneでないことを確認してから検証
+        if password:
+            try:
+                validate_password(password, self.instance)
+            except ValidationError as e:
+                # 検証エラーをフォームのエラーとして追加
+                self.add_error('password2', e)
+
+        # 最後に、検証済みのパスワード2を返す
+        return password2
 
 
 

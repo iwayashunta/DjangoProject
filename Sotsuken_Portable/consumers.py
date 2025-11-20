@@ -34,7 +34,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
         # 6. DBにオンライン状態を保存 (接続が確定してから)
         await self.save_online_status(is_online=True)
 
-        print(f"[CONSUMER CONNECT] User '{self.user.login_id}' connected to group '{self.group_name}'")
+        print(f"[CONSUMER CONNECT] User '{self.user.username}' connected to group '{self.group_name}'")
 
     async def disconnect(self, close_code):
         if hasattr(self, 'room_group_name'):  # group_nameが存在するか確認
@@ -44,7 +44,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             )
         if self.user.is_authenticated:  # 念のため
             await self.save_online_status(is_online=False)
-        print(f"[CONSUMER DISCONNECT] User '{self.user.login_id}' disconnected.")
+        print(f"[CONSUMER DISCONNECT] User '{self.user.username}' disconnected.")
 
     # WebSocketからメッセージを受信したときの処理
     async def receive(self, text_data=None, bytes_data=None):
@@ -57,7 +57,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
         # 1. メッセージをDBに保存
         await self.save_message(self.user, self.group_id, message_content)
 
-        sender_name = self.user.full_name or self.user.login_id
+        sender_name = self.user.full_name or self.user.username
 
         # --- ここからが新しいロジック ---
 
@@ -86,7 +86,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'chat_message',  # ← 実行されるメソッド名を指定
                 'message': new_message.content,
-                'sender': new_message.sender.full_name or new_message.sender.login_id
+                'sender': new_message.sender.full_name or new_message.sender.username
             }
         )
         '''
@@ -185,7 +185,7 @@ class DMChatConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'chat_message',
                 'message': new_message.content,
-                'sender': new_message.sender.full_name or new_message.sender.login_id
+                'sender': new_message.sender.full_name or new_message.sender.username
             }
         )
 

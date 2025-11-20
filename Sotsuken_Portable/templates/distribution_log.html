@@ -29,7 +29,7 @@
                         <td class="p-3 text-sm font-semibold text-gray-800">{{ record.item.name }}</td>
                         <td class="p-3 text-sm text-gray-700">
                             {{ record.user.full_name | default:"(氏名未登録)" }}
-                            <span class="text-xs text-gray-500">({{ record.user.login_id }})</span>
+                            <span class="text-xs text-gray-500">({{ record.user.username }})</span>
                         </td>
                         <td class="p-3 text-sm text-gray-500 font-mono">{{ record.recorded_by_device }}</td>
                     </tr>

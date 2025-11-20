@@ -12,7 +12,7 @@
         </a>
         {% endif %}
     <p class="text-md text-gray-500 mb-6 border-b pb-4">
-        投稿者: {{ post.author.login_id }} <br>
+        投稿者: {{ post.author.username }} <br>
         投稿日時: {{ post.posted_at|date:"Y/m/d H:i" }}
     </p>
 
@@ -39,7 +39,7 @@
     <div class="space-y-6">
         {% for comment in comments %}
         <div class="border-b pb-4">
-            <p class="font-semibold">{{ comment.author.login_id }}</p>
+            <p class="font-semibold">{{ comment.author.username }}</p>
             <p class="text-sm text-gray-500 mb-2">{{ comment.created_at|date:"Y/m/d H:i" }}</p>
             {# 権限チェックをして削除ボタンを表示 #}
             {% if user == comment.author or user == post.author or user.role == 'admin' %}

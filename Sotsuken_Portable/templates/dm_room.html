@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}チャット - {{ other_user.full_name|default:other_user.login_id }}{% endblock %}
-{% block header_title %}{{ other_user.full_name|default:other_user.login_id }}{% endblock %}
+{% block title %}チャット - {{ other_user.full_name|default:other_user.username }}{% endblock %}
+{% block header_title %}{{ other_user.full_name|default:other_user.username }}{% endblock %}
 
 {% block content %}
     <div class="flex flex-col h-[75vh]">
@@ -8,7 +8,7 @@
             {# 過去ログの表示 (Messageモデルのフィールド名に合わせる) #}
             {% for msg in messages %}
                 <div class="text-base {% if msg.sender == user %}text-right{% endif %}">
-                    <p class="font-bold text-sm text-gray-500">{{ msg.sender.full_name|default:msg.sender.login_id }}</p>
+                    <p class="font-bold text-sm text-gray-500">{{ msg.sender.full_name|default:msg.sender.username }}</p>
                     <p class="{% if msg.sender == user %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %} p-3 rounded-t-xl {% if msg.sender == user %}rounded-bl-xl{% else %}rounded-br-xl{% endif %} inline-block max-w-xs text-left">
                         {{ msg.content|urlize|linebreaksbr }}
                     </p>
@@ -27,7 +27,7 @@
 
     {# --- JavaScriptに渡すデータを変更 --- #}
     {{ other_user.id|json_script:"other-user-id" }}
-    {{ user.full_name|default:user.login_id|json_script:"current-user-name" }}
+    {{ user.full_name|default:user.username|json_script:"current-user-name" }}
 
     <script>
         const otherUserId = JSON.parse(document.getElementById('other-user-id').textContent);

@@ -7,31 +7,33 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 
 
+'''
 class UserManager(BaseUserManager):
     # create_userメソッドを修正
-    def create_user(self, login_id, password=None, **extra_fields):
-        if not login_id:
+    def create_user(self, username, password=None, **extra_fields):
+        if not username:
             raise ValueError('The Login ID field must be set')
 
         email = extra_fields.get('email')
         if email:
             extra_fields['email'] = self.normalize_email(email)
 
-        # usernameにlogin_idをコピーしておく（任意だが互換性のために推奨）
-        extra_fields.setdefault('username', login_id)
+        # usernameにusernameをコピーしておく（任意だが互換性のために推奨）
+        extra_fields.setdefault('username', username)
 
-        user = self.model(login_id=login_id, **extra_fields)
+        user = self.model(username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
     # create_superuserメソッドを修正
-    def create_superuser(self, login_id, password=None, **extra_fields):
+    def create_superuser(self, username, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         # ... (is_staff, is_superuserのチェック) ...
 
-        return self.create_user(login_id, password, **extra_fields)
+        return self.create_user(username, password, **extra_fields)
+    '''
 
 class User(AbstractUser):
     # ロール定義
@@ -54,12 +56,12 @@ class User(AbstractUser):
 
     # 1. ログインIDフィールドを追加 (ユニーク制約付き)
     #    ユーザーが自分で決める or システムが自動生成する
-    login_id = models.CharField(
-        verbose_name='ログインID',
-        max_length=50,
-        unique=True,
-        help_text='ログイン時に使用する一意のIDです。'
-    )
+    # username = models.CharField(
+        # verbose_name='ログインID',
+        # max_length=50,
+        # unique=True,
+        # help_text='ログイン時に使用する一意のIDです。'
+    # )
 
     # 2. 氏名フィールド
     full_name = models.CharField(verbose_name='氏名', max_length=150, blank=True)
@@ -67,17 +69,17 @@ class User(AbstractUser):
     # 3. emailフィールドのユニーク制約は外す（連絡先としてのみ使用）
     email = models.EmailField(verbose_name='メールアドレス', blank=True)
 
-    # 4. ログインに使うフィールドを 'login_id' に設定
-    USERNAME_FIELD = 'login_id'
+    # 4. ログインに使うフィールドを 'username' に設定
+    USERNAME_FIELD = 'username'
 
     # 5. createsuperuserコマンドで聞かれる項目に 'email' を追加
     REQUIRED_FIELDS = ['email']
 
     # 6. usernameのユニーク制約は外したままでOK
-    username = models.CharField(('username'), max_length=150, unique=False, blank=True)
+    # username = models.CharField(('username'), max_length=150, unique=False, blank=True)
 
     # --- カスタムマネージャーの修正 ---
-    objects = UserManager()  # UserManagerは後述
+    # objects = UserManager()  # UserManagerは後述
 
     # オプション：最終位置情報
     last_known_latitude = models.FloatField(null=True, blank=True)
@@ -107,11 +109,15 @@ class User(AbstractUser):
     )
 
     def __str__(self):
-        return self.full_name or self.login_id
+        return self.full_name or self.username
 
     class Meta:
         # DjangoにカスタムUserモデルを使用することを伝えます
-        pass
+        verbose_name = 'ユーザー'
+        verbose_name_plural = 'ユーザー'
+
+    AbstractUser._meta.get_field('username').verbose_name = 'ログインID'
+    AbstractUser._meta.get_field('username').help_text = 'ログイン時に使用する一意のIDです。'
 
     # ユーザー名としてメールアドレスを使用する場合
     # USERNAME_FIELD = 'email'

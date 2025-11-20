@@ -274,7 +274,7 @@ def user_management_view(request):
     登録ユーザーの一覧と安否情報を表示する管理者向けビュー
     """
     # select_related を使って、User と SafetyStatus を効率的に一括取得
-    user_list = User.objects.select_related('safety_status_record').order_by('login_id')
+    user_list = User.objects.select_related('safety_status_record').order_by('username')
 
     context = {
         'user_list': user_list
@@ -298,10 +298,10 @@ def user_delete_view(request, user_id):
             return redirect('Sotsuken_Portable:user_management')
 
         # ユーザーを削除
-        deleted_user_login_id = user_to_delete.login_id
+        deleted_user_username = user_to_delete.username
         user_to_delete.delete()
 
-        messages.success(request, f"ユーザー「{deleted_user_login_id}」を削除しました。")
+        messages.success(request, f"ユーザー「{deleted_user_username}」を削除しました。")
         return redirect('Sotsuken_Portable:user_management')
 
     # GETリクエストの場合（確認画面の表示）
@@ -328,7 +328,7 @@ def user_change_role_view(request, user_id):
         else:
             user_to_change.role = new_role
             user_to_change.save()
-            messages.success(request, f"ユーザー「{user_to_change.login_id}」のロールを「{user_to_change.get_role_display()}」に変更しました。")
+            messages.success(request, f"ユーザー「{user_to_change.username}」のロールを「{user_to_change.get_role_display()}」に変更しました。")
     else:
         messages.error(request, "無効なロールが指定されました。")
 
@@ -501,7 +501,7 @@ def sos_report_export_csv_view(request):
         writer.writerow([
             report.id,
             report.reported_at.strftime('%Y-%m-%d %H:%M:%S'),
-            report.reporter.login_id if report.reporter else '',
+            report.reporter.username if report.reporter else '',
             report.reporter.full_name if report.reporter else '(削除されたユーザー)',
             report.latitude,
             report.longitude,
@@ -598,7 +598,7 @@ def _internal_post_message(sender_user, group_id, message):
         chat_data = {
             'type': 'chat_message',
             'message': message,
-            'sender': sender_user.full_name or sender_user.login_id,
+            'sender': sender_user.full_name or sender_user.username,
         }
         target_group_name = f'chat_{group_id}'
 
@@ -937,12 +937,12 @@ def user_id_qr_view(request):
     # 変更前
     # user_id = str(request.user.id)
 
-    # 変更後： user.id から user.login_id に変更
-    login_id_str = str(request.user.login_id)
+    # 変更後： user.id から user.username に変更
+    username_str = str(request.user.username)
 
     context = {
         # テンプレートに渡す変数名も分かりやすく変更
-        'login_id_str': login_id_str
+        'username_str': username_str
     }
     return render(request, 'user_id_qr.html', context)
 
