@@ -103,4 +103,6 @@ urlpatterns = [
     path('management/rpi-checkin-logs/', views.rpi_checkin_log_view, name='rpi_checkin_logs'),
     path('management/distribution-logs/', views.distribution_log_view, name='distribution_logs'),
 
+    path('ajax/get-nearby-alerts/', views.get_nearby_alerts_view, name='get_nearby_alerts'),
+
 ]

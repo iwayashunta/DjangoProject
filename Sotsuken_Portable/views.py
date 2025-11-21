@@ -1,6 +1,7 @@
 import csv
 import datetime
 import json
+import math
 
 from asgiref.sync import async_to_sync
 from channels.layers import channel_layers
@@ -9,7 +10,7 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required # ログイン必須にするためのデコレータ
 from django.urls import reverse_lazy, reverse
@@ -22,7 +23,7 @@ from django.views.generic import ListView, DetailView, CreateView, TemplateView
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
-    CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord
+    CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -891,7 +892,6 @@ def group_invite_qr_view(request, group_id):
     }
     return render(request, 'group_invite_qr.html', context)
 
-
 # --- 3. QRコードスキャナー用ビュー (新規作成) ---
 @login_required
 def qr_scan_view(request):
@@ -900,7 +900,6 @@ def qr_scan_view(request):
     このビューはテンプレートを表示するだけで、特別なロジックは不要。
     """
     return render(request, 'qr_scanner.html')
-
 
 @login_required
 def join_group_by_code_view(request, invitation_code):
@@ -926,7 +925,6 @@ def join_group_by_code_view(request, invitation_code):
     except Group.DoesNotExist:
         messages.error(request, "無効な招待コードです。")
         return redirect('Sotsuken_Portable:group_list')  # エラー時はグループ一覧へ
-
 
 # --- ユーザーID QRコード用ビュー ---
 @login_required
@@ -957,7 +955,6 @@ def manual_list(request):
     }
     return render(request, 'manual_list.html', context)
 
-
 @login_required
 # @user_passes_test(lambda u: u.is_superuser)  # 管理者のみに制限する場合
 def rpi_checkin_log_view(request):
@@ -972,7 +969,6 @@ def rpi_checkin_log_view(request):
     }
     return render(request, 'rpi_data_log.html', context)
 
-
 # --- 2. 炊き出し配布記録の確認 ---
 @login_required
 def distribution_log_view(request):
@@ -982,4 +978,54 @@ def distribution_log_view(request):
         'records': records,
     }
     return render(request, 'distribution_log.html', context)
+
+
+def get_nearby_alerts_view(request):
+    """
+    【AJAX用】緯度経度を受け取り、最も近いエリアの有効な警報をJSONで返す
+    """
+    # GETリクエスト以外は拒否しても良い
+    if request.method != 'GET':
+        return JsonResponse({'status': 'error', 'message': 'GET method required'}, status=405)
+
+    try:
+        lat = float(request.GET.get('lat'))
+        lon = float(request.GET.get('lon'))
+    except (TypeError, ValueError):
+        return JsonResponse({'status': 'error', 'message': '緯度経度が不正です'}, status=400)
+
+    # 1. 一番近い JmaArea を探す
+    nearest_area = None
+    min_dist = float('inf')
+
+    # エリア数が少なければ全件ループで十分高速です
+    for area in JmaArea.objects.all():
+        d = math.sqrt((area.latitude - lat) ** 2 + (area.longitude - lon) ** 2)
+        if d < min_dist:
+            min_dist = d
+            nearest_area = area
+
+    if not nearest_area:
+        return JsonResponse({'status': 'success', 'alerts': [], 'area_name': '不明'})
+
+    # 2. そのエリアに紐付く有効な警報を取得
+    alerts = OfficialAlert.objects.filter(
+        area=nearest_area,
+        is_active=True
+    ).order_by('-published_at')[:5]
+
+    alert_data = [
+        {
+            'title': a.title,
+            'severity': a.get_severity_display() if hasattr(a, 'get_severity_display') else a.severity,
+            'content': a.content,
+            'date': a.published_at.strftime('%Y/%m/%d %H:%M')
+        } for a in alerts
+    ]
+
+    return JsonResponse({
+        'status': 'success',
+        'area_name': nearest_area.name,
+        'alerts': alert_data
+    }, json_dumps_params={'ensure_ascii': False})
 

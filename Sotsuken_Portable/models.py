@@ -769,6 +769,17 @@ class OfficialAlert(models.Model):
         default='info'
     )
     published_at = models.DateTimeField(verbose_name="発表日時", auto_now_add=True)
+    publisher = models.CharField(verbose_name="発信元", max_length=100, default="気象庁")
+    is_active = models.BooleanField(verbose_name="有効", default=True)
+    # ★ エリア情報との紐付けを追加
+    # null=Trueにしておくことで、既存データの移行エラーを防ぎます
+    area = models.ForeignKey(
+        'JmaArea',
+        on_delete=models.CASCADE,
+        verbose_name="対象地域",
+        null=True,
+        blank=True
+    )
 
     class Meta:
         verbose_name = "公式緊急情報"
@@ -845,3 +856,15 @@ class Manual(models.Model):
     class Meta:
         verbose_name = "マニュアル"
         verbose_name_plural = "マニュアル"
+
+class JmaArea(models.Model):
+    """気象庁のエリアコードと、その代表座標（県庁所在地など）を管理するモデル"""
+    name = models.CharField(verbose_name="地域名", max_length=50) # 例: 東京地方
+    code = models.CharField(verbose_name="エリアコード", max_length=20, unique=True) # 例: 130000
+    latitude = models.FloatField(verbose_name="代表緯度")
+    longitude = models.FloatField(verbose_name="代表経度")
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+

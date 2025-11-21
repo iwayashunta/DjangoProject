@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserCreationForm
 
 from .models import User, Group, GroupMember, SafetyStatus, SupportRequest, OfficialAlert, Shelter, Comment, \
-    DistributionItem, DistributionRecord, CommunityPost, Manual
+    DistributionItem, DistributionRecord, CommunityPost, Manual, Message
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -56,4 +56,5 @@ admin.site.register(DistributionItem)
 admin.site.register(DistributionRecord)
 admin.site.register(CommunityPost)
 admin.site.register(Manual)
+admin.site.register(Message)
 
