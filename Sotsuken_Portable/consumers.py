@@ -10,40 +10,52 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user = self.scope['user']
         if not self.user.is_authenticated:
-            await self.close()  # 未認証なら即切断
+            await self.close()
             return
 
-        # 2. URLからグループIDを取得し、グループ名を設定
+        # URLからグループIDを取得
         self.group_id = self.scope['url_route']['kwargs']['group_id']
-        self.group_name = f'chat_{self.group_id}'  # room_group_name ではなく group_name に統一
 
-        # 3. ユーザーがこのグループのメンバーかチェック (DBアクセス)
-        if not await self.is_user_in_group(self.user, self.group_id):
-            await self.close()  # メンバーでなければ切断
-            return
+        # ---------------------------------------------------------
+        # 分岐: 全体連絡 ('all') か、通常のグループチャットか
+        # ---------------------------------------------------------
+        if self.group_id == 'all':
+            # --- A. 全体連絡の場合 ---
+            self.group_name = 'chat_broadcast'
+            # 全体連絡は権限チェック不要（ログインしていれば参加OK）
 
-        # 4. 全てのチェックをパスしたら、グループに参加
+        else:
+            # --- B. 通常のグループチャットの場合 ---
+            self.group_name = f'chat_{self.group_id}'
+
+            # メンバーシップチェック
+            if not await self.is_user_in_group(self.user, self.group_id):
+                await self.close()
+                return
+
+        # グループに参加
         await self.channel_layer.group_add(
-            group=self.group_name,
-            channel=self.channel_name
+            self.group_name,
+            self.channel_name
         )
 
-        # 5. WebSocket接続を受け入れる
         await self.accept()
 
-        # 6. DBにオンライン状態を保存 (接続が確定してから)
+        # オンライン状態を保存
         await self.save_online_status(is_online=True)
-
         print(f"[CONSUMER CONNECT] User '{self.user.username}' connected to group '{self.group_name}'")
 
     async def disconnect(self, close_code):
-        if hasattr(self, 'room_group_name'):  # group_nameが存在するか確認
+        # ★修正: 変数名を self.group_name に統一
+        if hasattr(self, 'group_name'):
             await self.channel_layer.group_discard(
-                group=self.room_group_name,
-                channel=self.channel_name,
+                self.group_name,
+                self.channel_name,
             )
-        if self.user.is_authenticated:  # 念のため
+
+        if self.user.is_authenticated:
             await self.save_online_status(is_online=False)
+
         print(f"[CONSUMER DISCONNECT] User '{self.user.username}' disconnected.")
 
     # WebSocketからメッセージを受信したときの処理
@@ -59,68 +71,53 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
 
         sender_name = self.user.full_name or self.user.username
 
-        # --- ここからが新しいロジック ---
-
-        # 2. 送信先のグループに所属している、現在オンラインのユーザーを探す
-        online_channels = await self.get_online_channels_in_group(self.group_id)
-
-        if not online_channels:
-            print(f"[CONSUMER WARN] Group {self.group_id} has no online users to send message to.")
-            return
-
-        # 3. 送信するメッセージデータを作成
+        # 2. メッセージを配信
         chat_data = {
-            'type': 'chat_message',  # chat_messageメソッドを呼び出す
+            'type': 'chat_message',
             'message': message_content,
             'sender': sender_name,
         }
 
-        # 4. オンラインのユーザー一人ひとりに、直接メッセージを送信
-        for channel_name in online_channels:
-            await self.channel_layer.send(channel_name, chat_data)
+        if self.group_id == 'all':
+            # --- A. 全体連絡の場合: グループ全員に一斉送信 ---
+            await self.channel_layer.group_send(
+                self.group_name,  # 'chat_broadcast'
+                chat_data
+            )
+        else:
+            # --- B. 通常グループの場合: オンラインユーザーに個別送信 ---
+            # (元のロジックを維持)
+            online_channels = await self.get_online_channels_in_group(self.group_id)
+            if not online_channels:
+                print(f"[CONSUMER WARN] Group {self.group_id} has no online users.")
+                return
 
-        '''
-        # 5. グループ内の全員にメッセージを送信
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'chat_message',  # ← 実行されるメソッド名を指定
-                'message': new_message.content,
-                'sender': new_message.sender.full_name or new_message.sender.username
-            }
-        )
-        '''
+            for channel_name in online_channels:
+                await self.channel_layer.send(channel_name, chat_data)
+
+    # グループからメッセージを受信したときの処理
+    async def chat_message(self, event):
+        # WebSocketにJSONデータを送信
+        await self.send(text_data=json.dumps({
+            'message': event['message'],
+            'sender': event['sender'],
+        }))
+
+    # --- データベース操作ヘルパー ---
 
     @database_sync_to_async
     def get_online_channels_in_group(self, group_id):
-        """指定されたグループに所属し、かつオンラインのユーザーのchannel_nameリストを返す"""
         target_members = GroupMember.objects.filter(group_id=group_id)
         target_user_ids = [member.member_id for member in target_members]
-
         online_users = OnlineUser.objects.filter(user_id__in=target_user_ids)
         return [user.channel_name for user in online_users]
 
-    # グループからメッセージを受信したときの処理 (typeで指定したメソッド)
-    async def chat_message(self, event):
-        print(f"[CONSUMER DEBUG] Received message in group {self.group_name}: {event}")
-        message = event['message']
-        sender = event['sender']
-
-        print(f"[CONSUMER DEBUG] Received message in group {self.group_name}: {event}")
-
-        # 6. WebSocketにJSONデータを送信
-        await self.send(text_data=json.dumps({
-            'message': message,
-            'sender': sender,
-        }))
-
-    # --- データベース操作を非同期で行うためのヘルパー関数 ---
     @database_sync_to_async
     def is_user_in_group(self, user, group_id):
         try:
             group = Group.objects.get(id=group_id)
             return group.memberships.filter(member=user).exists()
-        except Group.DoesNotExist:
+        except (Group.DoesNotExist, ValueError):
             return False
 
     @database_sync_to_async
@@ -135,9 +132,20 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def save_message(self, user, group_id, message_content):
-        group = Group.objects.get(id=group_id)
-        # Messageモデルのauthorフィールドに合わせて修正
-        return Message.objects.create(sender=user, group=group, content=message_content)
+        # ★修正: group_id='all' の場合の保存処理を追加
+        if group_id == 'all':
+            return Message.objects.create(
+                sender=user,
+                group=None,
+                content=message_content
+            )
+        else:
+            group = Group.objects.get(id=group_id)
+            return Message.objects.create(
+                sender=user,
+                group=group,
+                content=message_content
+            )
 
 
 class DMChatConsumer(AsyncWebsocketConsumer):
