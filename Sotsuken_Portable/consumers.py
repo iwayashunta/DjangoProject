@@ -9,9 +9,9 @@ from .models import Message, User, Group, OnlineUser, GroupMember
 class GroupChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user = self.scope['user']
-        if not self.user.is_authenticated:
-            await self.close()
-            return
+        # if not self.user.is_authenticated:
+        #    await self.close()
+        #    return
 
         # URLからグループIDを取得
         self.group_id = self.scope['url_route']['kwargs']['group_id']
@@ -28,10 +28,18 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             # --- B. 通常のグループチャットの場合 ---
             self.group_name = f'chat_{self.group_id}'
 
-            # メンバーシップチェック
-            if not await self.is_user_in_group(self.user, self.group_id):
-                await self.close()
-                return
+            if self.user.is_authenticated:
+                # ログインユーザーなら、ちゃんとグループに入っているかチェック
+                if not await self.is_user_in_group(self.user, self.group_id):
+                    await self.close()
+                    return
+            else:
+                # 匿名ユーザー（ラズパイ）の場合
+                # ここで await self.close() すれば「閲覧禁止」
+                # 何もしなければ「閲覧許可（接続OK）」となります。
+                # 今回はラズパイでの閲覧を許可するため、何もしない（スルー）でOKです。
+                pass
+
 
         # グループに参加
         await self.channel_layer.group_add(
@@ -114,6 +122,11 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def is_user_in_group(self, user, group_id):
+        # ★追加: 匿名ユーザー（ラズパイ）の場合は、メンバー検索を行わずに False を返す
+        # (ただし、ラズパイからの接続を許可したい場合は、ここで True を返してスルーさせる手もあります)
+        if not user.is_authenticated:
+            return False  # または True (ポリシー次第)
+
         try:
             group = Group.objects.get(id=group_id)
             return group.memberships.filter(member=user).exists()
@@ -122,13 +135,17 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def save_online_status(self, is_online):
-        if is_online:
-            OnlineUser.objects.update_or_create(
-                user=self.scope["user"],
-                defaults={'channel_name': self.channel_name}
-            )
-        else:
-            OnlineUser.objects.filter(user=self.scope["user"]).delete()
+        user = self.scope["user"]
+
+        # ★追加: 認証済みユーザーの場合のみ保存処理を行う
+        if user.is_authenticated:
+            if is_online:
+                OnlineUser.objects.update_or_create(
+                    user=user,
+                    defaults={'channel_name': self.channel_name}
+                )
+            else:
+                OnlineUser.objects.filter(user=user).delete()
 
     @database_sync_to_async
     def save_message(self, user, group_id, message_content):

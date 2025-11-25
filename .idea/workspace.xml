@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="緊急情報機能を実装（11/21）&#10;ハザードマップ表示・現在位置の警報を取得する機能など">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="全体連絡チャットをざっくり実装（11/25）">
       <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/consumers.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/consumers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/routing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/routing.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -194,7 +192,7 @@
       <workItem from="1763597989730" duration="11861000" />
       <workItem from="1763690364478" duration="14685000" />
       <workItem from="1763710427472" duration="595000" />
-      <workItem from="1764036170730" duration="6298000" />
+      <workItem from="1764036170730" duration="8125000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -524,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763707958630</updated>
     </task>
-    <option name="localTasksCounter" value="42" />
+    <task id="LOCAL-00042" summary="全体連絡チャットをざっくり実装（11/25）">
+      <option name="closed" value="true" />
+      <created>1764049087859</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1764049087859</updated>
+    </task>
+    <option name="localTasksCounter" value="43" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -542,7 +548,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="コミュニティ機能を実装、ついでにリプライぶら下げられるようにしました（10/27）" />
     <MESSAGE value="コミュニティ機能を実装(投稿・削除・返信機能)&#10;安否確認機能で自分の状況を確認できるよう修正（10/27）" />
     <MESSAGE value="ユーザーIDでログインする仕様にしました&#10;データベースのマイグレーションが必要となります" />
     <MESSAGE value="グループ管理機能をつくりました" />
@@ -567,7 +572,8 @@
     <MESSAGE value="同期機能の細かい部分の修正など（11/20）" />
     <MESSAGE value="adminメニューからユーザー登録できない問題を解消（11/20）" />
     <MESSAGE value="緊急情報機能を実装（11/21）&#10;ハザードマップ表示・現在位置の警報を取得する機能など" />
-    <option name="LAST_COMMIT_MESSAGE" value="緊急情報機能を実装（11/21）&#10;ハザードマップ表示・現在位置の警報を取得する機能など" />
+    <MESSAGE value="全体連絡チャットをざっくり実装（11/25）" />
+    <option name="LAST_COMMIT_MESSAGE" value="全体連絡チャットをざっくり実装（11/25）" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
