@@ -268,220 +268,113 @@ def get_user_groups_api(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-'''
+
 @csrf_exempt
 @require_POST
 def post_group_message_api(request):
     """
-    現場デバイスからグループチャットへのメッセージ投稿を受け付けるAPI
+    メッセージ投稿API (ラズパイからのヘッダー認証 & ブラウザからのセッション認証 両対応)
     """
-    # 簡易認証
-    username = request.headers.get('X-User-Login-Id')
-    if not username:
-        return JsonResponse({'status': 'error', 'message': 'X-User-Login-Idヘッダーが必要です。'}, status=401)
+    user = None
 
-    try:
-        user = User.objects.get(username=username)
-        data = json.loads(request.body)
-        group_id = data.get('group_id')
-        message = data.get('message')
-
-        # デバッグ用ログ出力
-        print(f"[API DEBUG] Received message for group_id: {group_id}")
-        print(f"[API DEBUG] Message content: {message}")
-        target_group_name = f'chat_{group_id}'
-        print(f"[API DEBUG] Sending to channel group: {target_group_name}")
-
-        if not all([group_id, message]):
-            return JsonResponse({'status': 'error', 'message': 'group_idとmessageは必須です。'}, status=400)
-
-        # 1. 送信先のグループに所属しているメンバーを取得
-        target_members = GroupMember.objects.filter(group_id=group_id)
-        target_user_ids = [member.member_id for member in target_members]
-
-        # 2. その中で、現在オンライン（WebSocketに接続中）のユーザーを探す
-        online_users = OnlineUser.objects.filter(user_id__in=target_user_ids)
-
-        if not online_users:
-            # 誰もオンラインでなければ、何もしない（DBへの保存は別途行う）
-            print(f"[API WARN] Group {group_id} has no online users.")
-            # (メッセージをDBに保存する処理はここに入れる)
-            return JsonResponse({'status': 'success', 'message': 'メッセージを保存しました（オンラインユーザーなし）。'})
-
-        channel_layer = channel_layers['default']
-        chat_data = {
-            'type': 'chat_message',
-            'message': message,
-            'sender': user.full_name or user.username,
-        }
-
-        # 3. オンラインのユーザー一人ひとりに、直接メッセージを送信する
-        for online_user in online_users:
-            print(f"[API DEBUG] Sending direct message to channel: {online_user.channel_name}")
-            async_to_sync(channel_layer.send)(
-                online_user.channel_name,
-                chat_data
-            )
-
-        # (メッセージをDBに保存する処理も忘れずに)
+    # 1. ヘッダー認証（ラズパイ用）を試みる
+    header_username = request.headers.get('X-User-Login-Id')
+    if header_username:
         try:
-            # メッセージをデータベースのMessageテーブルに保存
-            Message.objects.create(
-                sender=user,
-                group_id=group_id,
-                content=message
-            )
-        except Exception as e:
-            # DB保存に失敗しても、リアルタイム送信は試みる
-            print(f"!!! DB SAVE ERROR in post_group_message_api: {e}")
+            user = User.objects.get(username=header_username)
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': '指定されたユーザーが存在しません。'}, status=400)
 
-        return JsonResponse({'status': 'success', 'message': 'メッセージをオンラインユーザーに送信しました。'})
+    # 2. セッション認証（メインサーバーブラウザ用）を試みる
+    elif request.user.is_authenticated:
+        user = request.user
 
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-'''
+    # どちらもダメならエラー
+    else:
+        return JsonResponse({'status': 'error', 'message': '認証が必要です。'}, status=401)
 
-
-@csrf_exempt
-@require_POST
-def post_group_message_api(request):
-    """
-    現場デバイスからグループチャットへのメッセージ投稿を受け付けるAPI
-    （全体連絡 'all' 対応版）
-    """
-    # 簡易認証
-    username = request.headers.get('X-User-Login-Id')
-    if not username:
-        return JsonResponse({'status': 'error', 'message': 'X-User-Login-Idヘッダーが必要です。'}, status=401)
-
+    # ここからメイン処理
     try:
-        user = User.objects.get(username=username)
-        data = json.loads(request.body)
-        group_id = data.get('group_id')
-        message = data.get('message')
+        # JSONではなくPOST/FILESからデータを取得
+        group_id = request.POST.get('group_id')
+        message = request.POST.get('message', '')
+        image_file = request.FILES.get('image')
 
-        # デバッグ用ログ出力
-        print(f"[API DEBUG] Received message for group_id: {group_id}")
-        print(f"[API DEBUG] Message content: {message}")
+        print(f"[API DEBUG] group_id: {group_id}, message: {message}, image: {image_file}")
 
-        if not all([group_id, message]):
-            return JsonResponse({'status': 'error', 'message': 'group_idとmessageは必須です。'}, status=400)
+        # メッセージも画像もない場合はエラー
+        if not message and not image_file:
+            return JsonResponse({'status': 'error', 'message': 'メッセージまたは画像が必要です。'}, status=400)
 
         channel_layer = channel_layers['default']
 
-        # WebSocketに送るデータ（共通）
-        chat_data = {
-            'type': 'chat_message',
-            'message': message,
-            'sender': user.full_name or user.username,
-            'group_id': group_id,  # クライアント側で判定するために追加
-        }
+        # DB保存と配信データの準備
+        new_msg = None
 
-        # ---------------------------------------------------------
-        # 分岐: 全体連絡 ('all') か、特定のグループチャットか
-        # ---------------------------------------------------------
-        if group_id == 'all':
-            # --- A. 全体連絡の場合 ---
+        if str(group_id) == 'all':
+            # --- A. 全体連絡 ---
+            new_msg = Message.objects.create(
+                sender=user,
+                group=None,
+                content=message,
+                image=image_file
+            )
+            target_group_name = "chat_broadcast"
 
-            # 「管理者(admin)」または「救助チーム(rescuer)」または「スーパーユーザー」以外は拒否
-            if user.role not in ['admin', 'rescuer'] and not user.is_superuser:
-                return JsonResponse({'status': 'error', 'message': '全体連絡への送信権限がありません。'}, status=403)
+            # WebSocket配信用データ
+            chat_data = {
+                'type': 'chat_message',
+                'message': new_msg.content,
+                'sender': user.full_name or user.username,
+                'group_id': 'all',
+                'image_url': new_msg.image.url if new_msg.image else None,
+            }
 
-            print("[API DEBUG] Handling Broadcast Message")
-
-            # 1. WebSocket送信: 全員が参加している 'chat_broadcast' グループへ一斉送信
-            # (Consumer側で connect 時に 'chat_broadcast' に add している前提)
+            # 一斉送信
             async_to_sync(channel_layer.group_send)(
-                "chat_broadcast",
+                target_group_name,
                 chat_data
             )
-
-            # 2. DB保存: group=None, recipient=None として保存
-            try:
-                Message.objects.create(
-                    sender=user,
-                    group=None,  # 全体連絡はグループ指定なし
-                    recipient=None,
-                    content=message
-                )
-            except Exception as e:
-                print(f"!!! DB SAVE ERROR (Broadcast): {e}")
 
         else:
-            # --- B. 通常のグループチャットの場合 ---
-            target_group_name = f'chat_{group_id}'
-            print(f"[API DEBUG] Sending to specific group: {target_group_name}")
+            # --- B. 通常グループ ---
+            try:
+                group_id_int = int(group_id)
+            except ValueError:
+                return JsonResponse({'status': 'error', 'message': '無効なグループIDです'}, status=400)
 
-            # 1. 送信先のグループに所属しているメンバーを取得
-            target_members = GroupMember.objects.filter(group_id=group_id)
-            target_user_ids = [member.member_id for member in target_members]
+            new_msg = Message.objects.create(
+                sender=user,
+                group_id=group_id_int,
+                content=message,
+                image=image_file
+            )
 
-            # 2. その中で、現在オンライン（WebSocketに接続中）のユーザーを探す
+            # WebSocket配信用データ
+            chat_data = {
+                'type': 'chat_message',
+                'message': new_msg.content,
+                'sender': user.full_name or user.username,
+                'group_id': str(group_id_int),
+                'image_url': new_msg.image.url if new_msg.image else None,
+            }
+
+            # オンラインユーザーへの個別送信（またはグループ送信）
+            target_members = GroupMember.objects.filter(group_id=group_id_int)
+            target_user_ids = [m.member_id for m in target_members]
             online_users = OnlineUser.objects.filter(user_id__in=target_user_ids)
 
-            # 3. オンラインのユーザー一人ひとりに、直接メッセージを送信する
-            # (もしConsumer側で 'chat_{group_id}' グループを作っているなら group_send でも可)
-            if online_users.exists():
-                for online_user in online_users:
-                    # print(f"[API DEBUG] Sending direct message to channel: {online_user.channel_name}")
-                    async_to_sync(channel_layer.send)(
-                        online_user.channel_name,
-                        chat_data
-                    )
-            else:
-                print(f"[API WARN] Group {group_id} has no online users.")
-
-            # 4. DB保存: 指定された group_id で保存
-            try:
-                Message.objects.create(
-                    sender=user,
-                    group_id=group_id,  # 外部キーとしてIDを指定
-                    content=message
+            for online_user in online_users:
+                async_to_sync(channel_layer.send)(
+                    online_user.channel_name,
+                    chat_data
                 )
-            except Exception as e:
-                print(f"!!! DB SAVE ERROR (Group {group_id}): {e}")
 
-        return JsonResponse({'status': 'success', 'message': 'メッセージを送信・保存しました。'})
+        return JsonResponse({'status': 'success', 'message': '送信成功'})
 
     except Exception as e:
+        print(f"[API ERROR] {e}")  # エラーログを出す
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
-'''
-@require_GET
-def get_group_messages_api(request, group_id):
-    """
-    指定されたグループの最新のメッセージ履歴を返すAPI
-    """
-    try:
-        # 認証チェック（簡易版）
-        username = request.headers.get('X-User-Login-Id')
-        if not username:
-            return JsonResponse({'status': 'error', 'message': '認証ヘッダーが必要です。'}, status=401)
-
-        # ユーザーがそのグループのメンバーかどうかの権限チェック（重要）
-        user = User.objects.get(username=username)
-        if not user.group_memberships.filter(group_id=group_id).exists():
-            return JsonResponse({'status': 'error', 'message': 'このグループへのアクセス権がありません。'}, status=403)
-
-        # 最新50件のメッセージを取得
-        messages = Message.objects.filter(group_id=group_id).order_by('-timestamp')[:50]
-
-        message_list = [
-            {
-                "sender": msg.sender.full_name or msg.sender.username,
-                "content": msg.content,
-                "timestamp": msg.timestamp.isoformat(),
-            }
-            for msg in reversed(messages)  # 古い順に戻してリスト化
-        ]
-
-        return JsonResponse(
-            {'status': 'success', 'messages': message_list},
-            json_dumps_params={'ensure_ascii': False}
-        )
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-'''
 
 
 @require_GET
@@ -531,6 +424,7 @@ def get_group_messages_api(request, group_id):
                 "sender": msg.sender.full_name or msg.sender.username,
                 "content": msg.content,
                 "timestamp": msg.timestamp.isoformat(),
+                "image_url": msg.image.url if msg.image else None,
             }
             # messages_query は新しい順(order_by('-timestamp'))で取得しているので、
             # reversed() で古い順（時系列順）に戻してリスト化する
@@ -545,6 +439,70 @@ def get_group_messages_api(request, group_id):
     except User.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'ユーザーが見つかりません。'}, status=404)
     except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def post_dm_message_api(request):
+    """
+    DMメッセージ投稿API (画像対応版)
+    """
+    # 認証チェック (セッション or ヘッダー)
+    sender = None
+    header_username = request.headers.get('X-User-Login-Id')
+    if header_username:
+        try:
+            sender = User.objects.get(username=header_username)
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': '送信ユーザーが見つかりません'}, status=400)
+    elif request.user.is_authenticated:
+        sender = request.user
+    else:
+        return JsonResponse({'status': 'error', 'message': '認証が必要です'}, status=401)
+
+    try:
+        recipient_id = request.POST.get('recipient_id')
+        message = request.POST.get('message', '')
+        image_file = request.FILES.get('image')
+
+        if not recipient_id or (not message and not image_file):
+            return JsonResponse({'status': 'error', 'message': '宛先と、メッセージまたは画像が必要です'}, status=400)
+
+        recipient = User.objects.get(id=recipient_id)
+
+        # 1. DB保存
+        new_msg = Message.objects.create(
+            sender=sender,
+            recipient=recipient,
+            group=None, # DMなのでNone
+            content=message,
+            image=image_file
+        )
+
+        # 2. WebSocket配信
+        # ルーム名を生成 (IDの小さい順_大きい順)
+        user_ids = sorted([sender.id, recipient.id])
+        room_group_name = f'dm_{user_ids[0]}_{user_ids[1]}'
+
+        channel_layer = channel_layers['default']
+        chat_data = {
+            'type': 'chat_message',
+            'message': new_msg.content,
+            'sender': sender.full_name or sender.username,
+            'image_url': new_msg.image.url if new_msg.image else None, # 画像URL
+        }
+
+        async_to_sync(channel_layer.group_send)(
+            room_group_name,
+            chat_data
+        )
+
+        return JsonResponse({'status': 'success', 'message': '送信成功'})
+
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': '宛先ユーザーが見つかりません'}, status=404)
+    except Exception as e:
+        print(f"[DM API ERROR] {e}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 

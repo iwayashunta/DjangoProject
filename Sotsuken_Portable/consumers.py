@@ -109,6 +109,8 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'message': event['message'],
             'sender': event['sender'],
+            'image_url': event.get('image_url'),
+            'group_id': event.get('group_id'),
         }))
 
     # --- データベース操作ヘルパー ---
@@ -219,6 +221,8 @@ class DMChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'message': event['message'],
             'sender': event['sender'],
+            'image_url': event.get('image_url'),
+            'group_id': event.get('group_id'),
         }))
 
     # DB操作用のヘルパー関数

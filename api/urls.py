@@ -24,5 +24,7 @@ urlpatterns = [
 
     path('register-field-user/', views.register_field_user_api, name='register_field_user_api'),
 
+    path('post-dm-message/', views.post_dm_message_api, name='post_dm_message_api'),
+
 
 ]

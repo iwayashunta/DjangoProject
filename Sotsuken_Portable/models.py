@@ -492,6 +492,13 @@ class Message(models.Model):
         default=False
     )
 
+    image = models.ImageField(
+        verbose_name="添付画像",
+        upload_to='chat_images/',  # media/chat_images/ に保存される
+        blank=True,
+        null=True
+    )
+
     class Meta:
         verbose_name = "メッセージ"
         verbose_name_plural = "メッセージ一覧"
