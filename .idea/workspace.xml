@@ -5,8 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="チャット内で画像を添付できるようにしました（11/26）">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/dm_room.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/dm_room.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/signup.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/signup.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -193,7 +193,7 @@
       <workItem from="1763690364478" duration="14685000" />
       <workItem from="1763710427472" duration="595000" />
       <workItem from="1764036170730" duration="10854000" />
-      <workItem from="1764122485939" duration="13587000" />
+      <workItem from="1764122485939" duration="13970000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -563,7 +563,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764139728245</updated>
     </task>
-    <option name="localTasksCounter" value="47" />
+    <task id="LOCAL-00047" summary="チャット内で画像を添付できるようにしました（11/26）">
+      <option name="closed" value="true" />
+      <created>1764140492400</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1764140492400</updated>
+    </task>
+    <option name="localTasksCounter" value="48" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
