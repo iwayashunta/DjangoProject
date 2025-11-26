@@ -4,14 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="UIを修正（11/26）">
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="チャット内で画像を添付できるようにしました（11/26）">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/consumers.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/consumers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/dm_room.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/dm_room.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -198,7 +193,7 @@
       <workItem from="1763690364478" duration="14685000" />
       <workItem from="1763710427472" duration="595000" />
       <workItem from="1764036170730" duration="10854000" />
-      <workItem from="1764122485939" duration="12789000" />
+      <workItem from="1764122485939" duration="13587000" />
     </task>
     <task id="LOCAL-00001" summary="作成">
       <option name="closed" value="true" />
@@ -560,7 +555,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764124071076</updated>
     </task>
-    <option name="localTasksCounter" value="46" />
+    <task id="LOCAL-00046" summary="チャット内で画像を添付できるようにしました（11/26）">
+      <option name="closed" value="true" />
+      <created>1764139728245</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1764139728245</updated>
+    </task>
+    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -578,7 +581,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="グループ管理機能をつくりました" />
     <MESSAGE value="個人間チャット機能を実装しました&#10;モデルの変更を行ったのでデータベースのマイグレーションを行ってください（10/29）" />
     <MESSAGE value="ユーザーメニューをつくりました（10/30）" />
     <MESSAGE value="エラー画面をつくりました。&#10;みるためにはデバッグモードをFalseにしてALLOWED_HOSTに'127.0.0.1'と'localhost'を追加する必要があります（10/30）" />
@@ -603,7 +605,8 @@
     <MESSAGE value="全体連絡チャットをざっくり実装（11/25）" />
     <MESSAGE value="各種ツールのバージョン等をまとめています" />
     <MESSAGE value="UIを修正（11/26）" />
-    <option name="LAST_COMMIT_MESSAGE" value="UIを修正（11/26）" />
+    <MESSAGE value="チャット内で画像を添付できるようにしました（11/26）" />
+    <option name="LAST_COMMIT_MESSAGE" value="チャット内で画像を添付できるようにしました（11/26）" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
