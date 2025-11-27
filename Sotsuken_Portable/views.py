@@ -21,9 +21,9 @@ from django.views.decorators.http import require_POST
 from django.views.generic import ListView, DetailView, CreateView, TemplateView
 
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
-    GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm
+    GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
-    CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea
+    CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -552,20 +552,83 @@ def chat_room_view(request, group_id):
 @login_required
 def dm_user_list_view(request):
     """
-    DM相手と、参加中グループチャットへの入り口ページ
+    DMユーザー一覧＆ユーザー検索画面
     """
-    # 1. 自分以外の全ユーザーを取得 (DM相手用)
-    dm_users = User.objects.exclude(pk=request.user.pk)
+    current_user = request.user
+    search_query = request.GET.get('q')
+    search_results = []
 
-    # 2. 自分が所属するグループの一覧を取得 (グループチャット用)
-    chat_groups = Group.objects.filter(memberships__member=request.user)
+    # --- 1. 検索機能 ---
+    if search_query:
+        # IDまたは名前で検索（自分自身は除外）
+        users = User.objects.filter(
+            Q(username__icontains=search_query) | Q(full_name__icontains=search_query)
+        ).exclude(id=current_user.id)
+
+        for user in users:
+            # そのユーザーとの関係性を判定して、userオブジェクトに属性を追加する
+            user.can_chat = False
+            user.connection_status = 'none'  # none, requesting, received, accepted
+
+            # A. 特権階級チェック（災害用特例）
+            # 相手が管理者/救助隊、または自分が管理者/救助隊なら無条件でチャット可能
+            if user.role in ['admin', 'rescuer'] or current_user.role in ['admin', 'rescuer']:
+                user.can_chat = True
+                user.connection_status = 'special'  # 特別権限
+
+            # B. 友達関係チェック
+            else:
+                # 自分と相手の間のConnectionを探す
+                conn = Connection.objects.filter(
+                    (Q(requester=current_user, receiver=user) |
+                     Q(requester=user, receiver=current_user))
+                ).first()
+
+                if conn:
+                    user.connection_status = conn.status
+                    if conn.status == 'accepted':
+                        user.can_chat = True
+                    elif conn.status == 'requesting':
+                        # 自分が申請したのか、されたのかを区別
+                        if conn.requester == current_user:
+                            user.connection_status = 'sent_request'  # 申請中
+                        else:
+                            user.connection_status = 'received_request'  # 承認待ち
+
+            search_results.append(user)
+
+    # ★★★ 追加: 自分宛ての未承認リクエストを取得 ★★★
+    received_requests = Connection.objects.filter(
+        receiver=current_user,
+        status='requesting'
+    )
+    # 申請者のユーザーオブジェクトのリストにする（テンプレートで使いやすくするため）
+    requesting_users = [req.requester for req in received_requests]
+
+    # --- 2. 既存のチャット可能なユーザー一覧（友達など） ---
+    # 既に 'accepted' な関係にあるユーザーを取得
+    connections = Connection.objects.filter(
+        (Q(requester=current_user) | Q(receiver=current_user)),
+        status='accepted'
+    )
+    friend_ids = []
+    for c in connections:
+        friend_ids.append(c.receiver.id if c.requester == current_user else c.requester.id)
+
+    # 管理者などは検索しなくても最初からリストに出すなどの仕様もアリですが
+    # ここでは「友達登録済みユーザー」を表示します
+    dm_users = User.objects.filter(id__in=friend_ids)
+
+    memberships = current_user.group_memberships.all()
+    chat_groups = [m.group for m in memberships]
 
     context = {
+        'search_query': search_query,
+        'search_results': search_results,
         'dm_users': dm_users,
+        'requesting_users': requesting_users,
         'chat_groups': chat_groups,
     }
-
-    # テンプレート名をより実態に合った 'chat_index.html' などに変更しても良い
     return render(request, 'dm_user_list.html', context)
 
 
@@ -574,13 +637,47 @@ def dm_room_view(request, user_id):
     """
     特定のユーザーとのDMルームページ
     """
+
+    # 自分自身とのチャットは許可するか？（メモ代わりにするならOK、禁止なら弾く）
+    if request.user.id == user_id:
+        pass  # 今回は許可
+
+    target_user = get_object_or_404(User, id=user_id)
+    current_user = request.user
+
+    # --- 権限チェックロジック ---
+    is_allowed = False
+
+    # 1. 特権階級（救助隊・管理者）への連絡は無条件で許可する（災害用なので）
+    if target_user.role in ['admin', 'rescuer']:
+        is_allowed = True
+
+    # 2. 自分が特権階級なら、誰にでも連絡できる
+    elif current_user.role in ['admin', 'rescuer']:
+        is_allowed = True
+
+    # 3. それ以外（一般人同士）は、友達関係が必要
+    else:
+        # A->B または B->A のどちらかで 'accepted' な関係があるか
+        connection = Connection.objects.filter(
+            (Q(requester=current_user, receiver=target_user) |
+             Q(requester=target_user, receiver=current_user)),
+            status='accepted'
+        ).exists()
+        if connection:
+            is_allowed = True
+
+    if not is_allowed:
+        messages.error(request, "このユーザーとメッセージを送る権限がありません（友達登録が必要です）。")
+        return redirect('Sotsuken_Portable:index')
+
     try:
         other_user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
         return redirect('Sotsuken_Portable:dm_user_list')
 
     # 自分と相手の間で交わされたメッセージを取得 (groupがNULLのものに限定)
-    messages = Message.objects.filter(
+    chat_history = Message.objects.filter(
         group__isnull=True,  # グループチャットのメッセージを除外
         sender__in=[request.user, other_user],
         recipient__in=[request.user, other_user]
@@ -588,9 +685,70 @@ def dm_room_view(request, user_id):
 
     context = {
         'other_user': other_user,
-        'messages': messages,
+        'messages': chat_history,
     }
     return render(request, 'dm_room.html', context)
+
+
+@login_required
+def search_users_view(request):
+    results = []
+    form = UserSearchForm(request.GET or None)
+
+    if form.is_valid():
+        query = form.cleaned_data['query']
+        # 自分以外、かつIDか氏名が一致するユーザーを検索
+        results = User.objects.filter(
+            Q(username__icontains=query) | Q(full_name__icontains=query)
+        ).exclude(id=request.user.id)
+
+    # 各ユーザーとの現在の関係性を確認（テンプレートでボタンを出し分けるため）
+    # 実際はテンプレート内でカスタムタグ等を使うか、リストを加工して渡します
+
+    context = {
+        'form': form,
+        'results': results,
+    }
+    return render(request, 'Sotsuken_Portable/user_search.html', context)
+
+
+@login_required
+def send_connection_request_view(request, user_id):
+    target_user = get_object_or_404(User, pk=user_id)
+
+    # 重複チェック
+    if Connection.objects.filter(requester=request.user, receiver=target_user).exists():
+        messages.warning(request, "既に申請済みです。")
+    elif Connection.objects.filter(requester=target_user, receiver=request.user).exists():
+        messages.info(request, "相手から既に申請が来ています。承認してください。")
+    else:
+        Connection.objects.create(requester=request.user, receiver=target_user, status='requesting')
+        messages.success(request, f"{target_user.username} さんに申請を送りました。")
+
+    return redirect('Sotsuken_Portable:dm_user_list')  # 元の画面に戻る
+
+
+@login_required
+def approve_connection_request_view(request, user_id):
+    """友達申請を承認するビュー"""
+    requester = get_object_or_404(User, pk=user_id)
+
+    # 自分宛て(receiver=request.user)の申請を探す
+    connection = get_object_or_404(
+        Connection,
+        requester=requester,
+        receiver=request.user,
+        status='requesting'
+    )
+
+    # ステータスを承認済みに更新
+    connection.status = 'accepted'
+    connection.save()
+
+    messages.success(request, f"{requester.username} さんと友達になりました！")
+    return redirect('Sotsuken_Portable:dm_user_list')
+
+
 
 
 def _internal_post_message(sender_user, group_id, message):

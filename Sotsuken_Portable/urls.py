@@ -78,6 +78,10 @@ urlpatterns = [
     path('chat/dm/', views.dm_user_list_view, name='dm_user_list'),
     path('chat/dm/<int:user_id>/', views.dm_room_view, name='dm_room'),
 
+    path('chat/connect/<int:user_id>/', views.send_connection_request_view, name='send_connection_request'),
+
+    path('chat/approve/<int:user_id>/', views.approve_connection_request_view, name='approve_connection_request'),
+
     # 設定画面のURLを追加
     path('settings/', views.settings_view, name='settings'),
 

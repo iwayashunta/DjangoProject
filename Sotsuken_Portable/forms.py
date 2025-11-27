@@ -218,5 +218,11 @@ class SignUpForm(UserCreationForm):
         # 最後に、検証済みのパスワード2を返す
         return password2
 
+class UserSearchForm(forms.Form):
+    query = forms.CharField(label="ユーザー検索", max_length=100, widget=forms.TextInput(attrs={
+        'placeholder': 'ログインID または 氏名',
+        'class': 'w-full p-2 border rounded'
+    }))
+
 
 

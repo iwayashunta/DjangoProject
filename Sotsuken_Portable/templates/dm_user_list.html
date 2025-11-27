@@ -5,6 +5,86 @@
 {% block content %}
 <div class="bg-white p-6 rounded-xl shadow-lg">
 
+     <!-- ★★★ 1. ユーザー検索セクション ★★★ -->
+    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <h2 class="text-lg font-bold mb-3 text-blue-800">ユーザーを探す</h2>
+        <form method="get" action="" class="flex gap-2">
+            <input type="text" name="q" value="{{ search_query|default:'' }}"
+                   placeholder="ID または 氏名を入力"
+                   class="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold">
+                検索
+            </button>
+        </form>
+
+        <!-- 検索結果表示 -->
+        {% if search_query %}
+            <div class="mt-4">
+                <p class="text-sm text-gray-500 mb-2">"{{ search_query }}" の検索結果:</p>
+                {% if search_results %}
+                    <ul class="space-y-2">
+                        {% for user in search_results %}
+                        <li class="flex items-center justify-between bg-white p-3 rounded shadow-sm border">
+                            <div>
+                                <span class="font-bold">{{ user.full_name|default:"(氏名未登録)" }}</span>
+                                <span class="text-sm text-gray-500 ml-1">@{{ user.username }}</span>
+                                {% if user.role == 'admin' %}<span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2">管理者</span>{% endif %}
+                                {% if user.role == 'rescuer' %}<span class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded ml-2">救助隊</span>{% endif %}
+                            </div>
+
+                            <!-- ★★★ 状態に応じたボタンの出し分け ★★★ -->
+                            <div>
+                                {% if user.can_chat %}
+                                    <!-- チャット可能 -->
+                                    <a href="{% url 'Sotsuken_Portable:dm_room' user.id %}" class="bg-green-500 text-white text-sm px-3 py-2 rounded hover:bg-green-600">
+                                        チャットを開く
+                                    </a>
+
+                                {% elif user.connection_status == 'sent_request' %}
+                                    <!-- 申請中 -->
+                                    <span class="text-gray-500 text-sm bg-gray-100 px-3 py-2 rounded">申請中...</span>
+
+                                {% elif user.connection_status == 'received_request' %}
+                                    <!-- 相手から申請が来ている -->
+                                    <a href="#" class="bg-blue-500 text-white text-sm px-3 py-2 rounded hover:bg-blue-600">
+                                        承認する
+                                    </a>
+
+                                {% else %}
+                                    <!-- 他人（申請ボタン） -->
+                                    <a href="{% url 'Sotsuken_Portable:send_connection_request' user.id %}" class="bg-indigo-500 text-white text-sm px-3 py-2 rounded hover:bg-indigo-600">
+                                        友達申請
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-gray-500">見つかりませんでした。</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- ★★★ 追加: 友達申請の承認待ちリスト ★★★ -->
+    {% if requesting_users %}
+    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-6">
+        <h3 class="text-md font-bold mb-2 text-yellow-800">届いている友達申請</h3>
+        <ul class="space-y-2">
+            {% for user in requesting_users %}
+            <li class="flex items-center justify-between bg-white p-3 rounded shadow-sm">
+                <span class="font-bold">{{ user.full_name|default:user.username }} <span class="text-xs text-gray-500">(@{{ user.username }})</span></span>
+                <a href="{% url 'Sotsuken_Portable:approve_connection_request' user.id %}"
+                   class="bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700 font-bold">
+                    承認する
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
     <!-- グループチャット セクション -->
     <div class="mb-8">
         <h2 class="text-xl font-bold mb-4">グループチャット</h2>
@@ -22,17 +102,19 @@
 
     <!-- 個人チャット (DM) セクション -->
     <div>
-        <h2 class="text-xl font-bold mb-4">個人チャット (DM)</h2>
+        <h2 class="text-xl font-bold mb-4">友達リスト (DM)</h2>
         <div class="space-y-2">
             {% for u in dm_users %}
-            <a href="{% url 'Sotsuken_Portable:dm_room' u.pk %}" class="block p-4 bg-gray-100 hover:bg-green-100 rounded-lg">
-                {{ u.full_name|default:u.username }}
+            <a href="{% url 'Sotsuken_Portable:dm_room' u.pk %}" class="block p-4 bg-gray-100 hover:bg-green-100 rounded-lg flex justify-between items-center">
+                <span>{{ u.full_name|default:u.username }}</span>
+                <span class="text-xs text-gray-400">友達</span>
             </a>
             {% empty %}
-            <p class="text-gray-500">他のユーザーが存在しません。</p>
+            <p class="text-gray-500">友達登録済みのユーザーはいません。</p>
             {% endfor %}
         </div>
     </div>
+
 
 </div>
 {% endblock %}

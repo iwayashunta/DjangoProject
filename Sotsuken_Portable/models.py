@@ -123,6 +123,35 @@ class User(AbstractUser):
     # USERNAME_FIELD = 'email'
     # REQUIRED_FIELDS = ['username']
 
+class Connection(models.Model):
+    """ユーザー間の繋がり（友達関係）を管理するモデル"""
+    STATUS_CHOICES = (
+        ('requesting', '申請中'), # 自分 -> 相手
+        ('accepted', '承認済み'), # 友達状態
+        ('blocked', 'ブロック'),
+    )
+
+    # 申請した側
+    requester = models.ForeignKey(
+        'User',
+        related_name='sent_connections',
+        on_delete=models.CASCADE
+    )
+    # 申請された側
+    receiver = models.ForeignKey(
+        'User',
+        related_name='received_connections',
+        on_delete=models.CASCADE
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requesting')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('requester', 'receiver') # 重複申請を防ぐ
+
+    def __str__(self):
+        return f"{self.requester} -> {self.receiver} ({self.get_status_display()})"
+
 class Group(models.Model):
     """
     ユーザーをまとめるためのグループ（家族、地域コミュニティなど）を定義するモデル。
