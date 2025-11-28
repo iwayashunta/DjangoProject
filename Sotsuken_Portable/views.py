@@ -106,74 +106,100 @@ def signup_done_view(request):
     """
     return render(request, 'signup_done.html')
 
-@login_required()
+
+@login_required
 def safety_check_view(request):
     """
-    安否確認・支援要請ページの表示とフォーム処理を行うビュー
+    安否確認・支援要請ページの表示とフォーム処理
     """
     user = request.user
 
-    # --- フォームの処理 (POSTリクエスト時) ---
+    # --- 1. 自分の現在の安否情報を取得 ---
+    try:
+        my_status = getattr(user, 'safety_status_record', None)
+    except SafetyStatus.DoesNotExist:
+        my_status = None
+
+    safety_form = None
+    support_form = None
+
+    # --- 2. フォームの処理 (POST) ---
     if request.method == 'POST':
-        # どちらのフォームが送信されたかを判定
-        # テンプレート側の送信ボタンに name属性 をつけておく
         if 'submit_safety' in request.POST:
-            # 安否報告フォームが送信された場合
-            # ログインユーザーの安否情報を取得 or なければ作成
-            instance, created = SafetyStatus.objects.get_or_create(user=user)
+            # 安否報告
+            instance = my_status if my_status else SafetyStatus(user=user)
             safety_form = SafetyStatusForm(request.POST, instance=instance)
+            support_form = SupportRequestForm()
 
             if safety_form.is_valid():
                 safety_form.save()
                 messages.success(request, '安否情報を更新しました。')
                 return redirect('Sotsuken_Portable:safety_check')
 
-            # エラーがあった場合は、もう片方のフォームは空で初期化
-            support_form = SupportRequestForm()
-
         elif 'submit_support' in request.POST:
-            # 支援要請フォームが送信された場合
+            # 支援要請
             support_form = SupportRequestForm(request.POST)
+            safety_form = SafetyStatusForm(instance=my_status)
 
             if support_form.is_valid():
-                # DBに保存する前に、requesterをログインユーザーに設定
                 instance = support_form.save(commit=False)
                 instance.requester = user
+                # 新規作成時はデフォルトで 'pending' になるので指定不要ですが、念のため
+                instance.status = 'pending'
                 instance.save()
                 messages.success(request, '支援要請を送信しました。')
                 return redirect('Sotsuken_Portable:safety_check')
 
-            # エラーがあった場合は、もう片方のフォームはユーザーの現在の状態で初期化
-            safety_form = SafetyStatusForm(instance=user.safety_status_record)
-
-    # --- ページの表示 (GETリクエスト時 or フォームエラー時) ---
-    else:
-        # ログインユーザーの現在の安否情報をフォームの初期値に設定
-        try:
-            my_status = user.safety_status_record
-        except SafetyStatus.DoesNotExist:
-            my_status = None
-
-        if my_status:
-            safety_form = SafetyStatusForm(instance=my_status)
-        else:
-            safety_form = SafetyStatusForm()
-
+    # --- 3. フォーム初期化 (GET or Error) ---
+    if not safety_form:
+        safety_form = SafetyStatusForm(instance=my_status)
+    if not support_form:
         support_form = SupportRequestForm()
 
-        # --- 表示用データの準備 ---
-        safety_list = SafetyStatus.objects.exclude(user=user).order_by('-last_updated')
-        request_list = SupportRequest.objects.filter(status='pending').order_by('-requested_at')
+    # --- 4. 表示用データの取得 ---
 
-        context = {
-            'my_status': my_status,  # <-- 自分の安否情報を追加
-            'safety_form': safety_form,
-            'support_form': support_form,
-            'safety_list': safety_list,
-            'request_list': request_list,
-        }
+    # 安否リスト
+    safety_list = SafetyStatus.objects.exclude(user=user).order_by('-last_updated')
 
-        return render(request, 'safety_check.html', context)
+    # ★★★ 修正: 支援要請リストの取得条件 ★★★
+    # 「解決済(resolved)」と「キャンセル(cancelled)」以外を表示する
+    request_list = SupportRequest.objects.exclude(
+        status__in=['resolved', 'cancelled']
+    ).order_by('-requested_at')
+
+    context = {
+        'my_status': my_status,
+        'safety_form': safety_form,
+        'support_form': support_form,
+        'safety_list': safety_list,
+        'request_list': request_list,
+    }
+
+    return render(request, 'safety_check.html', context)
+
+
+# ★★★ 修正: 解決済みアクションのビュー ★★★
+@login_required
+def resolve_support_request_view(request, pk):
+    """支援要請を「解決済み」にする"""
+
+    # 権限チェック
+    if request.user.role not in ['admin', 'rescuer'] and not request.user.is_superuser:
+        messages.error(request, "権限がありません。")
+        return redirect('Sotsuken_Portable:safety_check')
+
+    if request.method == 'POST':
+        req = get_object_or_404(SupportRequest, pk=pk)
+
+        # ★★★ 修正: statusフィールドを更新 ★★★
+        req.status = 'resolved'
+        req.save()
+
+        messages.success(request, f"支援要請（{req.get_category_display()}）を解決済みにしました。")
+
+    return redirect('Sotsuken_Portable:safety_check')
+
+
 
 @login_required
 def emergency_sos_view(request):

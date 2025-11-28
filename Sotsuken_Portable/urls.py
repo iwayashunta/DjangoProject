@@ -26,6 +26,8 @@ urlpatterns = [
 
     path('safety/', views.safety_check_view, name='safety_check'),
 
+    path('support-request/<int:pk>/resolve/', views.resolve_support_request_view, name='resolve_support_request'),
+
     path('sos/', views.emergency_sos_view, name='emergency_sos'),
     path('sos/done/', views.emergency_sos_done_view, name='emergency_sos_done'),
     path('map/', views.map_view, name='map'),

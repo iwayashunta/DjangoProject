@@ -85,6 +85,19 @@ class User(AbstractUser):
     last_known_latitude = models.FloatField(null=True, blank=True)
     last_known_longitude = models.FloatField(null=True, blank=True)
 
+    last_known_location = models.CharField(
+        verbose_name="最終確認場所",
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="避難所チェックイン等で記録された場所名"
+    )
+    last_seen_at = models.DateTimeField(
+        verbose_name="最終確認日時",
+        blank=True,
+        null=True
+    )
+
     # groups フィールドにユニークな related_name を追加
     groups = models.ManyToManyField(
         Group,

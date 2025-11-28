@@ -3,6 +3,7 @@ import json
 
 from asgiref.sync import async_to_sync
 from channels.layers import channel_layers
+from dateutil import parser
 from django.db import transaction
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404  # get_object_or_404 を追記
@@ -550,9 +551,16 @@ def shelter_checkin_sync_api(request):
         # 5. (重要) ユーザーの安否ステータスや最終確認場所を更新する
         #    これがユーザーの安否確認の中核機能となる
         user.safety_status = 'safe'  # 例: チェックインなら「無事」に
-        user.last_known_location = shelter.name  # 最後の確認場所を更新
-        user.last_seen_at = data['timestamp']  # 最後の確認日時を更新
+        if data['checkin_type'] == 'checkin':
+            user.last_known_location = shelter.name # 最後の確認場所を更新
+        else:
+            # 退所の場合は「(退所)」を付けるなど
+            user.last_known_location = f"{shelter.name} (退所)"
+        user.last_seen_at = parser.parse(data['timestamp'])  # 最後の確認日時を更新
         user.save()
+
+
+        print(f"[API INFO] User {user.username} updated: Location={user.last_known_location}, Time={user.last_seen_at}")
 
         return JsonResponse({
             'status': 'success',

@@ -8,13 +8,26 @@
 {% block content %}
 <div id="settings-screen" class="p-4 md:p-8">
 
-    <!-- ラズベリーパイ通信設定 -->
+    <!-- ★★★ 変更: 設定ではなく「状況確認」にする ★★★ -->
     <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
-        <h3 class="text-lg font-semibold mb-2">ラズベリーパイ通信設定</h3>
-        <p class="text-gray-600 mb-4">ラズベリーパイデバイスとのデータ同期設定を行います。</p>
-        <!-- この機能は未実装のため、ボタンを非活性化します -->
-        <button class="w-full bg-blue-300 text-white p-2 rounded-lg cursor-not-allowed" disabled>RPiデバイス認証・ペアリング</button>
-        <p class="text-xs text-gray-500 mt-2">この機能は現在開発中です。</p>
+        <h3 class="text-lg font-semibold mb-2 text-green-700">避難所チェックイン状況</h3>
+        <p class="text-gray-600 mb-4">ラズベリーパイ経由で同期されたあなたの最新情報です。</p>
+
+        <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+            <div class="flex justify-between items-center border-b border-green-200 pb-2 mb-2">
+                <span class="text-sm text-gray-600">最終確認場所:</span>
+                <span class="font-bold text-lg">
+                    {{ user.last_known_location|default:"未確認" }}
+                </span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">最終確認日時:</span>
+                <span class="font-mono text-gray-800">
+                    {{ user.last_seen_at|date:"Y/m/d H:i"|default:"-" }}
+                </span>
+            </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">※ 情報が古い場合は、現地の避難所受付でQRコードをかざしてください。</p>
     </div>
 
     <!-- アカウント設定 -->

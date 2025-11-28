@@ -25,7 +25,7 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Personal info', {'fields': ('full_name', 'email')}),
-        ('災害用カスタム情報', {'fields': ('role', 'safety_status', 'last_known_latitude', 'last_known_longitude')}),
+        ('災害用カスタム情報', {'fields': ('role', 'safety_status', 'last_known_latitude', 'last_known_longitude', 'last_known_location', 'last_seen_at')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
