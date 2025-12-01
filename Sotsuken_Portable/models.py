@@ -64,10 +64,10 @@ class User(AbstractUser):
     # )
 
     # 2. 氏名フィールド
-    full_name = models.CharField(verbose_name='氏名', max_length=150, blank=True)
+    full_name = models.CharField(verbose_name='氏名', max_length=150)
 
     # 3. emailフィールドのユニーク制約は外す（連絡先としてのみ使用）
-    email = models.EmailField(verbose_name='メールアドレス', blank=True)
+    email = models.EmailField(verbose_name='メールアドレス')
 
     # 4. ログインに使うフィールドを 'username' に設定
     USERNAME_FIELD = 'username'
