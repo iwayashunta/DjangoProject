@@ -21,9 +21,10 @@ from django.views.decorators.http import require_POST
 from django.views.generic import ListView, DetailView, CreateView, TemplateView
 
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
-    GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm
+    GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
-    CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection
+    CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection, \
+    DistributionInfo, DistributionItem
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -201,7 +202,6 @@ def resolve_support_request_view(request, pk):
 
 
 
-@login_required
 def emergency_sos_view(request):
     """
     緊急SOS発信ページの表示と、SOS情報の受付処理
@@ -211,20 +211,35 @@ def emergency_sos_view(request):
         # フォームから緯度と経度を取得
         latitude = request.POST.get('latitude')
         longitude = request.POST.get('longitude')
+        guest_name_input = request.POST.get('guest_name', '匿名')
 
         # 緯度・経度が正常に取れているかチェック
         if latitude and longitude:
+
+            # ★★★ 分岐処理 ★★★
+            if request.user.is_authenticated:
+                # ログインしている場合
+                reporter_user = request.user
+                saved_guest_name = ""  # ユーザーがいるならゲスト名は空でOK
+            else:
+                # ログインしていない場合
+                reporter_user = None
+                # 入力が空文字なら'匿名'にする
+                saved_guest_name = guest_name_input if guest_name_input.strip() else '匿名'
+
             # SOSレポートをデータベースに作成
             SOSReport.objects.create(
-                reporter=request.user,
+                reporter=reporter_user,
+                guest_name=saved_guest_name,
                 latitude=latitude,
                 longitude=longitude,
             )
+
             # 完了ページへリダイレクト
             return redirect('Sotsuken_Portable:emergency_sos_done')
+
         else:
-            # もし位置情報が取得できていなければ、エラーメッセージと共に元のページに戻る
-            messages.error(request, '位置情報の取得に失敗しました。再度お試しください。')
+            messages.error(request, '位置情報の取得に失敗しました。GPSを有効にして再度お試しください。')
             return render(request, 'emergency_sos.html')
 
     # GETリクエスト（初めてページを開いた）の場合
@@ -264,20 +279,41 @@ def map_view(request):
 
 @login_required
 def emergency_info_view(request):
-    """
-    緊急情報ポータルページを表示するビュー
-    """
-    # 1. 行政からの最新情報を取得
+    # 1. 行政情報、避難所情報の取得 (既存)
     alerts = OfficialAlert.objects.all()
-
-    # 2. 全ての避難所の情報を取得
     shelters = Shelter.objects.all()
+
+    # 2. 全ての有効な配布情報を取得
+    all_distributions = DistributionInfo.objects.exclude(status='ended').order_by('status', 'start_time')
+
+    # 3. ★★★ ユーザーの場所に基づく振り分け ★★★
+    my_shelter_distributions = []
+    other_distributions = []
+
+    # ユーザーの最終確認場所を取得 (例: "〇〇小学校")
+    user_location = request.user.last_known_location
+
+    for dist in all_distributions:
+        # 配布情報に避難所が紐付いていて、かつ名前が一致する場合
+        # (または location_name が一致する場合)
+        is_match = False
+
+        if dist.shelter and dist.shelter.name == user_location:
+            is_match = True
+        elif dist.location_name and dist.location_name == user_location:
+            is_match = True
+
+        if is_match:
+            my_shelter_distributions.append(dist)
+        else:
+            other_distributions.append(dist)
 
     context = {
         'alerts': alerts,
         'shelters': shelters,
+        'my_distributions': my_shelter_distributions,  # あなたの避難所用
+        'other_distributions': other_distributions,  # その他
     }
-
     return render(request, 'emergency_info.html', context)
 
 
@@ -1162,6 +1198,50 @@ def distribution_log_view(request):
         'records': records,
     }
     return render(request, 'distribution_log.html', context)
+
+
+@login_required
+def add_distribution_info_view(request):
+    """炊き出し・物資配布情報を手動で追加するビュー"""
+
+    # 権限チェック (管理者 or 救助隊 or スーパーユーザー)
+    if request.user.role not in ['admin', 'rescuer'] and not request.user.is_superuser:
+        messages.error(request, "情報の追加権限がありません。")
+        return redirect('Sotsuken_Portable:emergency_info')  # 緊急情報ページへ戻す
+
+    if request.method == 'POST':
+        form = DistributionInfoForm(request.POST)
+        if form.is_valid():
+            # commit=False で一旦止める（まだDBには保存しない）
+            dist_info = form.save(commit=False)
+
+            # ★★★ 追加ロジック: 新規品目の登録 ★★★
+            new_item_name = form.cleaned_data.get('new_item_name')
+
+            if new_item_name:
+                # 入力された名前で DistributionItem を作成 (get_or_create で重複防止)
+                item, created = DistributionItem.objects.get_or_create(
+                    name=new_item_name,
+                    defaults={'description': f'{request.user.username}により自動追加'}
+                )
+                # 作成（または取得）したアイテムを紐付ける
+                dist_info.related_item = item
+
+                if created:
+                    messages.info(request, f"品目マスタに「{new_item_name}」を追加しました。")
+
+            # 保存実行
+            dist_info.save()
+
+            messages.success(request, f"「{dist_info.title}」の情報を登録しました。")
+            return redirect('Sotsuken_Portable:emergency_info')
+    else:
+        form = DistributionInfoForm()
+
+    context = {
+        'form': form,
+    }
+    return render(request, 'add_distribution_info.html', context)
 
 
 def get_nearby_alerts_view(request):

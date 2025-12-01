@@ -427,7 +427,15 @@ class SOSReport(models.Model):
         verbose_name="発信者",
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name="sos_reports"
+    )
+
+    guest_name = models.CharField(
+        verbose_name="通報者名(未ログイン)",
+        max_length=100,
+        blank=True,
+        default="匿名"
     )
 
     # 2. 発信日時
@@ -846,6 +854,65 @@ class DistributionItem(models.Model):
     def __str__(self):
         return self.name
 
+
+class DistributionInfo(models.Model):
+    """炊き出し・物資配布状況のお知らせを管理するモデル"""
+
+    STATUS_CHOICES = [
+        ('scheduled', '予定'),
+        ('active', '実施中'),
+        ('ended', '終了'),
+    ]
+
+    TYPE_CHOICES = [
+        ('food', '炊き出し・食料'),
+        ('supplies', '物資配布'),
+        ('water', '給水'),
+        ('bath', '入浴支援'),
+    ]
+
+    # 場所
+    shelter = models.ForeignKey(
+        'Shelter',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="関連避難所"
+    )
+    location_name = models.CharField(
+        verbose_name="場所名",
+        max_length=100,
+        help_text="避難所を選択しない場合は具体的な場所名を入力（例: 〇〇公園）"
+    )
+
+    related_item = models.ForeignKey(
+        'DistributionItem',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="配布品目 (マスタ)"
+    )
+
+    # 内容
+    info_type = models.CharField(verbose_name="種別", max_length=20, choices=TYPE_CHOICES)
+    title = models.CharField(verbose_name="内容タイトル", max_length=100)
+    description = models.TextField(verbose_name="詳細", blank=True)
+
+    # 時間と状況
+    status = models.CharField(verbose_name="状況", max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    start_time = models.DateTimeField(verbose_name="開始日時", null=True, blank=True)
+    end_time = models.DateTimeField(verbose_name="終了日時", null=True, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "炊き出し・物資情報"
+        verbose_name_plural = "炊き出し・物資情報"
+        ordering = ['status', 'start_time']
+
+    def __str__(self):
+        return self.title
+
 class DistributionRecord(models.Model):
     """誰が、いつ、何を受け取ったかの記録"""
     user = models.ForeignKey(User, verbose_name="受け取りユーザー", on_delete=models.CASCADE)
@@ -856,6 +923,8 @@ class DistributionRecord(models.Model):
     class Meta:
         # 同じユーザーが同じアイテムを複数回記録できないようにユニーク制約
         unique_together = ('user', 'item')
+
+
 
 
 class FieldReportLog(models.Model):

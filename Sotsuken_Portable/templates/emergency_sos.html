@@ -1,80 +1,82 @@
+# template/emergency_sos.html
 {% extends "base.html" %}
 
 {% block title %}緊急SOS発信{% endblock %}
 {% block header_title %}緊急SOS発信{% endblock %}
 
 {% block content %}
-<div class="flex flex-col items-center justify-center h-full text-center">
+    <div class="flex flex-col items-center justify-center h-full text-center">
 
-    {# エラーメッセージがあれば表示 #}
-    {% if messages %}
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
-        {% for message in messages %}
-        <span class="block sm:inline">{{ message }}</span>
-        {% endfor %}
+        {# エラーメッセージがあれば表示 #}
+        {% if messages %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+                {% for message in messages %}
+                    <span class="block sm:inline">{{ message }}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form id="sos-form" method="post">
+            {% csrf_token %}
+            {# 位置情報を裏で送信するための隠しフィールド #}
+            <input type="hidden" name="latitude" id="latitude">
+            <input type="hidden" name="longitude" id="longitude">
+
+            {# SOS発信ボタン #}
+            <button type="submit" id="sos-button"
+                    class="bg-white p-10 rounded-full shadow-2xl w-56 h-56 flex items-center justify-center border-8 border-red-500 transform hover:scale-105 transition-transform cursor-pointer">
+                <h2 class="text-3xl font-extrabold text-red-600">SOS発信</h2>
+            </button>
+        </form>
+
+        <p id="status-message" class="mt-8 text-lg text-gray-600 font-medium">
+            ボタンを押すと、現在地の位置情報が救助チームに送信されます。
+        </p>
     </div>
-    {% endif %}
 
-    <form id="sos-form" method="post">
-        {% csrf_token %}
-        {# 位置情報を裏で送信するための隠しフィールド #}
-        <input type="hidden" name="latitude" id="latitude">
-        <input type="hidden" name="longitude" id="longitude">
+    {# --- ここからJavaScript --- #}
+    <script>
+        const sosForm = document.getElementById('sos-form');
+        const sosButton = document.getElementById('sos-button');
+        const latitudeInput = document.getElementById('latitude');
+        const longitudeInput = document.getElementById('longitude');
+        const statusMessage = document.getElementById('status-message');
 
-        {# SOS発信ボタン #}
-        <button type="submit" id="sos-button" class="bg-white p-10 rounded-full shadow-2xl w-56 h-56 flex items-center justify-center border-8 border-red-500 transform hover:scale-105 transition-transform cursor-pointer">
-            <h2 class="text-3xl font-extrabold text-red-600">SOS発信</h2>
-        </button>
-    </form>
-    
-    <p id="status-message" class="mt-8 text-lg text-gray-600 font-medium">
-        ボタンを押すと、現在地の位置情報が救助チームに送信されます。
-    </p>
-</div>
+        sosForm.addEventListener('submit', function (event) {
+            // 1. フォームの通常の送信を一旦停止
+            event.preventDefault();
 
-{# --- ここからJavaScript --- #}
-<script>
-    const sosForm = document.getElementById('sos-form');
-    const sosButton = document.getElementById('sos-button');
-    const latitudeInput = document.getElementById('latitude');
-    const longitudeInput = document.getElementById('longitude');
-    const statusMessage = document.getElementById('status-message');
+            // 2. ボタンを無効化し、メッセージを変更して二重送信を防ぐ
+            sosButton.disabled = true;
+            statusMessage.textContent = '位置情報を取得しています...';
+            statusMessage.classList.add('text-blue-600');
 
-    sosForm.addEventListener('submit', function(event) {
-        // 1. フォームの通常の送信を一旦停止
-        event.preventDefault();
+            // 3. ブラウザに位置情報を問い合わせる
+            if (!navigator.geolocation) {
+                statusMessage.textContent = 'お使いのブラウザは位置情報機能に対応していません。';
+                statusMessage.classList.add('text-red-600');
+                sosButton.disabled = false;
+            } else {
+                navigator.geolocation.getCurrentPosition(
+                    // 成功した場合の処理
+                    function (position) {
+                        statusMessage.textContent = '位置情報を取得しました。SOSを発信します...';
 
-        // 2. ボタンを無効化し、メッセージを変更して二重送信を防ぐ
-        sosButton.disabled = true;
-        statusMessage.textContent = '位置情報を取得しています...';
-        statusMessage.classList.add('text-blue-600');
+                        // 4. 取得した緯度・経度を隠しフィールドに設定
+                        latitudeInput.value = position.coords.latitude;
+                        longitudeInput.value = position.coords.longitude;
 
-        // 3. ブラウザに位置情報を問い合わせる
-        if (!navigator.geolocation) {
-            statusMessage.textContent = 'お使いのブラウザは位置情報機能に対応していません。';
-            statusMessage.classList.add('text-red-600');
-            sosButton.disabled = false;
-        } else {
-            navigator.geolocation.getCurrentPosition(
-                // 成功した場合の処理
-                function(position) {
-                    statusMessage.textContent = '位置情報を取得しました。SOSを発信します...';
-                    
-                    // 4. 取得した緯度・経度を隠しフィールドに設定
-                    latitudeInput.value = position.coords.latitude;
-                    longitudeInput.value = position.coords.longitude;
-
-                    // 5. フォームを送信
-                    sosForm.submit();
-                },
-                // 失敗した場合の処理
-                function() {
-                    statusMessage.textContent = '位置情報の取得を許可してください。';
-                    statusMessage.classList.add('text-red-600');
-                    sosButton.disabled = false; // 再度押せるようにボタンを有効化
-                }
-            );
-        }
-    });
-</script>
+                        // 5. フォームを送信
+                        sosForm.submit();
+                    },
+                    // 失敗した場合の処理
+                    function () {
+                        statusMessage.textContent = '位置情報の取得を許可してください。';
+                        statusMessage.classList.add('text-red-600');
+                        sosButton.disabled = false; // 再度押せるようにボタンを有効化
+                    }
+                );
+            }
+        });
+    </script>
 {% endblock %}

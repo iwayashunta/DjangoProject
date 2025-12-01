@@ -1,16 +1,17 @@
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django import forms
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
-from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment, Group, Shelter  # カスタムUserモデルをインポート
-
+from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment, Group, Shelter, \
+    DistributionInfo  # カスタムUserモデルをインポート
 
 
 class SafetyStatusForm(forms.ModelForm):
     """
     安否状況を報告・更新するためのフォーム
     """
+
     class Meta:
         model = SafetyStatus
         # フォームに表示するフィールドを指定
@@ -36,6 +37,7 @@ class SupportRequestForm(forms.ModelForm):
     """
     支援要請を新規作成するためのフォーム
     """
+
     class Meta:
         model = SupportRequest
         # フォームに表示するフィールドを指定
@@ -61,10 +63,12 @@ class SupportRequestForm(forms.ModelForm):
             }),
         }
 
+
 class CommunityPostForm(forms.ModelForm):
     """
     コミュニティ投稿を作成・編集するためのフォーム
     """
+
     class Meta:
         model = CommunityPost
         # フォームでユーザーに入力させるフィールドを指定
@@ -89,16 +93,18 @@ class CommunityPostForm(forms.ModelForm):
             }),
         }
 
+
 class CommentForm(forms.ModelForm):
     """
     リプライ（コメント）を投稿するためのフォーム
     """
+
     class Meta:
         model = Comment
         # ユーザーに入力させるのは text フィールドのみ
         fields = ('text',)
         labels = {
-            'text': '', # ラベルは表示しない（プレースホルダーで示すため）
+            'text': '',  # ラベルは表示しない（プレースホルダーで示すため）
         }
         widgets = {
             'text': forms.Textarea(attrs={
@@ -108,10 +114,11 @@ class CommentForm(forms.ModelForm):
             }),
         }
 
+
 class GroupCreateForm(forms.ModelForm):
     class Meta:
         model = Group
-        fields = ('name',) # ユーザーに入力させるのはグループ名のみ
+        fields = ('name',)  # ユーザーに入力させるのはグループ名のみ
         labels = {
             'name': '新しいグループ名',
         }
@@ -119,10 +126,12 @@ class GroupCreateForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'class': 'w-full p-3 border rounded-lg', 'placeholder': '例: 山田家'})
         }
 
+
 class UserUpdateForm(forms.ModelForm):
     """
     ユーザー情報（氏名、メールアドレス）を更新するためのフォーム
     """
+
     class Meta:
         model = User
         fields = ('full_name', 'email')
@@ -131,10 +140,12 @@ class UserUpdateForm(forms.ModelForm):
             'email': 'メールアドレス',
         }
 
+
 class MyPasswordChangeForm(PasswordChangeForm):
     """
     PasswordChangeFormのラベルとヘルプテキストを日本語化するためのカスタムフォーム
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['old_password'].label = "現在のパスワード"
@@ -150,18 +161,20 @@ class MyPasswordChangeForm(PasswordChangeForm):
         )
         self.fields['new_password2'].help_text = '確認のため、もう一度同じパスワードを入力してください。'
 
+
 class ShelterForm(forms.ModelForm):
     class Meta:
         model = Shelter
         # フォームに表示するフィールドを指定
-        fields = ['management_id', 'name', 'address', 'max_capacity', 'current_occupancy', 'is_pet_friendly', 'opening_status']
+        fields = ['management_id', 'name', 'address', 'max_capacity', 'current_occupancy', 'is_pet_friendly',
+                  'opening_status']
         # フォームのラベルを日本語で分かりやすく設定
         labels = {
             'management_id': '避難所管理ID',
             'name': '避難所名',
             'address': '住所',
-            #'latitude': '緯度',  # 一旦消してます
-            #'longitude': '経度', # 一旦消してます
+            # 'latitude': '緯度',  # 一旦消してます
+            # 'longitude': '経度', # 一旦消してます
             'max_capacity': '最大収容人数',
             'current_occupancy': '現在の避難者数',
             'is_pet_friendly': 'ペット受け入れ可',
@@ -218,6 +231,7 @@ class SignUpForm(UserCreationForm):
         # 最後に、検証済みのパスワード2を返す
         return password2
 
+
 class UserSearchForm(forms.Form):
     query = forms.CharField(label="ユーザー検索", max_length=100, widget=forms.TextInput(attrs={
         'placeholder': 'ログインID または 氏名',
@@ -225,4 +239,71 @@ class UserSearchForm(forms.Form):
     }))
 
 
+class DistributionInfoForm(forms.ModelForm):
+    """炊き出し・物資配布情報を登録・編集するフォーム"""
 
+    # ★★★ 追加: 新規品目入力用のフィールド（モデルには保存されない一時的な欄） ★★★
+    new_item_name = forms.CharField(
+        label='新しい品目を追加',
+        required=False,  # 必須ではない（既存から選ぶ場合もあるため）
+        widget=forms.TextInput(attrs={
+            'class': 'w-full p-2 border rounded bg-blue-50',
+            'placeholder': 'リストにない場合、ここに入力してください（例: カイロ）'
+        })
+    )
+
+    class Meta:
+        model = DistributionInfo
+        # 'shelter' と 'related_item' を追加しました
+        fields = [
+            'related_item', 'new_item_name', 'title', 'info_type', 'status',
+            'shelter', 'location_name',
+            'description', 'start_time', 'end_time'
+        ]
+
+        labels = {
+            'related_item': '配布品目（リストから選択）',
+            'title': '配布内容のタイトル',
+            'info_type': '情報の種類',
+            'status': '現在の状況',
+            'shelter': '場所（避難所から選択）',
+            'location_name': '場所名（手入力する場合）',
+            'description': '詳細情報',
+            'start_time': '開始日時',
+            'end_time': '終了日時',
+        }
+
+        help_texts = {
+            'related_item': 'ラズパイ側で管理している品目と紐付ける場合に選択してください（任意）。',
+            'location_name': '「避難所」を選択した場合は入力不要です。公園など、リストにない場所の場合に入力してください。',
+        }
+
+        widgets = {
+            'related_item': forms.Select(attrs={'class': 'w-full p-2 border rounded bg-white'}),
+            'title': forms.TextInput(attrs={
+                'class': 'w-full p-2 border rounded',
+                'placeholder': '例: おにぎりの配布、給水活動'
+            }),
+            'info_type': forms.Select(attrs={'class': 'w-full p-2 border rounded bg-white'}),
+            'status': forms.Select(attrs={'class': 'w-full p-2 border rounded bg-white'}),
+            'shelter': forms.Select(attrs={'class': 'w-full p-2 border rounded bg-white'}),
+            'location_name': forms.TextInput(attrs={
+                'class': 'w-full p-2 border rounded',
+                'placeholder': '例: 第一公園 入口付近'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full p-2 border rounded',
+                'rows': 3,
+                'placeholder': '例: 1人2個まで。無くなり次第終了します。'
+            }),
+            'start_time': forms.DateTimeInput(attrs={'class': 'w-full p-2 border rounded', 'type': 'datetime-local'}),
+            'end_time': forms.DateTimeInput(attrs={'class': 'w-full p-2 border rounded', 'type': 'datetime-local'}),
+        }
+
+        def clean(self):
+            """
+            バリデーション: 既存リスト選択か、新規入力のどちらかは必須にしたい場合など
+            （今回は任意なので、特になにもしなくてもOKですが、両方入力された場合の優先度などを決められます）
+            """
+            cleaned_data = super().clean()
+            return cleaned_data

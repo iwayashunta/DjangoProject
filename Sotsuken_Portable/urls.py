@@ -32,7 +32,9 @@ urlpatterns = [
     path('sos/done/', views.emergency_sos_done_view, name='emergency_sos_done'),
     path('map/', views.map_view, name='map'),
 
-    path('emergency/', views.emergency_info_view, name='emergency_common'),
+    #path('emergency/', views.emergency_info_view, name='emergency_common'),
+
+    path('emergency/', views.emergency_info_view, name='emergency_info'),
 
     path('menu/', views.user_menu_view, name='user_menu'),
 
@@ -56,6 +58,8 @@ urlpatterns = [
     path('management/sos-reports/<int:report_id>/delete/', views.sos_report_delete_view, name='sos_report_delete'),
 
     path('management/sos-reports/export-csv/', views.sos_report_export_csv_view, name='sos_report_export_csv'),
+
+    path('management/distribution/add/', views.add_distribution_info_view, name='add_distribution_info'),
 
     path('community/', views.CommunityPostListView.as_view(), name='community_list'),
 
