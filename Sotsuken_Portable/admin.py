@@ -4,7 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.db import connection
 
 from .models import User, Group, GroupMember, SafetyStatus, SupportRequest, OfficialAlert, Shelter, Comment, \
-    DistributionItem, DistributionRecord, CommunityPost, Manual, Message, Connection
+    DistributionItem, DistributionRecord, CommunityPost, Manual, Message, Connection, DistributionInfo
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -55,9 +55,11 @@ admin.site.register(Shelter)
 admin.site.register(Comment)
 admin.site.register(DistributionItem)
 admin.site.register(DistributionRecord)
+admin.site.register(DistributionInfo)
 admin.site.register(CommunityPost)
 admin.site.register(Manual)
 admin.site.register(Message)
 admin.site.register(Connection)
+
 
 
