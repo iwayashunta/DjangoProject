@@ -612,5 +612,27 @@ def register_field_user_api(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
+@require_GET
+def get_all_users_api(request):
+    """
+    ラズパイ向けに全ユーザーの認証情報（ハッシュ済みパスワード含む）を返すAPI
+    ※ セキュリティ注意: 本番環境では必ずHTTPSで通信し、IP制限やトークン認証を行うこと
+    """
+    # ラズパイからのアクセスであることを確認する簡易認証（ヘッダーなど）を入れるとより安全です
+
+    users = User.objects.all()
+    data = []
+    for user in users:
+        data.append({
+            'username': user.username,
+            'password': user.password,  # ハッシュ化されたパスワード文字列
+            'full_name': user.full_name,
+            'email': user.email,
+            'role': user.role,
+        })
+
+    return JsonResponse({'status': 'success', 'users': data})
+
+
 
 

@@ -26,5 +26,7 @@ urlpatterns = [
 
     path('post-dm-message/', views.post_dm_message_api, name='post_dm_message_api'),
 
+    path( 'get-all-users/', views.get_all_users_api, name='get_all_users_api' ),
+
 
 ]
