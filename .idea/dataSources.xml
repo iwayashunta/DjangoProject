@@ -10,5 +10,19 @@
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/db.sqlite3</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="sotsuken@sotsuken-db.c3hoboo1mxeu.us-east-1.rds.amazonaws.com" uuid="533e03b9-3c01-4bf4-990d-f032a358a5d6">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://sotsuken-db.c3hoboo1mxeu.us-east-1.rds.amazonaws.com:3306/sotsuken</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+    <data-source source="LOCAL" name="sotsuken@sotsuken-db.c3hoboo1mxeu.us-east-1.rds.amazonaws.com [2]" uuid="9cb07e9d-658f-47e7-a5f9-f756150609e9">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://sotsuken-db.c3hoboo1mxeu.us-east-1.rds.amazonaws.com:3306/sotsuken</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
