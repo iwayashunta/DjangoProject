@@ -5,9 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="ユーザー情報・配布物資の品目をダウンロードするための受け皿を導入（12/02）">
+      <change beforePath="$PROJECT_DIR$/.idea/DjangoProject.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/DjangoProject.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/emergency_sos.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/emergency_sos.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/manual_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/manual_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/login.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,6 +31,7 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="HARD" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {
@@ -143,6 +146,11 @@
       <option name="customRunCommand" value="" />
       <method v="2" />
     </configuration>
+    <list>
+      <item itemvalue="Django サーバー.DjangoProject" />
+      <item itemvalue="JavaScript デバッグ.login.html" />
+      <item itemvalue="Python.websocket" />
+    </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.websocket" />
@@ -606,7 +614,19 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="HEAD" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
