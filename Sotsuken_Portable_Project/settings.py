@@ -81,7 +81,7 @@ WSGI_APPLICATION = 'Sotsuken_Portable_Project.wsgi.application'
 DATABASES = {
      'default': {
         # 【変更点】mysql-connector-pythonを使用する場合のENGINEの指定
-        'ENGINE': 'mysql.connector.django',
+        'ENGINE': 'django.db.backends.mysql',
 
         # データベース名
         'NAME': 'sotsuken',
@@ -93,7 +93,7 @@ DATABASES = {
         'PASSWORD': 'your_password',
 
         # ホスト名
-        'HOST': 'localhost',
+        'HOST': '127.0.0.1',
 
         # ポート番号
         'PORT': '3306',
