@@ -4,72 +4,80 @@
 {% block header_title %}新規ユーザー登録{% endblock %}
 
 {% block content %}
-{# 入力欄を一括で綺麗にするためのスタイル定義 #}
-<style>
-    /* フォーム内のすべてのinputタグに対するスタイル */
-    .signup-form input {
-        width: 100%;
-        padding: 0.75rem 1rem; /* 上下左右に余裕を持たせる */
-        font-size: 1rem;
-        border: 1px solid #d1d5db; /* 薄いグレーの枠線 */
-        border-radius: 0.5rem;     /* 角丸 */
-        margin-top: 0.5rem;
-        background-color: #f9fafb; /* ほんのりグレーの背景 */
-        transition: all 0.2s;
-    }
-    /* 入力中のスタイル */
-    .signup-form input:focus {
-        outline: none;
-        border-color: #2563eb;     /* 青い枠線 */
-        background-color: #ffffff; /* 白背景 */
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); /* 青いぼかし */
-    }
-</style>
+    {# 入力欄を一括で綺麗にするためのスタイル定義 #}
+    <style>
+        /* フォーム内のすべてのinputタグに対するスタイル */
+        .signup-form input {
+            width: 100%;
+            padding: 0.75rem 1rem; /* 上下左右に余裕を持たせる */
+            font-size: 1rem;
+            border: 1px solid #d1d5db; /* 薄いグレーの枠線 */
+            border-radius: 0.5rem; /* 角丸 */
+            margin-top: 0.5rem;
+            background-color: #f9fafb; /* ほんのりグレーの背景 */
+            transition: all 0.2s;
+        }
 
-<div class="flex flex-col items-center justify-center min-h-screen py-10"> {# 上下に余白を追加 #}
-    {# max-w-md (幅) を維持しつつ、py-10 px-8 で内部の余白を大きく設定 #}
-    <div class="bg-white px-10 py-12 rounded-2xl shadow-2xl w-full max-w-md">
+        /* 入力中のスタイル */
+        .signup-form input:focus {
+            outline: none;
+            border-color: #2563eb; /* 青い枠線 */
+            background-color: #ffffff; /* 白背景 */
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); /* 青いぼかし */
+        }
+    </style>
 
-        <h2 class="text-3xl font-bold mb-8 text-center text-blue-700 tracking-wide">アカウント作成</h2>
+    <div class="flex flex-col items-center justify-center min-h-screen py-10"> {# 上下に余白を追加 #}
+        {# max-w-md (幅) を維持しつつ、py-10 px-8 で内部の余白を大きく設定 #}
+        <div class="bg-white px-10 py-12 rounded-2xl shadow-2xl w-full max-w-md">
 
-        {# クラス名 signup-form を追加してCSSを適用 #}
-        <form method="post" class="signup-form space-y-6"> {# space-y-6 で項目間の縦幅を広げる #}
-            {% csrf_token %}
+            <h2 class="text-3xl font-bold mb-8 text-center text-blue-700 tracking-wide">アカウント作成</h2>
 
-            {% for field in form %}
-            <div>
-                <label class="block text-gray-700 font-bold text-sm mb-1">
-                    {{ field.label }}
-                </label>
+            {# クラス名 signup-form を追加してCSSを適用 #}
+            <form method="post" class="signup-form space-y-6"> {# space-y-6 で項目間の縦幅を広げる #}
+                {% csrf_token %}
 
-                {{ field }}
+                {% for field in form %}
+                <div>
+                    <label class="block text-gray-700 font-bold text-sm mb-1">
+                        {{ field.label }}
+                    </label>
 
-                {# ヘルプテキスト（パスワードの要件など）があれば表示 #}
-                {% if field.help_text %}
-                    <p class="text-xs text-gray-500 mt-1">{{ field.help_text|safe }}</p>
-                {% endif %}
+                    {{ field }}
 
-                {# エラーがあれば表示 #}
-                {% if field.errors %}
-                    <div class="text-red-500 text-sm mt-1 font-semibold">
-                        {{ field.errors.as_text }}
-                    </div>
-                {% endif %}
+                    {# ヘルプテキスト（パスワードの要件など）があれば表示 #}
+                    {% if field.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ field.help_text|safe }}</p>
+                    {% endif %}
+
+                    {# エラーがあれば表示（ここを修正） #}
+                    {% if field.errors %}
+                        <div class="text-red-500 text-sm mt-1 font-semibold">
+                            {% for error in field.errors %}
+                                {# blockクラスをつけることで改行されます #}
+                                <div class="block">
+                                    * {{ error|linebreaksbr }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="pt-4"> {# ボタンの上に少し余白を追加 #}
+                    <button type="submit"
+                            class="w-full bg-blue-600 text-white p-4 rounded-xl hover:bg-blue-700 transition-colors font-bold text-lg shadow-md">
+                        入力内容を確認する
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-6 text-center">
+                <a href="{% url 'Sotsuken_Portable:login' %}"
+                   class="text-sm text-gray-500 hover:text-blue-600 hover:underline">
+                    ログイン画面に戻る
+                </a>
             </div>
-            {% endfor %}
-
-            <div class="pt-4"> {# ボタンの上に少し余白を追加 #}
-                <button type="submit" class="w-full bg-blue-600 text-white p-4 rounded-xl hover:bg-blue-700 transition-colors font-bold text-lg shadow-md">
-                    入力内容を確認する
-                </button>
-            </div>
-        </form>
-
-        <div class="mt-6 text-center">
-            <a href="{% url 'Sotsuken_Portable:login' %}" class="text-sm text-gray-500 hover:text-blue-600 hover:underline">
-                ログイン画面に戻る
-            </a>
         </div>
     </div>
-</div>
 {% endblock %}

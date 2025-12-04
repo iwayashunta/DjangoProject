@@ -4,10 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="新規登録のボタンの色を灰色から青色へ変更&#10;マニュアル画面のメインメニューに戻るをホームに戻るに変更">
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="ご登録ありがとうございます。&lt;br&gt;ログインページからログインしてください。改行を加える&#10;安否・支援情報の更新完了のメッセージを一行に修正">
+      <change afterPath="$PROJECT_DIR$/Sotsuken_Portable/validators.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/safety_check.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/safety_check.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/signup_done.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/signup_done.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/signup.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/signup.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable_Project/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable_Project/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,8 +24,8 @@
       <list>
         <option value="CSS File" />
         <option value="JavaScript File" />
-        <option value="Python Script" />
         <option value="HTML File" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -208,14 +210,6 @@
       <workItem from="1764554132068" duration="13777000" />
       <workItem from="1764641177134" duration="6155000" />
       <workItem from="1764726880209" duration="5402000" />
-    </task>
-    <task id="LOCAL-00008" summary="ホームメニューと管理者メニューを実装（中身はまだできてないです）&#10;データベース更新したのでマイグレーションしてください（10/24）">
-      <option name="closed" value="true" />
-      <created>1761286338531</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1761286338531</updated>
     </task>
     <task id="LOCAL-00009" summary="WebSocket周りはよくわからんですが頑張って調整します（10/24）">
       <option name="closed" value="true" />
@@ -601,7 +595,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764818962939</updated>
     </task>
-    <option name="localTasksCounter" value="57" />
+    <task id="LOCAL-00057" summary="ご登録ありがとうございます。&lt;br&gt;ログインページからログインしてください。改行を加える&#10;安否・支援情報の更新完了のメッセージを一行に修正">
+      <option name="closed" value="true" />
+      <created>1764824218968</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1764824218969</updated>
+    </task>
+    <option name="localTasksCounter" value="58" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -631,7 +633,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="招待リンクを発行、チャット内で踏めるようにしました（11/5）" />
     <MESSAGE value="チャット機能の文字をちょっと大きくしました（11/06）" />
     <MESSAGE value="避難所リストAPIを作成しました（11/06）" />
     <MESSAGE value="allowed_hosts = '*'を追加" />
@@ -656,7 +657,8 @@
     <MESSAGE value="炊き出し・物資配布情報をadminメニューから編集できるようにしました（12/02）" />
     <MESSAGE value="ユーザー情報・配布物資の品目をダウンロードするための受け皿を導入（12/02）" />
     <MESSAGE value="新規登録のボタンの色を灰色から青色へ変更&#10;マニュアル画面のメインメニューに戻るをホームに戻るに変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="新規登録のボタンの色を灰色から青色へ変更&#10;マニュアル画面のメインメニューに戻るをホームに戻るに変更" />
+    <MESSAGE value="ご登録ありがとうございます。&lt;br&gt;ログインページからログインしてください。改行を加える&#10;安否・支援情報の更新完了のメッセージを一行に修正" />
+    <option name="LAST_COMMIT_MESSAGE" value="ご登録ありがとうございます。&lt;br&gt;ログインページからログインしてください。改行を加える&#10;安否・支援情報の更新完了のメッセージを一行に修正" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
