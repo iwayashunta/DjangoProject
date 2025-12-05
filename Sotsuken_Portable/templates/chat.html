@@ -40,14 +40,10 @@
                 <input type="file" id="chat-image-input" accept="image/*" class="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
             </div>
 
-            <!-- テキスト入力と送信ボタン -->
-            <div class="flex w-full">
-                <input type="text" id="chat-message-input"
-                       class="flex-1 p-3 border border-gray-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-                       placeholder="メッセージを入力...">
-                <button type="submit" id="chat-message-submit"
-                        class="bg-blue-600 text-white p-3 rounded-r-xl hover:bg-blue-700 font-semibold whitespace-nowrap">送信
-                </button>
+            <!-- items-end を追加して、入力欄が伸びたときにボタンが下に揃うようにする -->
+            <div class="flex w-full items-end">
+                <textarea id="chat-message-input" rows="1" class="flex-1 p-3 border border-gray-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base resize-none overflow-hidden" placeholder="メッセージを入力..."></textarea>
+                <button type="submit" id="chat-message-submit" class="bg-blue-600 text-white p-3 rounded-r-xl hover:bg-blue-700 font-semibold whitespace-nowrap h-full">送信</button>
             </div>
         </form>
     </div>
@@ -62,6 +58,29 @@
         const chatLog = document.querySelector('#chat-log');
         const chatMessageInput = document.querySelector('#chat-message-input');
         const chatForm = document.querySelector('#chat-form');
+        // --- テキストエリアの自動リサイズとEnter送信 ---
+        const chatMessageSubmit = document.querySelector('#chat-message-submit'); // ボタン取得
+
+        chatMessageInput.addEventListener('input', function() {
+            this.style.height = 'auto'; // 一旦高さをリセット
+            this.style.height = (this.style.scrollHeight) + 'px'; // 文字量に合わせて高さを設定
+
+            // 最大の高さ（例えば150px）を超えたらスクロールさせる場合
+            if (this.scrollHeight > 150) {
+                this.style.overflowY = "scroll";
+            } else {
+                this.style.overflowY = "hidden";
+            }
+        });
+
+        chatMessageInput.addEventListener('keydown', function(e) {
+            // Enterキーが押されたとき（Shiftキーは押されていない場合）
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); // 改行をキャンセル
+                chatMessageSubmit.click(); // 送信ボタンをクリックしたことにする
+            }
+        });
+
 
         // --- XSS対策: HTMLエスケープ関数 ---
         function escapeHtml(text) {
@@ -149,6 +168,7 @@
                     // 送信成功したらフォームをクリア
                     chatMessageInput.value = '';
                     chatImageInput.value = ''; // 画像選択もクリア
+                    chatMessageInput.style.height = 'auto';
                 } else {
                     console.error('送信エラー');
                     alert('メッセージの送信に失敗しました。');

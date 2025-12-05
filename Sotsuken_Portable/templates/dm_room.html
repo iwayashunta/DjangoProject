@@ -30,17 +30,15 @@
             <!-- 画像選択ボタン -->
             <div class="flex items-center gap-2">
                 <label class="text-sm text-gray-600 font-bold">添付画像:</label>
-                <input type="file" id="chat-image-input" accept="image/*" class="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                <input type="file" id="chat-image-input" accept="image/*"
+                       class="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
             </div>
 
             <!-- テキスト入力と送信ボタン -->
-            <div class="flex w-full">
-                <input type="text" id="chat-message-input"
-                       class="flex-1 p-3 border border-gray-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-                       placeholder="メッセージを入力...">
-                <button type="submit" id="chat-message-submit"
-                        class="bg-blue-600 text-white p-3 rounded-r-xl hover:bg-blue-700 font-semibold whitespace-nowrap">送信
-                </button>
+            <!-- items-end を追加して、入力欄が伸びたときにボタンが下に揃うようにする -->
+            <div class="flex w-full items-end">
+                <textarea id="chat-message-input" rows="1" class="flex-1 p-3 border border-gray-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base resize-none overflow-hidden" placeholder="メッセージを入力..."></textarea>
+                <button type="submit" id="chat-message-submit" class="bg-blue-600 text-white p-3 rounded-r-xl hover:bg-blue-700 font-semibold whitespace-nowrap h-full">送信</button>
             </div>
         </form>
     </div>
@@ -87,10 +85,10 @@
 
         // --- WebSocket接続 ---
         // プロトコル（http/https）に合わせて ws/wss を自動切り替え
-	const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
-	const chatSocket = new WebSocket(
-    		ws_scheme + '://' + window.location.host + '/ws/chat/dm/' + otherUserId + '/'
-	);
+        const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+        const chatSocket = new WebSocket(
+            ws_scheme + '://' + window.location.host + '/ws/chat/dm/' + otherUserId + '/'
+        );
 
         chatSocket.onopen = function (e) {
             console.log('Chat socket connected successfully');
@@ -134,19 +132,19 @@
                     'X-CSRFToken': getCookie('csrftoken') // CSRF対策
                 }
             })
-            .then(response => {
-                if (response.ok) {
-                    // 送信成功したらフォームをクリア
-                    chatMessageInput.value = '';
-                    chatImageInput.value = '';
-                } else {
-                    console.error('送信エラー');
-                    alert('メッセージの送信に失敗しました。');
-                }
-            })
-            .catch(error => {
-                console.error('通信エラー:', error);
-            });
+                .then(response => {
+                    if (response.ok) {
+                        // 送信成功したらフォームをクリア
+                        chatMessageInput.value = '';
+                        chatImageInput.value = '';
+                    } else {
+                        console.error('送信エラー');
+                        alert('メッセージの送信に失敗しました。');
+                    }
+                })
+                .catch(error => {
+                    console.error('通信エラー:', error);
+                });
         };
 
         function appendMessage(sender, message, imageUrl) {
