@@ -119,7 +119,7 @@ AUTH_USER_MODEL = 'Sotsuken_Portable.User'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'Sotsuken_Portable.validators.CustomUserAttributeSimilarityValidator',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
