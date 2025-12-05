@@ -75,9 +75,12 @@
         }
 
         // --- WebSocket関連のロジックは変更なし ---
-        const chatSocket = new WebSocket(
-            'ws://' + window.location.host + '/ws/chat/group/' + groupId + '/'
-        );
+        // --- WebSocket関連のロジックは変更なし ---
+	// httpsならwss、httpならwsを自動選択
+	const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+	const chatSocket = new WebSocket(
+    		ws_scheme + '://' + window.location.host + '/ws/chat/group/' + groupId + '/'
+	);
 
         chatSocket.onopen = function (e) {
             console.log('Chat socket connected successfully');
