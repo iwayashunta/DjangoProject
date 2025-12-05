@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="新規ユーザー登録のパスワードエラーメッセージの修正&#10;*このパスワードは他の個人情報と似ているため&#10;使用できません。">
+    <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="QRコードの文章の改行位置の変更">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/emergency_info.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/emergency_info.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/qr_scanner.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/qr_scanner.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable_Project/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable_Project/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,6 +29,7 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="PUSH_AUTO_UPDATE" value="true" />
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
     <option name="RESET_MODE" value="HARD" />
   </component>
@@ -207,23 +210,7 @@
       <workItem from="1764554132068" duration="13777000" />
       <workItem from="1764641177134" duration="6155000" />
       <workItem from="1764726880209" duration="5402000" />
-      <workItem from="1764900353809" duration="2235000" />
-    </task>
-    <task id="LOCAL-00010" summary="websocketを仮実装（10/27）">
-      <option name="closed" value="true" />
-      <created>1761532885075</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1761532885075</updated>
-    </task>
-    <task id="LOCAL-00011" summary="commonファイルを反映する形に修正（10/27）">
-      <option name="closed" value="true" />
-      <created>1761533865062</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1761533865062</updated>
+      <workItem from="1764900353809" duration="5555000" />
     </task>
     <task id="LOCAL-00012" summary="チャット機能を半分くらい実装しました(10/27)">
       <option name="closed" value="true" />
@@ -601,7 +588,23 @@
       <option name="project" value="LOCAL" />
       <updated>1764827671984</updated>
     </task>
-    <option name="localTasksCounter" value="59" />
+    <task id="LOCAL-00059" summary="# ▼ 追加: パスワード入力欄（password1）のヘルプテキストを上書き">
+      <option name="closed" value="true" />
+      <created>1764903654132</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1764903654132</updated>
+    </task>
+    <task id="LOCAL-00060" summary="QRコードの文章の改行位置の変更">
+      <option name="closed" value="true" />
+      <created>1764905218101</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1764905218101</updated>
+    </task>
+    <option name="localTasksCounter" value="61" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -631,8 +634,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="避難所リストAPIを作成しました（11/06）" />
-    <MESSAGE value="allowed_hosts = '*'を追加" />
     <MESSAGE value="ラズパイ側とグループチャットをつなげられるようにしました（11/13）" />
     <MESSAGE value="災害発生時用のマニュアルを読めるようにしました（11/13）" />
     <MESSAGE value="オートコンプリート機能を無効化（11/14）" />
@@ -656,7 +657,9 @@
     <MESSAGE value="新規登録のボタンの色を灰色から青色へ変更&#10;マニュアル画面のメインメニューに戻るをホームに戻るに変更" />
     <MESSAGE value="ご登録ありがとうございます。&lt;br&gt;ログインページからログインしてください。改行を加える&#10;安否・支援情報の更新完了のメッセージを一行に修正" />
     <MESSAGE value="新規ユーザー登録のパスワードエラーメッセージの修正&#10;*このパスワードは他の個人情報と似ているため&#10;使用できません。" />
-    <option name="LAST_COMMIT_MESSAGE" value="新規ユーザー登録のパスワードエラーメッセージの修正&#10;*このパスワードは他の個人情報と似ているため&#10;使用できません。" />
+    <MESSAGE value="# ▼ 追加: パスワード入力欄（password1）のヘルプテキストを上書き" />
+    <MESSAGE value="QRコードの文章の改行位置の変更" />
+    <option name="LAST_COMMIT_MESSAGE" value="QRコードの文章の改行位置の変更" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DjangoProject$websocket.coverage" NAME="websocket のカバレッジ結果" MODIFIED="1761291899012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

@@ -90,7 +90,7 @@ DATABASES = {
         'USER': 'django_user',
 
         # パスワード
-        'PASSWORD': '!12Sotsuken34',
+        'PASSWORD': 'your_password',
 
         # ホスト名
         'HOST': '127.0.0.1',
