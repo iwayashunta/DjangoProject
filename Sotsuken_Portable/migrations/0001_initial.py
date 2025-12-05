@@ -3,6 +3,8 @@ import django.contrib.auth.validators
 import django.db.models.deletion
 import django.utils.timezone
 import uuid
+from django.db import migrations, models
+from django.conf import settings
 
 
 class Migration(migrations.Migration):
