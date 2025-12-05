@@ -9,10 +9,17 @@
 
             {# --- ここから修正・追加 --- #}
             {# ビューから渡された過去のメッセージをループで表示 #}
-            {% for msg in messages %}
-                <div class="text-sm {% if msg.sender == user %}text-right{% endif %}">
-                    <p class="font-bold text-xs text-gray-500">{{ msg.sender.full_name|default:msg.sender.login_id }}</p>
+            {% for msg in chat_messages %}
+                <div class="text-base {% if msg.sender == user %}text-right{% endif %}">
+                    <p class="font-bold text-sm text-gray-500">{{ msg.sender.full_name|default:msg.sender.username }}</p>
                     <p class="{% if msg.sender == user %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %} p-3 rounded-t-xl {% if msg.sender == user %}rounded-bl-xl{% else %}rounded-br-xl{% endif %} inline-block max-w-xs text-left">
+                        {% if msg.image %}
+                            <a href="{{ msg.image.url }}" target="_blank">
+                                <img src="{{ msg.image.url }}" class="max-w-full h-auto rounded-lg mb-2"
+                                     style="max-height: 200px;">
+                            </a>
+                            <br>
+                        {% endif %}
                         {{ msg.content|urlize|linebreaksbr }} {# Messageモデルのフィールド名に合わせてください #}
                     </p>
                 </div>
@@ -22,18 +29,27 @@
         </div>
 
         <!-- メッセージ入力フォーム -->
-        <form id="chat-form" class="flex">
-            <input type="text" id="chat-message-input"
-                   class="flex-1 p-3 border border-gray-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                   placeholder="メッセージを入力...">
-            <button type="submit" id="chat-message-submit"
-                    class="bg-blue-600 text-white p-3 rounded-r-xl hover:bg-blue-700 font-semibold">送信
-            </button>
+        <form id="chat-form" class="flex flex-col gap-2 p-2" autocomplete="off" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- ★★★ レイアウト修正: flex-col で縦並びにしています ★★★ -->
+
+            <!-- 画像選択ボタン -->
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-600 font-bold">添付画像:</label>
+                <input type="file" id="chat-image-input" accept="image/*" class="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+
+            <!-- items-end を追加して、入力欄が伸びたときにボタンが下に揃うようにする -->
+            <div class="flex w-full items-end">
+                <textarea id="chat-message-input" rows="1" class="flex-1 p-3 border border-gray-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base resize-none overflow-hidden" placeholder="メッセージを入力..."></textarea>
+                <button type="submit" id="chat-message-submit" class="bg-blue-600 text-white p-3 rounded-r-xl hover:bg-blue-700 font-semibold whitespace-nowrap h-full">送信</button>
+            </div>
         </form>
     </div>
 
     {{ group.id|json_script:"group-id" }}
-    {{ user.full_name|default:user.login_id|json_script:"current-user-name" }}
+    {{ user.full_name|default:user.username|json_script:"current-user-name" }}
 
     <script>
         const groupId = JSON.parse(document.getElementById('group-id').textContent);
@@ -42,11 +58,48 @@
         const chatLog = document.querySelector('#chat-log');
         const chatMessageInput = document.querySelector('#chat-message-input');
         const chatForm = document.querySelector('#chat-form');
+        // --- テキストエリアの自動リサイズとEnter送信 ---
+        const chatMessageSubmit = document.querySelector('#chat-message-submit'); // ボタン取得
+
+        chatMessageInput.addEventListener('input', function() {
+            this.style.height = 'auto'; // 一旦高さをリセット
+            this.style.height = (this.style.scrollHeight) + 'px'; // 文字量に合わせて高さを設定
+
+            // 最大の高さ（例えば150px）を超えたらスクロールさせる場合
+            if (this.scrollHeight > 150) {
+                this.style.overflowY = "scroll";
+            } else {
+                this.style.overflowY = "hidden";
+            }
+        });
+
+        chatMessageInput.addEventListener('keydown', function(e) {
+            // Enterキーが押されたとき（Shiftキーは押されていない場合）
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); // 改行をキャンセル
+                chatMessageSubmit.click(); // 送信ボタンをクリックしたことにする
+            }
+        });
+
+
+        // --- XSS対策: HTMLエスケープ関数 ---
+        function escapeHtml(text) {
+            if (!text) return text;
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
 
         // --- WebSocket関連のロジックは変更なし ---
-        const chatSocket = new WebSocket(
-            'ws://' + window.location.host + '/ws/chat/group/' + groupId + '/'
-        );
+        // --- WebSocket関連のロジックは変更なし ---
+	// httpsならwss、httpならwsを自動選択
+	const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+	const chatSocket = new WebSocket(
+    		ws_scheme + '://' + window.location.host + '/ws/chat/group/' + groupId + '/'
+	);
 
         chatSocket.onopen = function (e) {
             console.log('Chat socket connected successfully');
@@ -58,28 +111,82 @@
 
         chatSocket.onmessage = function (e) {
             const data = JSON.parse(e.data);
-            appendMessage(data.sender, data.message);
+            appendMessage(data.sender, data.message, data.image_url);
         };
+
+
+        // ★重要: CSRFトークンを取得する関数
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const chatImageInput = document.querySelector('#chat-image-input'); // 追加
 
         chatForm.onsubmit = function (e) {
             e.preventDefault();
             const message = chatMessageInput.value;
-            if (message.trim() !== '') {
-                chatSocket.send(JSON.stringify({
-                    'message': message
-                }));
-                chatMessageInput.value = '';
+            const imageFile = chatImageInput.files[0]; // 画像ファイルを取得
+
+            // メッセージも画像もなければ何もしない
+            if (message.trim() === '' && !imageFile) {
+                return;
             }
+
+            // ★ WebSocket送信をやめて、FormDataを使ったPOST送信に変更
+            const formData = new FormData();
+            formData.append('group_id', groupId);
+            formData.append('message', message);
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+
+            // APIのURL (ラズパイと同じAPIを叩く)
+            // ※ api/ がurls.pyのどこにあるか確認してください。通常は /api/post-group-message/
+            const apiUrl = '/api/post-group-message/';
+
+            fetch(apiUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    // 'Content-Type': 'multipart/form-data', // ★重要: これは指定してはいけません (ブラウザが自動設定します)
+                    'X-CSRFToken': getCookie('csrftoken') // CSRF対策
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // 送信成功したらフォームをクリア
+                    chatMessageInput.value = '';
+                    chatImageInput.value = ''; // 画像選択もクリア
+                    chatMessageInput.style.height = 'auto';
+                } else {
+                    console.error('送信エラー');
+                    alert('メッセージの送信に失敗しました。');
+                }
+            })
+            .catch(error => {
+                console.error('通信エラー:', error);
+            });
         };
 
-        function appendMessage(sender, message) {
+        function appendMessage(sender, message, imageUrl) {
             const isMe = (sender === currentUserName);
 
             const messageDiv = document.createElement('div');
-            messageDiv.className = 'text-sm' + (isMe ? ' text-right' : '');
+            messageDiv.className = 'text-base' + (isMe ? ' text-right' : '');
 
             const senderP = document.createElement('p');
-            senderP.className = 'font-bold text-xs text-gray-500';
+            senderP.className = 'font-bold text-sm text-gray-500 mb-1';
             senderP.textContent = sender;
 
             const contentP = document.createElement('p');
@@ -87,6 +194,26 @@
                 ' p-3 rounded-t-xl' +
                 (isMe ? ' rounded-bl-xl' : ' rounded-br-xl') +
                 ' inline-block max-w-xs text-left';
+
+            // ★修正3: 画像がある場合の処理を追加
+            if (imageUrl) {
+                const imgLink = document.createElement('a');
+                imgLink.href = imageUrl;
+                imgLink.target = "_blank"; // 別タブで開く
+
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.className = "max-w-full h-auto rounded-lg mb-2";
+                img.style.maxHeight = "200px";
+
+                imgLink.appendChild(img);
+                contentP.appendChild(imgLink);
+
+                // 画像の下にテキストがある場合に備えて改行
+                if (message) {
+                    contentP.appendChild(document.createElement('br'));
+                }
+            }
 
             function urlify(text) {
                 const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -96,7 +223,15 @@
                     .replace(/\n/g, '<br>');
             }
 
-            contentP.innerHTML = urlify(message);
+
+            // ★修正4: テキストがある場合の処理（エスケープしてからリンク化）
+            if (message) {
+                const textSpan = document.createElement('span');
+                // 先にエスケープしてからURL化しないと、XSSの危険があるため
+                const safeText = escapeHtml(message);
+                textSpan.innerHTML = urlify(safeText);
+                contentP.appendChild(textSpan);
+            }
 
             messageDiv.appendChild(senderP);
             messageDiv.appendChild(contentP);

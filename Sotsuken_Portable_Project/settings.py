@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-9us3f5=%62u!r8_g8aaczg+(314l^%&-g&2l-btd7g(wm@1$l7
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -67,6 +67,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'Sotsuken_Portable.context_processors.unread_notification',
             ],
         },
     },
@@ -81,7 +82,7 @@ WSGI_APPLICATION = 'Sotsuken_Portable_Project.wsgi.application'
 DATABASES = {
      'default': {
         # 【変更点】mysql-connector-pythonを使用する場合のENGINEの指定
-        'ENGINE': 'mysql.connector.django',
+        'ENGINE': 'django.db.backends.mysql',
 
         # データベース名
         'NAME': 'sotsuken',
@@ -93,7 +94,7 @@ DATABASES = {
         'PASSWORD': 'your_password',
 
         # ホスト名
-        'HOST': 'localhost',
+        'HOST': '127.0.0.1',
 
         # ポート番号
         'PORT': '3306',
@@ -119,7 +120,7 @@ AUTH_USER_MODEL = 'Sotsuken_Portable.User'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'Sotsuken_Portable.validators.CustomUserAttributeSimilarityValidator',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
@@ -181,11 +182,24 @@ ASGI_THREADS = 1
 CHANNEL_LAYERS = {
     "default": {
         # 開発中はこれでOK
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
+        # "BACKEND": "channels.layers.InMemoryChannelLayer"
         # 本番環境にデプロイする際は、Redisを使うようにこちらを有効化する
-        # "BACKEND": "channels_redis.core.RedisChannelLayer",
-        # "CONFIG": {
-        #     "hosts": [("127.0.0.1", 6379)],
-        # },
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
     },
 }
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# settings.py の最後の方に追加
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://www.sotsusotsu.com",
+    "https://sotsusotsu.com",
+]
+
+# プロキシ経由でHTTPS通信している場合に必要
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

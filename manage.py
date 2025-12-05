@@ -5,7 +5,7 @@ import sys
 
 
 def main():
-    """Run administrative tasks."""
+    #"""Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Sotsuken_Portable_Project.settings')
 
     try:
@@ -16,6 +16,7 @@ def main():
         # runserverのデフォルトポートを取得
         DEFAULT_PORT = runserver.default_port
 
+        '''
         if 'runserver' in sys.argv:
             # --- ここから修正 ---
 
@@ -46,9 +47,13 @@ def main():
             ).run()
             # Daphneが起動したら、ここで処理を終了
             return
+            '''
+
+
     except (ImportError, IndexError):
         # Daphneがない場合や、引数が不足している場合は通常のrunserverにフォールバック
         pass
+
 
     try:
         from django.core.management import execute_from_command_line
@@ -59,6 +64,7 @@ def main():
             "forget to activate a virtual environment?"
         ) from exc
     execute_from_command_line(sys.argv)
+
 
 
 if __name__ == '__main__':

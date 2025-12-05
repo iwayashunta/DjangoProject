@@ -7,31 +7,33 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 
 
+'''
 class UserManager(BaseUserManager):
     # create_userメソッドを修正
-    def create_user(self, login_id, password=None, **extra_fields):
-        if not login_id:
+    def create_user(self, username, password=None, **extra_fields):
+        if not username:
             raise ValueError('The Login ID field must be set')
 
         email = extra_fields.get('email')
         if email:
             extra_fields['email'] = self.normalize_email(email)
 
-        # usernameにlogin_idをコピーしておく（任意だが互換性のために推奨）
-        extra_fields.setdefault('username', login_id)
+        # usernameにusernameをコピーしておく（任意だが互換性のために推奨）
+        extra_fields.setdefault('username', username)
 
-        user = self.model(login_id=login_id, **extra_fields)
+        user = self.model(username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
     # create_superuserメソッドを修正
-    def create_superuser(self, login_id, password=None, **extra_fields):
+    def create_superuser(self, username, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         # ... (is_staff, is_superuserのチェック) ...
 
-        return self.create_user(login_id, password, **extra_fields)
+        return self.create_user(username, password, **extra_fields)
+    '''
 
 class User(AbstractUser):
     # ロール定義
@@ -54,34 +56,47 @@ class User(AbstractUser):
 
     # 1. ログインIDフィールドを追加 (ユニーク制約付き)
     #    ユーザーが自分で決める or システムが自動生成する
-    login_id = models.CharField(
-        verbose_name='ログインID',
-        max_length=50,
-        unique=True,
-        help_text='ログイン時に使用する一意のIDです。'
-    )
+    # username = models.CharField(
+        # verbose_name='ログインID',
+        # max_length=50,
+        # unique=True,
+        # help_text='ログイン時に使用する一意のIDです。'
+    # )
 
     # 2. 氏名フィールド
-    full_name = models.CharField(verbose_name='氏名', max_length=150, blank=True)
+    full_name = models.CharField(verbose_name='氏名', max_length=150)
 
     # 3. emailフィールドのユニーク制約は外す（連絡先としてのみ使用）
-    email = models.EmailField(verbose_name='メールアドレス', blank=True)
+    email = models.EmailField(verbose_name='メールアドレス')
 
-    # 4. ログインに使うフィールドを 'login_id' に設定
-    USERNAME_FIELD = 'login_id'
+    # 4. ログインに使うフィールドを 'username' に設定
+    USERNAME_FIELD = 'username'
 
     # 5. createsuperuserコマンドで聞かれる項目に 'email' を追加
     REQUIRED_FIELDS = ['email']
 
     # 6. usernameのユニーク制約は外したままでOK
-    username = models.CharField(('username'), max_length=150, unique=False, blank=True)
+    # username = models.CharField(('username'), max_length=150, unique=False, blank=True)
 
     # --- カスタムマネージャーの修正 ---
-    objects = UserManager()  # UserManagerは後述
+    # objects = UserManager()  # UserManagerは後述
 
     # オプション：最終位置情報
     last_known_latitude = models.FloatField(null=True, blank=True)
     last_known_longitude = models.FloatField(null=True, blank=True)
+
+    last_known_location = models.CharField(
+        verbose_name="最終確認場所",
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="避難所チェックイン等で記録された場所名"
+    )
+    last_seen_at = models.DateTimeField(
+        verbose_name="最終確認日時",
+        blank=True,
+        null=True
+    )
 
     # groups フィールドにユニークな related_name を追加
     groups = models.ManyToManyField(
@@ -107,15 +122,48 @@ class User(AbstractUser):
     )
 
     def __str__(self):
-        return self.full_name or self.login_id
+        return self.full_name or self.username
 
     class Meta:
         # DjangoにカスタムUserモデルを使用することを伝えます
-        pass
+        verbose_name = 'ユーザー'
+        verbose_name_plural = 'ユーザー'
+
+    AbstractUser._meta.get_field('username').verbose_name = 'ログインID'
+    AbstractUser._meta.get_field('username').help_text = 'ログイン時に使用する一意のIDです。'
 
     # ユーザー名としてメールアドレスを使用する場合
     # USERNAME_FIELD = 'email'
     # REQUIRED_FIELDS = ['username']
+
+class Connection(models.Model):
+    """ユーザー間の繋がり（友達関係）を管理するモデル"""
+    STATUS_CHOICES = (
+        ('requesting', '申請中'), # 自分 -> 相手
+        ('accepted', '承認済み'), # 友達状態
+        ('blocked', 'ブロック'),
+    )
+
+    # 申請した側
+    requester = models.ForeignKey(
+        'User',
+        related_name='sent_connections',
+        on_delete=models.CASCADE
+    )
+    # 申請された側
+    receiver = models.ForeignKey(
+        'User',
+        related_name='received_connections',
+        on_delete=models.CASCADE
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requesting')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('requester', 'receiver') # 重複申請を防ぐ
+
+    def __str__(self):
+        return f"{self.requester} -> {self.receiver} ({self.get_status_display()})"
 
 class Group(models.Model):
     """
@@ -379,7 +427,15 @@ class SOSReport(models.Model):
         verbose_name="発信者",
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name="sos_reports"
+    )
+
+    guest_name = models.CharField(
+        verbose_name="通報者名(未ログイン)",
+        max_length=100,
+        blank=True,
+        default="匿名"
     )
 
     # 2. 発信日時
@@ -481,9 +537,16 @@ class Message(models.Model):
     # 6. 既読フラグ (簡易的な実装)
     # 複雑な既読管理（誰が読んだか）は別の中間テーブル (ReadReceipt) を使いますが、
     # 簡易的に「宛先全体で既読か否か」のフラグを持たせます。
-    is_read = models.BooleanField(
-        verbose_name="既読",
-        default=False
+    # is_read = models.BooleanField(
+    #    verbose_name="既読",
+    #    default=False
+    #)
+
+    image = models.ImageField(
+        verbose_name="添付画像",
+        upload_to='chat_images/',  # media/chat_images/ に保存される
+        blank=True,
+        null=True
     )
 
     class Meta:
@@ -493,6 +556,36 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Msg from {self.sender.username if self.sender else 'Deleted'} to {self.group.name if self.group else 'DM/Other'}"
+
+
+class ReadState(models.Model):
+    """ユーザーごとのチャット既読状況を管理するモデル"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='read_states'
+    )
+
+    # グループチャットの場合
+    group = models.ForeignKey(
+        'Group', on_delete=models.CASCADE, null=True, blank=True
+    )
+
+    # DMの場合 (相手ユーザーを特定するためには、DM相手かDMルームIDが必要ですが、
+    # 簡易的に「DM相手」をキーにするのが楽です)
+    dm_partner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='dm_read_states'
+    )
+
+    last_read_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [
+            ('user', 'group'),
+            ('user', 'dm_partner')
+        ]
+
+    def __str__(self):
+        target = self.group.name if self.group else f"DM:{self.dm_partner}"
+        return f"{self.user} read {target} at {self.last_read_at}"
 
 
 class CommunityPost(models.Model):
@@ -612,6 +705,14 @@ class Shelter(models.Model):
         ('preparating', '開設準備中'),
     ]
 
+    # 避難所ID
+    management_id = models.CharField(
+        verbose_name="避難所管理ID",
+        max_length=50,
+        unique=True,  # このIDは絶対に重複してはならない
+        help_text="例: TKY-SHIBUYA-01 のように、システム全体でユニークなIDを設定してください。"
+    )
+
     # 1. 避難所名 (必須)
     name = models.CharField(
         verbose_name="避難所名",
@@ -710,6 +811,13 @@ class RPiData(models.Model):
         auto_now_add=True
     )
 
+    # 元の記録日時 (ラズパイ側で記録された日時)
+    original_timestamp = models.DateTimeField(
+        verbose_name="元の記録日時",
+        blank=True,
+        null=True  # 過去のデータにはこの値がない可能性があるのでnullを許容
+    )
+
     # 5. データ取得時の位置情報
     latitude = models.FloatField(verbose_name="緯度", null=True, blank=True)
     longitude = models.FloatField(verbose_name="経度", null=True, blank=True)
@@ -748,6 +856,17 @@ class OfficialAlert(models.Model):
         default='info'
     )
     published_at = models.DateTimeField(verbose_name="発表日時", auto_now_add=True)
+    publisher = models.CharField(verbose_name="発信元", max_length=100, default="気象庁")
+    is_active = models.BooleanField(verbose_name="有効", default=True)
+    # ★ エリア情報との紐付けを追加
+    # null=Trueにしておくことで、既存データの移行エラーを防ぎます
+    area = models.ForeignKey(
+        'JmaArea',
+        on_delete=models.CASCADE,
+        verbose_name="対象地域",
+        null=True,
+        blank=True
+    )
 
     class Meta:
         verbose_name = "公式緊急情報"
@@ -756,3 +875,144 @@ class OfficialAlert(models.Model):
 
     def __str__(self):
         return self.title
+
+class DistributionItem(models.Model):
+    """配布する物資の種類を管理するモデル（例：朝食、水、毛布）"""
+    name = models.CharField(verbose_name="物資名", max_length=100, unique=True)
+    description = models.TextField(verbose_name="説明", blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+class DistributionInfo(models.Model):
+    """炊き出し・物資配布状況のお知らせを管理するモデル"""
+
+    STATUS_CHOICES = [
+        ('scheduled', '予定'),
+        ('active', '実施中'),
+        ('ended', '終了'),
+    ]
+
+    TYPE_CHOICES = [
+        ('food', '炊き出し・食料'),
+        ('supplies', '物資配布'),
+        ('water', '給水'),
+        ('bath', '入浴支援'),
+    ]
+
+    # 場所
+    shelter = models.ForeignKey(
+        'Shelter',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="関連避難所"
+    )
+    location_name = models.CharField(
+        verbose_name="場所名",
+        max_length=100,
+        help_text="避難所を選択しない場合は具体的な場所名を入力（例: 〇〇公園）"
+    )
+
+    related_item = models.ForeignKey(
+        'DistributionItem',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="配布品目 (マスタ)"
+    )
+
+    # 内容
+    info_type = models.CharField(verbose_name="種別", max_length=20, choices=TYPE_CHOICES)
+    title = models.CharField(verbose_name="内容タイトル", max_length=100)
+    description = models.TextField(verbose_name="詳細", blank=True)
+
+    # 時間と状況
+    status = models.CharField(verbose_name="状況", max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    start_time = models.DateTimeField(verbose_name="開始日時", null=True, blank=True)
+    end_time = models.DateTimeField(verbose_name="終了日時", null=True, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "炊き出し・物資情報"
+        verbose_name_plural = "炊き出し・物資情報"
+        ordering = ['status', 'start_time']
+
+    def __str__(self):
+        return self.title
+
+class DistributionRecord(models.Model):
+    """誰が、いつ、何を受け取ったかの記録"""
+    user = models.ForeignKey(User, verbose_name="受け取りユーザー", on_delete=models.CASCADE)
+    item = models.ForeignKey(DistributionItem, verbose_name="受け取り物資", on_delete=models.CASCADE)
+    distributed_at = models.DateTimeField(verbose_name="配布日時", auto_now_add=True)
+    recorded_by_device = models.CharField(verbose_name="記録デバイスID", max_length=100, blank=True, null=True)
+
+    class Meta:
+        # 同じユーザーが同じアイテムを複数回記録できないようにユニーク制約
+        unique_together = ('user', 'item')
+
+
+
+
+class FieldReportLog(models.Model):
+    """
+    現場デバイス(RPi)から送信された、現場状況報告の履歴を記録するモデル。
+    """
+    # どの避難所からの報告か
+    shelter = models.ForeignKey(Shelter, verbose_name="報告元避難所", on_delete=models.SET_NULL, null=True)
+
+    # 報告内容
+    current_evacuees = models.PositiveIntegerField(verbose_name="報告時の避難者数")
+    medical_needs = models.PositiveIntegerField(verbose_name="報告時の要介護者数")
+    food_stock = models.CharField(verbose_name="報告時の食料残量", max_length=10)  # 'safe', 'warning', 'critical'
+
+    # 報告が作成された元のタイムスタンプ (ラズパイ側で記録された日時)
+    original_timestamp = models.DateTimeField(verbose_name="現場での報告日時")
+
+    # この記録を中央サーバーが受信した日時
+    received_at = models.DateTimeField(verbose_name="サーバー受信日時", auto_now_add=True)
+
+    # どのデバイスからの報告か
+    reported_by_device = models.CharField(verbose_name="報告デバイスID", max_length=100, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.original_timestamp.strftime('%Y-%m-%d %H:%M')} - {self.shelter.name if self.shelter else '不明な避難所'}"
+
+    class Meta:
+        verbose_name = "現場状況報告ログ"
+        verbose_name_plural = "現場状況報告ログ"
+        ordering = ['-original_timestamp']
+
+class OnlineUser(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    channel_name = models.CharField(max_length=255)
+
+class Manual(models.Model):
+    """
+    マニュアルを管理するモデル
+    """
+    title = models.CharField(max_length=200, verbose_name="タイトル")
+    pdf_file = models.FileField(upload_to='manuals/', verbose_name="PDFファイル")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = "マニュアル"
+        verbose_name_plural = "マニュアル"
+
+class JmaArea(models.Model):
+    """気象庁のエリアコードと、その代表座標（県庁所在地など）を管理するモデル"""
+    name = models.CharField(verbose_name="地域名", max_length=50) # 例: 東京地方
+    code = models.CharField(verbose_name="エリアコード", max_length=20, unique=True) # 例: 130000
+    latitude = models.FloatField(verbose_name="代表緯度")
+    longitude = models.FloatField(verbose_name="代表経度")
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+

@@ -14,7 +14,7 @@
         </p>
         
         <div class="bg-red-50 p-4 rounded-lg border border-red-200 mb-6 text-left">
-            <p><span class="font-semibold">発信者:</span> {{ report.reporter.full_name|default:report.reporter.login_id }}</p>
+            <p><span class="font-semibold">発信者:</span> {{ report.reporter.full_name|default:report.reporter.username }}</p>
             <p><span class="font-semibold">発信日時:</span> {{ report.reported_at|date:"Y/m/d H:i:s" }}</p>
             <p><span class="font-semibold">位置情報:</span> {{ report.latitude }}, {{ report.longitude }}</p>
             <p><span class="font-semibold">現在の状況:</span> {{ report.get_status_display }}</p>

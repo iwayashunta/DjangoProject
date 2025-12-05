@@ -40,7 +40,7 @@
                                         {# 氏名が未登録なら、代わりにログインIDを表示 #}
                                         <span class="text-gray-500 italic">(氏名未登録)</span>
                                     {% endif %}
-                                    <span class="text-xs text-gray-500">({{ report.reporter.login_id }})</span>
+                                    <span class="text-xs text-gray-500">({{ report.reporter.username }})</span>
                                 {% else %}
                                     {# ユーザーが本当に削除されて、reporterがNULLの場合 #}
                                     <span class="text-red-500 font-semibold">(削除されたユーザー)</span>

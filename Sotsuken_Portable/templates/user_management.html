@@ -14,14 +14,14 @@
                     <th class="p-2 font-semibold">ログインID</th>
                     <th class="p-2 font-semibold">氏名</th>
                     <th class="p-2 font-semibold">メールアドレス</th>
-                    <th class="p-2 font-semibold text-center">安否状況</th>
-                    <th class="p-2 font-semibold text-center">操作</th> <!-- ← 新しく列を追加 -->
+                    <th class="p-2 font-semibold text-center">操作</th>
+                    <th class="p-2 font-semibold text-center">安否状況</th> <!-- ← 新しく列を追加 -->
                 </tr>
                 </thead>
                 <tbody>
                 {% for user in user_list %}
                     <tr class="border-b hover:bg-gray-50">
-                        <td class="p-2 font-mono">{{ user.login_id }}</td>
+                        <td class="p-2 font-mono">{{ user.username }}</td>
                         <td class="p-2">{{ user.full_name|default:"-" }}</td>
                         <td class="p-2">{{ user.email|default:"-" }}</td>
                         <!-- ▼▼▼ ロール変更フォーム部分 ▼▼▼ -->

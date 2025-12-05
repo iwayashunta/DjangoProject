@@ -13,7 +13,7 @@
         {% for post in post_list %}
         <a href="{% url 'Sotsuken_Portable:community_detail' post.pk %}" class="block p-4 border rounded-lg hover:bg-gray-50">
             <h3 class="text-lg font-semibold">{{ post.title }}</h3>
-            <p class="text-sm text-gray-600">投稿者: {{ post.author.login_id }} | {{ post.posted_at|date:"Y/m/d H:i" }}</p>
+            <p class="text-sm text-gray-600">投稿者: {{ post.author.username }} | {{ post.posted_at|date:"Y/m/d H:i" }}</p>
         </a>
         {% empty %}
         <p>まだ投稿はありません。</p>

@@ -1,26 +1,31 @@
 import csv
 import datetime
 import json
+import math
 
+from asgiref.sync import async_to_sync
+from channels.layers import channel_layers
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required # ログイン必須にするためのデコレータ
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q
+from django.utils import timezone
 from django.views import generic
 from django.views.decorators.http import require_POST
 # generic から、使いたいクラスを直接インポートする
 from django.views.generic import ListView, DetailView, CreateView, TemplateView
 
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
-    GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm
+    GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
-    CommunityPost, Comment, GroupMember, User
+    CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection, \
+    DistributionInfo, DistributionItem, ReadState
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -103,76 +108,101 @@ def signup_done_view(request):
     """
     return render(request, 'signup_done.html')
 
-@login_required()
+
+@login_required
 def safety_check_view(request):
     """
-    安否確認・支援要請ページの表示とフォーム処理を行うビュー
+    安否確認・支援要請ページの表示とフォーム処理
     """
     user = request.user
 
-    # --- フォームの処理 (POSTリクエスト時) ---
+    # --- 1. 自分の現在の安否情報を取得 ---
+    try:
+        my_status = getattr(user, 'safety_status_record', None)
+    except SafetyStatus.DoesNotExist:
+        my_status = None
+
+    safety_form = None
+    support_form = None
+
+    # --- 2. フォームの処理 (POST) ---
     if request.method == 'POST':
-        # どちらのフォームが送信されたかを判定
-        # テンプレート側の送信ボタンに name属性 をつけておく
         if 'submit_safety' in request.POST:
-            # 安否報告フォームが送信された場合
-            # ログインユーザーの安否情報を取得 or なければ作成
-            instance, created = SafetyStatus.objects.get_or_create(user=user)
+            # 安否報告
+            instance = my_status if my_status else SafetyStatus(user=user)
             safety_form = SafetyStatusForm(request.POST, instance=instance)
+            support_form = SupportRequestForm()
 
             if safety_form.is_valid():
                 safety_form.save()
                 messages.success(request, '安否情報を更新しました。')
                 return redirect('Sotsuken_Portable:safety_check')
 
-            # エラーがあった場合は、もう片方のフォームは空で初期化
-            support_form = SupportRequestForm()
-
         elif 'submit_support' in request.POST:
-            # 支援要請フォームが送信された場合
+            # 支援要請
             support_form = SupportRequestForm(request.POST)
+            safety_form = SafetyStatusForm(instance=my_status)
 
             if support_form.is_valid():
-                # DBに保存する前に、requesterをログインユーザーに設定
                 instance = support_form.save(commit=False)
                 instance.requester = user
+                # 新規作成時はデフォルトで 'pending' になるので指定不要ですが、念のため
+                instance.status = 'pending'
                 instance.save()
                 messages.success(request, '支援要請を送信しました。')
                 return redirect('Sotsuken_Portable:safety_check')
 
-            # エラーがあった場合は、もう片方のフォームはユーザーの現在の状態で初期化
-            safety_form = SafetyStatusForm(instance=user.safety_status_record)
-
-    # --- ページの表示 (GETリクエスト時 or フォームエラー時) ---
-    else:
-        # ログインユーザーの現在の安否情報をフォームの初期値に設定
-        try:
-            my_status = user.safety_status_record
-        except SafetyStatus.DoesNotExist:
-            my_status = None
-
-        if my_status:
-            safety_form = SafetyStatusForm(instance=my_status)
-        else:
-            safety_form = SafetyStatusForm()
-
+    # --- 3. フォーム初期化 (GET or Error) ---
+    if not safety_form:
+        safety_form = SafetyStatusForm(instance=my_status)
+    if not support_form:
         support_form = SupportRequestForm()
 
-        # --- 表示用データの準備 ---
-        safety_list = SafetyStatus.objects.exclude(user=user).order_by('-last_updated')
-        request_list = SupportRequest.objects.filter(status='pending').order_by('-requested_at')
+    # --- 4. 表示用データの取得 ---
 
-        context = {
-            'my_status': my_status,  # <-- 自分の安否情報を追加
-            'safety_form': safety_form,
-            'support_form': support_form,
-            'safety_list': safety_list,
-            'request_list': request_list,
-        }
+    # 安否リスト
+    safety_list = SafetyStatus.objects.exclude(user=user).order_by('-last_updated')
 
-        return render(request, 'safety_check.html', context)
+    # ★★★ 修正: 支援要請リストの取得条件 ★★★
+    # 「解決済(resolved)」と「キャンセル(cancelled)」以外を表示する
+    request_list = SupportRequest.objects.exclude(
+        status__in=['resolved', 'cancelled']
+    ).order_by('-requested_at')
 
+    context = {
+        'my_status': my_status,
+        'safety_form': safety_form,
+        'support_form': support_form,
+        'safety_list': safety_list,
+        'request_list': request_list,
+    }
+
+    return render(request, 'safety_check.html', context)
+
+
+# ★★★ 修正: 解決済みアクションのビュー ★★★
 @login_required
+def resolve_support_request_view(request, pk):
+    """支援要請を「解決済み」にする"""
+
+    # 権限チェック
+    if request.user.role not in ['admin', 'rescuer'] and not request.user.is_superuser:
+        messages.error(request, "権限がありません。")
+        return redirect('Sotsuken_Portable:safety_check')
+
+    if request.method == 'POST':
+        req = get_object_or_404(SupportRequest, pk=pk)
+
+        # ★★★ 修正: statusフィールドを更新 ★★★
+        req.status = 'resolved'
+        req.save()
+
+        messages.success(request, f"支援要請（{req.get_category_display()}）を解決済みにしました。")
+
+    return redirect('Sotsuken_Portable:safety_check')
+
+
+
 def emergency_sos_view(request):
     """
     緊急SOS発信ページの表示と、SOS情報の受付処理
@@ -182,20 +212,35 @@ def emergency_sos_view(request):
         # フォームから緯度と経度を取得
         latitude = request.POST.get('latitude')
         longitude = request.POST.get('longitude')
+        guest_name_input = request.POST.get('guest_name', '匿名')
 
         # 緯度・経度が正常に取れているかチェック
         if latitude and longitude:
+
+            # ★★★ 分岐処理 ★★★
+            if request.user.is_authenticated:
+                # ログインしている場合
+                reporter_user = request.user
+                saved_guest_name = ""  # ユーザーがいるならゲスト名は空でOK
+            else:
+                # ログインしていない場合
+                reporter_user = None
+                # 入力が空文字なら'匿名'にする
+                saved_guest_name = guest_name_input if guest_name_input.strip() else '匿名'
+
             # SOSレポートをデータベースに作成
             SOSReport.objects.create(
-                reporter=request.user,
+                reporter=reporter_user,
+                guest_name=saved_guest_name,
                 latitude=latitude,
                 longitude=longitude,
             )
+
             # 完了ページへリダイレクト
             return redirect('Sotsuken_Portable:emergency_sos_done')
+
         else:
-            # もし位置情報が取得できていなければ、エラーメッセージと共に元のページに戻る
-            messages.error(request, '位置情報の取得に失敗しました。再度お試しください。')
+            messages.error(request, '位置情報の取得に失敗しました。GPSを有効にして再度お試しください。')
             return render(request, 'emergency_sos.html')
 
     # GETリクエスト（初めてページを開いた）の場合
@@ -235,20 +280,41 @@ def map_view(request):
 
 @login_required
 def emergency_info_view(request):
-    """
-    緊急情報ポータルページを表示するビュー
-    """
-    # 1. 行政からの最新情報を取得
+    # 1. 行政情報、避難所情報の取得 (既存)
     alerts = OfficialAlert.objects.all()
-
-    # 2. 全ての避難所の情報を取得
     shelters = Shelter.objects.all()
+
+    # 2. 全ての有効な配布情報を取得
+    all_distributions = DistributionInfo.objects.exclude(status='ended').order_by('status', 'start_time')
+
+    # 3. ★★★ ユーザーの場所に基づく振り分け ★★★
+    my_shelter_distributions = []
+    other_distributions = []
+
+    # ユーザーの最終確認場所を取得 (例: "〇〇小学校")
+    user_location = request.user.last_known_location
+
+    for dist in all_distributions:
+        # 配布情報に避難所が紐付いていて、かつ名前が一致する場合
+        # (または location_name が一致する場合)
+        is_match = False
+
+        if dist.shelter and dist.shelter.name == user_location:
+            is_match = True
+        elif dist.location_name and dist.location_name == user_location:
+            is_match = True
+
+        if is_match:
+            my_shelter_distributions.append(dist)
+        else:
+            other_distributions.append(dist)
 
     context = {
         'alerts': alerts,
         'shelters': shelters,
+        'my_distributions': my_shelter_distributions,  # あなたの避難所用
+        'other_distributions': other_distributions,  # その他
     }
-
     return render(request, 'emergency_info.html', context)
 
 
@@ -272,7 +338,7 @@ def user_management_view(request):
     登録ユーザーの一覧と安否情報を表示する管理者向けビュー
     """
     # select_related を使って、User と SafetyStatus を効率的に一括取得
-    user_list = User.objects.select_related('safety_status_record').order_by('login_id')
+    user_list = User.objects.select_related('safety_status_record').order_by('username')
 
     context = {
         'user_list': user_list
@@ -296,10 +362,10 @@ def user_delete_view(request, user_id):
             return redirect('Sotsuken_Portable:user_management')
 
         # ユーザーを削除
-        deleted_user_login_id = user_to_delete.login_id
+        deleted_user_username = user_to_delete.username
         user_to_delete.delete()
 
-        messages.success(request, f"ユーザー「{deleted_user_login_id}」を削除しました。")
+        messages.success(request, f"ユーザー「{deleted_user_username}」を削除しました。")
         return redirect('Sotsuken_Portable:user_management')
 
     # GETリクエストの場合（確認画面の表示）
@@ -326,7 +392,7 @@ def user_change_role_view(request, user_id):
         else:
             user_to_change.role = new_role
             user_to_change.save()
-            messages.success(request, f"ユーザー「{user_to_change.login_id}」のロールを「{user_to_change.get_role_display()}」に変更しました。")
+            messages.success(request, f"ユーザー「{user_to_change.username}」のロールを「{user_to_change.get_role_display()}」に変更しました。")
     else:
         messages.error(request, "無効なロールが指定されました。")
 
@@ -363,11 +429,11 @@ def shelter_management_view(request):
 
 # --- 避難所編集ビュー ---
 @admin_required
-def shelter_edit_view(request, shelter_id):
+def shelter_edit_view(request, management_id):
     """
     既存の避難所情報を編集するビュー
     """
-    shelter_instance = get_object_or_404(Shelter, pk=shelter_id)
+    shelter_instance = get_object_or_404(Shelter, management_id=management_id)
 
     # POSTリクエスト（フォームが送信された）の場合
     if request.method == 'POST':
@@ -392,11 +458,11 @@ def shelter_edit_view(request, shelter_id):
 
 # --- 避難所削除ビュー ---
 @admin_required
-def shelter_delete_view(request, shelter_id):
+def shelter_delete_view(request, management_id):
     """
     避難所を削除するビュー（確認ページ付き）
     """
-    shelter_to_delete = get_object_or_404(Shelter, pk=shelter_id)
+    shelter_to_delete = get_object_or_404(Shelter, management_id=management_id)
 
     # POSTリクエストの場合（削除実行）
     if request.method == 'POST':
@@ -499,7 +565,7 @@ def sos_report_export_csv_view(request):
         writer.writerow([
             report.id,
             report.reported_at.strftime('%Y-%m-%d %H:%M:%S'),
-            report.reporter.login_id if report.reporter else '',
+            report.reporter.username if report.reporter else '',
             report.reporter.full_name if report.reporter else '(削除されたユーザー)',
             report.latitude,
             report.longitude,
@@ -539,8 +605,16 @@ def chat_room_view(request, group_id):
 
         context = {
             'group': group,
-            'messages': messages,
+            'chat_messages': messages,
         }
+
+        # ★ 既読日時を更新
+        ReadState.objects.update_or_create(
+            user=request.user,
+            group=group,
+            defaults={'last_read_at': timezone.now()}
+        )
+
         return render(request, 'chat.html', context)
     except Group.DoesNotExist:
         return redirect('Sotsuken_Portable:chat_group_list')
@@ -549,20 +623,117 @@ def chat_room_view(request, group_id):
 @login_required
 def dm_user_list_view(request):
     """
-    DM相手と、参加中グループチャットへの入り口ページ
+    DMユーザー一覧＆ユーザー検索画面
     """
-    # 1. 自分以外の全ユーザーを取得 (DM相手用)
-    dm_users = User.objects.exclude(pk=request.user.pk)
+    current_user = request.user
+    search_query = request.GET.get('q')
+    search_results = []
 
-    # 2. 自分が所属するグループの一覧を取得 (グループチャット用)
-    chat_groups = Group.objects.filter(memberships__member=request.user)
+    # --- 1. 検索機能 ---
+    if search_query:
+        # IDまたは名前で検索（自分自身は除外）
+        users = User.objects.filter(
+            Q(username__icontains=search_query) | Q(full_name__icontains=search_query)
+        ).exclude(id=current_user.id)
+
+        for user in users:
+            # そのユーザーとの関係性を判定して、userオブジェクトに属性を追加する
+            user.can_chat = False
+            user.connection_status = 'none'  # none, requesting, received, accepted
+
+            # A. 特権階級チェック（災害用特例）
+            # 相手が管理者/救助隊、または自分が管理者/救助隊なら無条件でチャット可能
+            if user.role in ['admin', 'rescuer'] or current_user.role in ['admin', 'rescuer']:
+                user.can_chat = True
+                user.connection_status = 'special'  # 特別権限
+
+            # B. 友達関係チェック
+            else:
+                # 自分と相手の間のConnectionを探す
+                conn = Connection.objects.filter(
+                    (Q(requester=current_user, receiver=user) |
+                     Q(requester=user, receiver=current_user))
+                ).first()
+
+                if conn:
+                    user.connection_status = conn.status
+                    if conn.status == 'accepted':
+                        user.can_chat = True
+                    elif conn.status == 'requesting':
+                        # 自分が申請したのか、されたのかを区別
+                        if conn.requester == current_user:
+                            user.connection_status = 'sent_request'  # 申請中
+                        else:
+                            user.connection_status = 'received_request'  # 承認待ち
+
+            search_results.append(user)
+
+    # ★★★ 追加: 自分宛ての未承認リクエストを取得 ★★★
+    received_requests = Connection.objects.filter(
+        receiver=current_user,
+        status='requesting'
+    )
+    # 申請者のユーザーオブジェクトのリストにする（テンプレートで使いやすくするため）
+    requesting_users = [req.requester for req in received_requests]
+
+    # --- 2. 既存のチャット可能なユーザー一覧（友達など） ---
+    # 既に 'accepted' な関係にあるユーザーを取得
+    connections = Connection.objects.filter(
+        (Q(requester=current_user) | Q(receiver=current_user)),
+        status='accepted'
+    )
+    friend_ids = []
+    for c in connections:
+        friend_ids.append(c.receiver.id if c.requester == current_user else c.requester.id)
+
+    # 管理者などは検索しなくても最初からリストに出すなどの仕様もアリですが
+    # ここでは「友達登録済みユーザー」を表示します
+    dm_users = User.objects.filter(id__in=friend_ids)
+
+    memberships = current_user.group_memberships.all()
+    chat_groups = [m.group for m in memberships]
+
+    # A. グループチャットの未読判定
+    for group in chat_groups:
+        # このユーザーがこのグループを最後に読んだ時間を取得
+        read_state = ReadState.objects.filter(user=current_user, group=group).first()
+
+        if read_state:
+            last_read = read_state.last_read_at
+        else:
+            # まだ一度も開いていない場合は、ずっと昔の日付にする（＝全メッセージ未読扱い）
+            last_read = timezone.datetime.min.replace(tzinfo=datetime.timezone.utc)
+
+        # 「最終閲覧日時」より新しく、かつ「自分以外が送信した」メッセージがあるか？
+        group.has_unread = Message.objects.filter(
+            group=group,
+            timestamp__gt=last_read
+        ).exclude(sender=current_user).exists()
+
+    # B. DMの未読判定
+    for user in dm_users:
+        # このユーザーとのDMを最後に読んだ時間を取得
+        read_state = ReadState.objects.filter(user=current_user, dm_partner=user).first()
+
+        if read_state:
+            last_read = read_state.last_read_at
+        else:
+            last_read = timezone.datetime.min.replace(tzinfo=datetime.timezone.utc)
+
+        # 「最終閲覧日時」より新しく、かつ「相手から自分宛て」のメッセージがあるか？
+        user.has_unread = Message.objects.filter(
+            sender=user,
+            recipient=current_user,
+            timestamp__gt=last_read
+        ).exists()
 
     context = {
+        'search_query': search_query,
+        'search_results': search_results,
         'dm_users': dm_users,
+        'requesting_users': requesting_users,
         'chat_groups': chat_groups,
     }
-
-    # テンプレート名をより実態に合った 'chat_index.html' などに変更しても良い
     return render(request, 'dm_user_list.html', context)
 
 
@@ -571,13 +742,47 @@ def dm_room_view(request, user_id):
     """
     特定のユーザーとのDMルームページ
     """
+
+    # 自分自身とのチャットは許可するか？（メモ代わりにするならOK、禁止なら弾く）
+    if request.user.id == user_id:
+        pass  # 今回は許可
+
+    target_user = get_object_or_404(User, id=user_id)
+    current_user = request.user
+
+    # --- 権限チェックロジック ---
+    is_allowed = False
+
+    # 1. 特権階級（救助隊・管理者）への連絡は無条件で許可する（災害用なので）
+    if target_user.role in ['admin', 'rescuer']:
+        is_allowed = True
+
+    # 2. 自分が特権階級なら、誰にでも連絡できる
+    elif current_user.role in ['admin', 'rescuer']:
+        is_allowed = True
+
+    # 3. それ以外（一般人同士）は、友達関係が必要
+    else:
+        # A->B または B->A のどちらかで 'accepted' な関係があるか
+        connection = Connection.objects.filter(
+            (Q(requester=current_user, receiver=target_user) |
+             Q(requester=target_user, receiver=current_user)),
+            status='accepted'
+        ).exists()
+        if connection:
+            is_allowed = True
+
+    if not is_allowed:
+        messages.error(request, "このユーザーとメッセージを送る権限がありません（友達登録が必要です）。")
+        return redirect('Sotsuken_Portable:index')
+
     try:
         other_user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
         return redirect('Sotsuken_Portable:dm_user_list')
 
     # 自分と相手の間で交わされたメッセージを取得 (groupがNULLのものに限定)
-    messages = Message.objects.filter(
+    chat_history = Message.objects.filter(
         group__isnull=True,  # グループチャットのメッセージを除外
         sender__in=[request.user, other_user],
         recipient__in=[request.user, other_user]
@@ -585,9 +790,92 @@ def dm_room_view(request, user_id):
 
     context = {
         'other_user': other_user,
-        'messages': messages,
+        'chat_messages': chat_history,
     }
+
+    ReadState.objects.update_or_create(
+        user=request.user,
+        dm_partner=other_user,
+        defaults={'last_read_at': timezone.now()}
+    )
     return render(request, 'dm_room.html', context)
+
+
+@login_required
+def search_users_view(request):
+    results = []
+    form = UserSearchForm(request.GET or None)
+
+    if form.is_valid():
+        query = form.cleaned_data['query']
+        # 自分以外、かつIDか氏名が一致するユーザーを検索
+        results = User.objects.filter(
+            Q(username__icontains=query) | Q(full_name__icontains=query)
+        ).exclude(id=request.user.id)
+
+    # 各ユーザーとの現在の関係性を確認（テンプレートでボタンを出し分けるため）
+    # 実際はテンプレート内でカスタムタグ等を使うか、リストを加工して渡します
+
+    context = {
+        'form': form,
+        'results': results,
+    }
+    return render(request, 'Sotsuken_Portable/user_search.html', context)
+
+
+@login_required
+def send_connection_request_view(request, user_id):
+    target_user = get_object_or_404(User, pk=user_id)
+
+    # 重複チェック
+    if Connection.objects.filter(requester=request.user, receiver=target_user).exists():
+        messages.warning(request, "既に申請済みです。")
+    elif Connection.objects.filter(requester=target_user, receiver=request.user).exists():
+        messages.info(request, "相手から既に申請が来ています。承認してください。")
+    else:
+        Connection.objects.create(requester=request.user, receiver=target_user, status='requesting')
+        messages.success(request, f"{target_user.username} さんに申請を送りました。")
+
+    return redirect('Sotsuken_Portable:dm_user_list')  # 元の画面に戻る
+
+
+@login_required
+def approve_connection_request_view(request, user_id):
+    """友達申請を承認するビュー"""
+    requester = get_object_or_404(User, pk=user_id)
+
+    # 自分宛て(receiver=request.user)の申請を探す
+    connection = get_object_or_404(
+        Connection,
+        requester=requester,
+        receiver=request.user,
+        status='requesting'
+    )
+
+    # ステータスを承認済みに更新
+    connection.status = 'accepted'
+    connection.save()
+
+    messages.success(request, f"{requester.username} さんと友達になりました！")
+    return redirect('Sotsuken_Portable:dm_user_list')
+
+
+
+
+def _internal_post_message(sender_user, group_id, message):
+    try:
+        channel_layer = channel_layers['default']
+        chat_data = {
+            'type': 'chat_message',
+            'message': message,
+            'sender': sender_user.full_name or sender_user.username,
+        }
+        target_group_name = f'chat_{group_id}'
+
+        async_to_sync(channel_layer.group_send)(target_group_name, chat_data)
+        return True, "Success"
+    except Exception as e:
+        return False, str(e)
 
 
 
@@ -873,7 +1161,6 @@ def group_invite_qr_view(request, group_id):
     }
     return render(request, 'group_invite_qr.html', context)
 
-
 # --- 3. QRコードスキャナー用ビュー (新規作成) ---
 @login_required
 def qr_scan_view(request):
@@ -882,7 +1169,6 @@ def qr_scan_view(request):
     このビューはテンプレートを表示するだけで、特別なロジックは不要。
     """
     return render(request, 'qr_scanner.html')
-
 
 @login_required
 def join_group_by_code_view(request, invitation_code):
@@ -909,7 +1195,6 @@ def join_group_by_code_view(request, invitation_code):
         messages.error(request, "無効な招待コードです。")
         return redirect('Sotsuken_Portable:group_list')  # エラー時はグループ一覧へ
 
-
 # --- ユーザーID QRコード用ビュー ---
 @login_required
 def user_id_qr_view(request):
@@ -919,12 +1204,141 @@ def user_id_qr_view(request):
     # 変更前
     # user_id = str(request.user.id)
 
-    # 変更後： user.id から user.login_id に変更
-    login_id_str = str(request.user.login_id)
+    # 変更後： user.id から user.username に変更
+    username_str = str(request.user.username)
 
     context = {
         # テンプレートに渡す変数名も分かりやすく変更
-        'login_id_str': login_id_str
+        'username_str': username_str
     }
     return render(request, 'user_id_qr.html', context)
+
+@login_required
+def manual_list(request):
+    """
+    マニュアル一覧を表示するビュー
+    """
+    manuals = Manual.objects.all().order_by('-created_at')
+    context = {
+        'manuals': manuals,
+    }
+    return render(request, 'manual_list.html', context)
+
+@login_required
+# @user_passes_test(lambda u: u.is_superuser)  # 管理者のみに制限する場合
+def rpi_checkin_log_view(request):
+    # チェックイン系のログのみを抽出
+    logs = RPiData.objects.filter(
+        data_type__in=['shelter_checkin', 'sync_checkin', 'sync_checkout']
+    ).order_by('-received_at')
+
+    context = {
+        'logs': logs,
+        'title': '避難所受付データ連携ログ'
+    }
+    return render(request, 'rpi_data_log.html', context)
+
+# --- 2. 炊き出し配布記録の確認 ---
+@login_required
+def distribution_log_view(request):
+    records = DistributionRecord.objects.all().order_by('-distributed_at')
+
+    context = {
+        'records': records,
+    }
+    return render(request, 'distribution_log.html', context)
+
+
+@login_required
+def add_distribution_info_view(request):
+    """炊き出し・物資配布情報を手動で追加するビュー"""
+
+    # 権限チェック (管理者 or 救助隊 or スーパーユーザー)
+    if request.user.role not in ['admin', 'rescuer'] and not request.user.is_superuser:
+        messages.error(request, "情報の追加権限がありません。")
+        return redirect('Sotsuken_Portable:emergency_info')  # 緊急情報ページへ戻す
+
+    if request.method == 'POST':
+        form = DistributionInfoForm(request.POST)
+        if form.is_valid():
+            # commit=False で一旦止める（まだDBには保存しない）
+            dist_info = form.save(commit=False)
+
+            # ★★★ 追加ロジック: 新規品目の登録 ★★★
+            new_item_name = form.cleaned_data.get('new_item_name')
+
+            if new_item_name:
+                # 入力された名前で DistributionItem を作成 (get_or_create で重複防止)
+                item, created = DistributionItem.objects.get_or_create(
+                    name=new_item_name,
+                    defaults={'description': f'{request.user.username}により自動追加'}
+                )
+                # 作成（または取得）したアイテムを紐付ける
+                dist_info.related_item = item
+
+                if created:
+                    messages.info(request, f"品目マスタに「{new_item_name}」を追加しました。")
+
+            # 保存実行
+            dist_info.save()
+
+            messages.success(request, f"「{dist_info.title}」の情報を登録しました。")
+            return redirect('Sotsuken_Portable:emergency_info')
+    else:
+        form = DistributionInfoForm()
+
+    context = {
+        'form': form,
+    }
+    return render(request, 'add_distribution_info.html', context)
+
+
+def get_nearby_alerts_view(request):
+    """
+    【AJAX用】緯度経度を受け取り、最も近いエリアの有効な警報をJSONで返す
+    """
+    # GETリクエスト以外は拒否しても良い
+    if request.method != 'GET':
+        return JsonResponse({'status': 'error', 'message': 'GET method required'}, status=405)
+
+    try:
+        lat = float(request.GET.get('lat'))
+        lon = float(request.GET.get('lon'))
+    except (TypeError, ValueError):
+        return JsonResponse({'status': 'error', 'message': '緯度経度が不正です'}, status=400)
+
+    # 1. 一番近い JmaArea を探す
+    nearest_area = None
+    min_dist = float('inf')
+
+    # エリア数が少なければ全件ループで十分高速です
+    for area in JmaArea.objects.all():
+        d = math.sqrt((area.latitude - lat) ** 2 + (area.longitude - lon) ** 2)
+        if d < min_dist:
+            min_dist = d
+            nearest_area = area
+
+    if not nearest_area:
+        return JsonResponse({'status': 'success', 'alerts': [], 'area_name': '不明'})
+
+    # 2. そのエリアに紐付く有効な警報を取得
+    alerts = OfficialAlert.objects.filter(
+        area=nearest_area,
+        is_active=True
+    ).order_by('-published_at')[:5]
+
+    alert_data = [
+        {
+            'title': a.title,
+            'severity': a.get_severity_display() if hasattr(a, 'get_severity_display') else a.severity,
+            'content': a.content,
+            'date': a.published_at.strftime('%Y/%m/%d %H:%M')
+        } for a in alerts
+    ]
+
+    return JsonResponse({
+        'status': 'success',
+        'area_name': nearest_area.name,
+        'alerts': alert_data
+    }, json_dumps_params={'ensure_ascii': False})
 

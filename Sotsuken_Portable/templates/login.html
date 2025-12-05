@@ -10,7 +10,7 @@
 {# メインコンテンツ部分 #}
 {% block content %}
 <div class="flex flex-col items-center justify-center h-full">
-    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm">
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg">
         <h2 class="text-2xl font-extrabold mb-6 text-center text-blue-700">ログイン・ユーザー登録</h2>
 
         {# ログイン失敗時のエラーメッセージを表示 #}
@@ -18,7 +18,7 @@
             <p class="text-red-500 text-sm mb-4 text-center">ユーザー名またはパスワードが正しくありません。</p>
         {% endif %}
 
-        <form method="post" action="{% url 'Sotsuken_Portable:login' %}">
+        <form method="post" action="{% url 'Sotsuken_Portable:login' %}" autocomplete="off">
             {% csrf_token %} {# CSRF対策のための必須タグ #}
 
             <div class="mb-4">
@@ -26,7 +26,7 @@
 
                 <input type="text" name="username" id="id_username" required
                        class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                       autocomplete="username"> {# autocomplete属性を追加すると親切 #}
+                       {# autocomplete="username" #}> {# autocomplete属性を追加すると親切 #}
             </div>
 
             <div class="mb-6">
@@ -40,8 +40,38 @@
             </button>
         </form>
 
-        {# 新規登録ページへのリンク（将来的には {% url 'signup' %} などに変更） #}
-        <a href="{% url 'Sotsuken_Portable:signup' %}" class="block text-center w-full bg-gray-500 text-white p-3 rounded-lg hover:bg-gray-600 transition-all font-semibold">新規登録</a>
+        <div class="mt-8 pt-6 border-t border-gray-200">
+            <p class="text-center text-sm text-red-600 font-bold mb-3 flex items-center justify-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                緊急時・災害時
+            </p>
+            <a href="{% url 'Sotsuken_Portable:emergency_sos' %}" class="block w-full bg-red-50 text-red-600 border-2 border-red-500 p-3 rounded-lg hover:bg-red-500 hover:text-white transition-colors font-bold text-center flex items-center justify-center gap-2 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                ログインせずにSOSを発信
+            </a>
+        </div>
+
+        {# 新規登録ページへのリンク #}
+        <a href="{% url 'Sotsuken_Portable:signup' %}"
+            class="block text-center w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-all font-semibold">
+            新規登録
+        </a>
     </div>
 </div>
+
+ <style>
+    /* フォーム入力欄のスタイル（signup.htmlと同様） */
+    input[type="text"], input[type="password"] {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        background-color: #f9fafb;
+    }
+</style>
 {% endblock %}

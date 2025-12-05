@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}炊き出し・物資配布履歴{% endblock %}
+{% block header_title %}炊き出し・物資配布履歴{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 max-w-6xl mx-auto">
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <h3 class="text-xl font-semibold mb-4 text-gray-800">炊き出し・物資配布履歴</h3>
+
+        <p class="mb-4 text-sm text-gray-600">
+            全ての避難所で行われた炊き出しや物資の配布記録の一覧です。
+        </p>
+
+        <div class="overflow-x-auto border rounded-lg">
+            <table class="w-full min-w-[800px]">
+                <thead class="bg-gray-50">
+                    <tr class="border-b">
+                        <th class="p-3 text-left text-sm font-semibold text-gray-600">配布日時</th>
+                        <th class="p-3 text-left text-sm font-semibold text-gray-600">物資名</th>
+                        <th class="p-3 text-left text-sm font-semibold text-gray-600">受け取った人</th>
+                        <th class="p-3 text-left text-sm font-semibold text-gray-600">記録デバイスID</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for record in records %} {# ビューから渡された'records'をループ #}
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 text-sm text-gray-700 font-mono">{{ record.distributed_at|date:"Y/m/d H:i:s" }}</td>
+                        <td class="p-3 text-sm font-semibold text-gray-800">{{ record.item.name }}</td>
+                        <td class="p-3 text-sm text-gray-700">
+                            {{ record.user.full_name | default:"(氏名未登録)" }}
+                            <span class="text-xs text-gray-500">({{ record.user.username }})</span>
+                        </td>
+                        <td class="p-3 text-sm text-gray-500 font-mono">{{ record.recorded_by_device }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="p-4 text-center text-gray-500">配布履歴はまだありません。</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-6 text-center">
+            <a href="{% url 'Sotsuken_Portable:admin_menu' %}" class="bg-gray-500 text-white py-2 px-6 rounded-lg hover:bg-gray-600 transition-all">管理者メニューに戻る</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

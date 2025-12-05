@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}マニュアル一覧{% endblock %}
+{% block header_title %}マニュアル一覧{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+
+        {% if manuals %}
+            <ul class="space-y-4">
+                {% for manual in manuals %}
+                    <li class="border-b pb-4">
+                        <a href="{{ manual.pdf_file.url }}" target="_blank" class="flex items-center justify-between text-lg text-gray-800 hover:text-blue-600 transition-colors">
+                            <span>{{ manual.title }}</span>
+                            <span class="text-sm text-white bg-blue-500 px-3 py-1 rounded-full">
+                                PDFを開く
+                            </span>
+                        </a>
+                        <p class="text-sm text-gray-500 mt-1">
+                            追加日: {{ manual.created_at|date:"Y/m/d" }}
+                        </p>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-center text-gray-600">現在、閲覧できるマニュアルはありません。</p>
+        {% endif %}
+
+        <div class="mt-8 text-center">
+            <a href="{% url 'Sotsuken_Portable:index' %}" class="bg-gray-500 text-white py-2 px-6 rounded-lg hover:bg-gray-600 transition-all">
+                ホームに戻る
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

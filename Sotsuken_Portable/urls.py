@@ -26,11 +26,15 @@ urlpatterns = [
 
     path('safety/', views.safety_check_view, name='safety_check'),
 
+    path('support-request/<int:pk>/resolve/', views.resolve_support_request_view, name='resolve_support_request'),
+
     path('sos/', views.emergency_sos_view, name='emergency_sos'),
     path('sos/done/', views.emergency_sos_done_view, name='emergency_sos_done'),
     path('map/', views.map_view, name='map'),
 
-    path('emergency/', views.emergency_info_view, name='emergency_common'),
+    #path('emergency/', views.emergency_info_view, name='emergency_common'),
+
+    path('emergency/', views.emergency_info_view, name='emergency_info'),
 
     path('menu/', views.user_menu_view, name='user_menu'),
 
@@ -44,8 +48,8 @@ urlpatterns = [
 
     path('management/shelters/', views.shelter_management_view, name='shelter_management'),
 
-    path('management/shelters/<int:shelter_id>/edit/', views.shelter_edit_view, name='shelter_edit'),
-    path('management/shelters/<int:shelter_id>/delete/', views.shelter_delete_view, name='shelter_delete'),
+    path('management/shelters/<str:management_id>/edit/', views.shelter_edit_view, name='shelter_edit'),
+    path('management/shelters/<str:management_id>/delete/', views.shelter_delete_view, name='shelter_delete'),
 
     path('management/sos-reports/', views.sos_report_list_view, name='sos_report_list'),
 
@@ -54,6 +58,8 @@ urlpatterns = [
     path('management/sos-reports/<int:report_id>/delete/', views.sos_report_delete_view, name='sos_report_delete'),
 
     path('management/sos-reports/export-csv/', views.sos_report_export_csv_view, name='sos_report_export_csv'),
+
+    path('management/distribution/add/', views.add_distribution_info_view, name='add_distribution_info'),
 
     path('community/', views.CommunityPostListView.as_view(), name='community_list'),
 
@@ -78,6 +84,10 @@ urlpatterns = [
     path('chat/dm/', views.dm_user_list_view, name='dm_user_list'),
     path('chat/dm/<int:user_id>/', views.dm_room_view, name='dm_room'),
 
+    path('chat/connect/<int:user_id>/', views.send_connection_request_view, name='send_connection_request'),
+
+    path('chat/approve/<int:user_id>/', views.approve_connection_request_view, name='approve_connection_request'),
+
     # 設定画面のURLを追加
     path('settings/', views.settings_view, name='settings'),
 
@@ -98,5 +108,11 @@ urlpatterns = [
     # ユーザーIDのQRコードを表示するページ
     path('qr/user-id/', views.user_id_qr_view, name='user_id_qr'),
 
+    path('manuals/', views.manual_list, name='manual_list'),
+
+    path('management/rpi-checkin-logs/', views.rpi_checkin_log_view, name='rpi_checkin_logs'),
+    path('management/distribution-logs/', views.distribution_log_view, name='distribution_logs'),
+
+    path('ajax/get-nearby-alerts/', views.get_nearby_alerts_view, name='get_nearby_alerts'),
 
 ]

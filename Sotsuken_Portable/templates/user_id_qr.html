@@ -16,7 +16,7 @@
         </div>
 
         <p class="mt-4 text-gray-700">
-            このQRコードは、あなたのユーザーID ({{ login_id_str }}) を表します。<br>
+            このQRコードは、あなたのユーザーID を表します。<br>
             受付などで提示を求められた際に使用してください。
         </p>
 
@@ -43,7 +43,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // views.pyから渡されたログインIDの文字列
-    const loginId = '{{ login_id_str }}';
+    const loginId = '{{ username_str }}';
 
     // この文字列をQRコードを生成
     new QRCode(document.getElementById('qr-code-display'), {

@@ -11,9 +11,7 @@
         <h3 class="text-lg font-semibold mb-4">安否情報QRコード</h3>
         
         <!-- QRコードが描画されるエリア -->
-        <div id="qr-code-display" class="bg-white w-56 h-56 mx-auto rounded-lg flex items-center justify-center p-2 border-4 border-gray-200">
-            <!-- JavaScriptによって、ここにQRコードが生成されます -->
-        </div>
+        <canvas id="qr-code-display" class="bg-white mx-auto rounded-lg border-4 border-gray-200"></canvas>
 
         <p class="mt-4 text-gray-700">
             このQRコードを他のユーザーのスキャナーで読み取ると、あなたの最新の安否情報が相手の画面に表示されます。
@@ -33,19 +31,23 @@
 
 {% block body_extra %}
 <!-- QRコード生成ライブラリ (qrcode.js) -->
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // views.pyから渡された安否情報のJSONデータ
+    // JSONデータを受け取る
     const qrData = JSON.parse('{{ qr_data_json|escapejs }}');
-    
-    // このJSONデータを文字列に変換してQRコードを生成
-    new QRCode(document.getElementById('qr-code-display'), {
-        text: JSON.stringify(qrData),
-        width: 200,
-        height: 200,
-        correctLevel : QRCode.CorrectLevel.M // データ量が増えたので少し耐性を下げる
+    const jsonString = JSON.stringify(qrData);
+
+    // 2. QRiousを使ってQRコードを生成
+    // (unescape... のおまじないは不要です！そのまま渡せます)
+    new QRious({
+        element: document.getElementById('qr-code-display'),
+        value: jsonString,
+        size: 200,          // サイズ
+        level: 'L',         // 誤り訂正レベル L (7%)
+        background: 'white',
+        foreground: 'black'
     });
 });
 </script>
