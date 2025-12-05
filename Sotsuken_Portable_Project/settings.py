@@ -90,7 +90,7 @@ DATABASES = {
         'USER': 'django_user',
 
         # パスワード
-        'PASSWORD': 'your_password',
+        'PASSWORD': '!12Sotsuken34',
 
         # ホスト名
         'HOST': '127.0.0.1',
@@ -192,3 +192,13 @@ CHANNEL_LAYERS = {
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# settings.py の最後の方に追加
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://www.sotsusotsu.com",
+    "https://sotsusotsu.com",
+]
+
+# プロキシ経由でHTTPS通信している場合に必要
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

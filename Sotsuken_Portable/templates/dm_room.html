@@ -86,9 +86,11 @@
         }
 
         // --- WebSocket接続 ---
-        const chatSocket = new WebSocket(
-            'ws://' + window.location.host + '/ws/chat/dm/' + otherUserId + '/'
-        );
+        // プロトコル（http/https）に合わせて ws/wss を自動切り替え
+	const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+	const chatSocket = new WebSocket(
+    		ws_scheme + '://' + window.location.host + '/ws/chat/dm/' + otherUserId + '/'
+	);
 
         chatSocket.onopen = function (e) {
             console.log('Chat socket connected successfully');
