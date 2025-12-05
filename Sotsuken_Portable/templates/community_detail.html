@@ -3,57 +3,66 @@
 {% block header_title %}投稿詳細{% endblock %}
 
 {% block content %}
-<div class="bg-white p-8 rounded-xl shadow-lg">
-    <h1 class="text-3xl font-extrabold mb-4">{{ post.title }}</h1>
-    {# ログイン中のユーザーが投稿者本人か、ロールが'admin'の場合に表示 #}
-        {% if user == post.author or user.role == 'admin' %}
-        <a href="{% url 'Sotsuken_Portable:community_delete' post.pk %}" class="ml-4 bg-red-600 text-white text-sm py-1 px-3 rounded-md hover:bg-red-700 flex-shrink-0">
-            削除
-        </a>
-        {% endif %}
-    <p class="text-md text-gray-500 mb-6 border-b pb-4">
-        投稿者: {{ post.author.username }} <br>
-        投稿日時: {{ post.posted_at|date:"Y/m/d H:i" }}
-    </p>
+    <div class="bg-white p-8 rounded-xl shadow-lg">
 
-    <div class="prose max-w-none">
-        {{ post.content|linebreaks }}
-    </div>
+        {# ▼▼▼ 修正箇所1: タイトルと削除ボタンのエリア開始 ▼▼▼ #}
+        <div class="flex justify-between items-start mb-4">
+            <h1 class="text-3xl font-extrabold break-words w-full">{{ post.title }}</h1>
 
-    <hr class="my-8">
-
-    <!-- リプライ投稿フォーム -->
-    <h3 class="text-xl font-bold mb-4">返信する</h3>
-    <form method="post">
-        {% csrf_token %}
-        {{ comment_form.as_p }}
-        <button type="submit" class="mt-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
-            コメントを投稿する
-        </button>
-    </form>
-
-    <hr class="my-8">
-
-    <!-- リプライ一覧 -->
-    <h3 class="text-xl font-bold mb-4">コメント ({{ comments.count }})</h3>
-    <div class="space-y-6">
-        {% for comment in comments %}
-        <div class="border-b pb-4">
-            <p class="font-semibold">{{ comment.author.username }}</p>
-            <p class="text-sm text-gray-500 mb-2">{{ comment.created_at|date:"Y/m/d H:i" }}</p>
-            {# 権限チェックをして削除ボタンを表示 #}
-            {% if user == comment.author or user == post.author or user.role == 'admin' %}
-                <a href="{% url 'Sotsuken_Portable:comment_delete' comment.pk %}" class="text-red-600 hover:text-red-800 text-sm">削除</a>
+            {% if user == post.author or user.role == 'admin' %}
+                <a href="{% url 'Sotsuken_Portable:community_delete' post.pk %}"
+                   class="ml-4 bg-red-600 text-white text-sm py-1 px-3 rounded-md hover:bg-red-700 flex-shrink-0 whitespace-nowrap">
+                    削除
+                </a>
             {% endif %}
-            <p class="text-gray-800">{{ comment.text|linebreaksbr }}</p>
         </div>
-        {% empty %}
-        <p>まだコメントはありません。</p>
-        {% endfor %}
-    </div>
+        {# ▲▲▲ 修正箇所1: ここで flex の div をしっかり閉じる！ ▲▲▲ #}
 
-    <div class="mt-8 pt-4 border-t">
-        <a href="{% url 'Sotsuken_Portable:community_list' %}" class="text-blue-600 hover:underline">&laquo; 投稿一覧に戻る</a>
-    </div>
-</div>
+        {# ここからは flex の外側なので、通常通り縦に並びます #}
+        <p class="text-md text-gray-500 mb-6 border-b pb-4">
+            投稿者: {{ post.author.username }} <br>
+            投稿日時: {{ post.posted_at|date:"Y/m/d H:i" }}
+        </p>
+
+        <div class="prose max-w-none">
+            {{ post.content|linebreaks }}
+        </div>
+
+        <hr class="my-8">
+
+        <h3 class="text-xl font-bold mb-4">返信する</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ comment_form.as_p }}
+            <button type="submit" class="mt-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                コメントを投稿する
+            </button>
+        </form>
+
+        <hr class="my-8">
+
+        <h3 class="text-xl font-bold mb-4">コメント ({{ comments.count }})</h3>
+        <div class="space-y-6">
+            {% for comment in comments %}
+                <div class="border-b pb-4">
+                    <p class="font-semibold">{{ comment.author.username }}</p>
+                    <p class="text-sm text-gray-500 mb-2">{{ comment.created_at|date:"Y/m/d H:i" }}</p>
+                    {# 権限チェックをして削除ボタンを表示 #}
+                    {% if user == comment.author or user == post.author or user.role == 'admin' %}
+                        <a href="{% url 'Sotsuken_Portable:comment_delete' comment.pk %}"
+                           class="text-red-600 hover:text-red-800 text-sm">削除</a>
+                    {% endif %}
+                    <p class="text-gray-800">{{ comment.text|linebreaksbr }}</p>
+                </div>
+            {% empty %}
+                <p>まだコメントはありません。</p>
+            {% endfor %}
+        </div>
+
+        <div class="mt-8 pt-4 border-t">
+            <a href="{% url 'Sotsuken_Portable:community_list' %}" class="text-blue-600 hover:underline">&laquo;
+                投稿一覧に戻る</a>
+        </div>
+
+    </div> {# ▲▲▲ 修正箇所2: 最後に一番外側の div を閉じるのを忘れずに！ ▲▲▲ #}
 {% endblock %}

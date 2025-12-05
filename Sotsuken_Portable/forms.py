@@ -185,6 +185,31 @@ class ShelterForm(forms.ModelForm):
             'management_id': '他の避難所と絶対に重複しない、半角英数字のIDを入力してください。例: TKY-SHIBUYA-01',
             'current_occupancy': 'この値は現場レポートによっても自動更新されます。',
         }
+        widgets = {
+            'management_id': forms.TextInput(attrs={
+                'class': 'w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                'placeholder': '例: TKY-001'
+            }),
+            'name': forms.TextInput(attrs={
+                'class': 'w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                'placeholder': '例: 第一市民体育館'
+            }),
+            'address': forms.TextInput(attrs={
+                'class': 'w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }),
+            'max_capacity': forms.NumberInput(attrs={
+                'class': 'w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }),
+            'current_occupancy': forms.NumberInput(attrs={
+                'class': 'w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }),
+            'opening_status': forms.Select(attrs={
+                'class': 'w-full p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }),
+            'is_pet_friendly': forms.CheckboxInput(attrs={
+                'class': 'h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500'
+            }),
+        }
 
 
 class SignUpForm(UserCreationForm):
