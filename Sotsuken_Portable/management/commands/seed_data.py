@@ -49,7 +49,6 @@ class Command(BaseCommand):
                 full_name=full_name,
                 email=email,
                 # username にも仮の値を入れておく
-                username=username
             )
             users.append(user)
         self.stdout.write(self.style.SUCCESS(f'{len(users)} users created.'))
