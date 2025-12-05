@@ -206,6 +206,15 @@ class SignUpForm(UserCreationForm):
         # 'username'フィールドのラベルを「ログインID」に変更
         self.fields['username'].label = 'ログインID'
         self.fields['username'].help_text = 'ログイン時に使用する一意のIDです。'
+        # ▼ 追加: パスワード入力欄（password1）のヘルプテキストを上書き
+        #   UserCreationForm ではパスワードのフィールド名は 'password1' です
+        if 'password1' in self.fields:
+            self.fields['password1'].help_text = (
+                "このパスワードは他の個人情報と似ているため使用できません。<br>"
+                "パスワードは最低8文字以上必要です。<br>"
+                "よく使われるパスワードにはできません。<br>"
+                "数字だけのパスワードにはできません。"
+            )
 
     def clean_password2(self):
         """
