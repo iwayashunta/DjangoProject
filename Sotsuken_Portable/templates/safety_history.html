@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}安否状況の履歴{% endblock %}
+{% block header_title %}安否状況の履歴{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 max-w-3xl mx-auto">
+
+    <div class="mb-6 flex items-center justify-between">
+        <h3 class="text-xl font-bold text-gray-800">
+            {{ target_user.full_name|default:target_user.username }} さんの履歴
+        </h3>
+        <a href="{% url 'Sotsuken_Portable:safety_check' %}" class="text-sm text-blue-600 hover:underline flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            一覧に戻る
+        </a>
+    </div>
+
+    <div class="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-200">
+        <div class="divide-y divide-gray-100">
+            {% for history in history_list %}
+            <div class="p-4 hover:bg-gray-50 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center gap-2">
+                        <!-- ステータスバッジ -->
+                        <span class="px-3 py-1 rounded-full text-xs font-bold text-white
+                            {% if history.status == 'safe' %}bg-green-500
+                            {% elif history.status == 'help' %}bg-red-500
+                            {% else %}bg-gray-400{% endif %}">
+                            {{ history.get_status_display }}
+                        </span>
+                        <!-- 日時 -->
+                        <span class="text-sm text-gray-500">
+                            {{ history.recorded_at|date:"Y/m/d H:i" }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- メッセージ -->
+                {% if history.message %}
+                <div class="mt-2 text-gray-700 text-sm bg-gray-50 p-3 rounded border border-gray-100">
+                    {{ history.message|linebreaksbr }}
+                </div>
+                {% endif %}
+
+                <!-- 場所情報（もしあれば） -->
+                {% if history.location_name %}
+                <div class="mt-2 flex items-center text-xs text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    記録場所: {{ history.location_name }}
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="p-8 text-center text-gray-500">
+                <p>履歴データはありません。</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -115,4 +115,6 @@ urlpatterns = [
 
     path('ajax/get-nearby-alerts/', views.get_nearby_alerts_view, name='get_nearby_alerts'),
 
+    path('safety/history/<int:user_id>/', views.safety_history_view, name='safety_history'),
+
 ]
