@@ -107,10 +107,19 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
     async def chat_message(self, event):
         # WebSocketにJSONデータを送信
         await self.send(text_data=json.dumps({
+            'type': 'message',  # クライアント側の判別用
+            'id': event.get('id'),  # ★IDを追加
             'message': event['message'],
             'sender': event['sender'],
             'image_url': event.get('image_url'),
             'group_id': event.get('group_id'),
+        }))
+
+        # 削除イベント用メソッド
+    async def chat_message_delete(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'delete',  # 削除イベントであることを通知
+            'message_id': event['message_id']
         }))
 
     # --- データベース操作ヘルパー ---
@@ -219,10 +228,19 @@ class DMChatConsumer(AsyncWebsocketConsumer):
     # グループからメッセージ受信時の処理
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({
+            'type': 'message',  # クライアント側の判別用
+            'id': event.get('id'),  # ★IDを追加
             'message': event['message'],
             'sender': event['sender'],
             'image_url': event.get('image_url'),
             'group_id': event.get('group_id'),
+        }))
+
+    # 削除イベント用メソッド
+    async def chat_message_delete(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'delete',  # 削除イベントであることを通知
+            'message_id': event['message_id']
         }))
 
     # DB操作用のヘルパー関数

@@ -4,6 +4,7 @@ import json
 from asgiref.sync import async_to_sync
 from channels.layers import channel_layers
 from dateutil import parser
+from django.conf import settings
 from django.db import transaction
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404  # get_object_or_404 を追記
@@ -271,6 +272,7 @@ def get_user_groups_api(request):
 
 
 @csrf_exempt
+@csrf_exempt
 @require_POST
 def post_group_message_api(request):
     """
@@ -278,7 +280,7 @@ def post_group_message_api(request):
     """
     user = None
 
-    # 1. ヘッダー認証（ラズパイ用）を試みる
+    # 1. ヘッダー認証（ラズパイ用）
     header_username = request.headers.get('X-User-Login-Id')
     if header_username:
         try:
@@ -286,34 +288,32 @@ def post_group_message_api(request):
         except User.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': '指定されたユーザーが存在しません。'}, status=400)
 
-    # 2. セッション認証（メインサーバーブラウザ用）を試みる
+    # 2. セッション認証（メインサーバーブラウザ用）
     elif request.user.is_authenticated:
         user = request.user
 
-    # どちらもダメならエラー
+    # 認証失敗
     else:
         return JsonResponse({'status': 'error', 'message': '認証が必要です。'}, status=401)
 
-    # ここからメイン処理
+    # メイン処理
     try:
-        # JSONではなくPOST/FILESからデータを取得
         group_id = request.POST.get('group_id')
         message = request.POST.get('message', '')
         image_file = request.FILES.get('image')
 
         print(f"[API DEBUG] group_id: {group_id}, message: {message}, image: {image_file}")
 
-        # メッセージも画像もない場合はエラー
         if not message and not image_file:
             return JsonResponse({'status': 'error', 'message': 'メッセージまたは画像が必要です。'}, status=400)
 
         channel_layer = channel_layers['default']
-
-        # DB保存と配信データの準備
         new_msg = None
 
+        # ---------------------------------------------------------
+        # A. 全体連絡 ('all')
+        # ---------------------------------------------------------
         if str(group_id) == 'all':
-            # --- A. 全体連絡 ---
             new_msg = Message.objects.create(
                 sender=user,
                 group=None,
@@ -322,23 +322,28 @@ def post_group_message_api(request):
             )
             target_group_name = "chat_broadcast"
 
-            # WebSocket配信用データ
+            # ★★★ 修正: 保存直後にDBから再取得して、正しい画像URLを確定させる ★★★
+            new_msg.refresh_from_db()
+
             chat_data = {
                 'type': 'chat_message',
+                'id': new_msg.id,
                 'message': new_msg.content,
                 'sender': user.full_name or user.username,
                 'group_id': 'all',
+                # ★★★ 修正: Django標準の .url プロパティを使用 ★★★
                 'image_url': new_msg.image.url if new_msg.image else None,
             }
 
-            # 一斉送信
             async_to_sync(channel_layer.group_send)(
                 target_group_name,
                 chat_data
             )
 
+        # ---------------------------------------------------------
+        # B. 通常グループ
+        # ---------------------------------------------------------
         else:
-            # --- B. 通常グループ ---
             try:
                 group_id_int = int(group_id)
             except ValueError:
@@ -351,16 +356,20 @@ def post_group_message_api(request):
                 image=image_file
             )
 
-            # WebSocket配信用データ
+            # ★★★ 修正: 保存直後にDBから再取得 ★★★
+            new_msg.refresh_from_db()
+
             chat_data = {
                 'type': 'chat_message',
+                'id': new_msg.id,
                 'message': new_msg.content,
                 'sender': user.full_name or user.username,
                 'group_id': str(group_id_int),
+                # ★★★ 修正: Django標準の .url プロパティを使用 ★★★
                 'image_url': new_msg.image.url if new_msg.image else None,
             }
 
-            # オンラインユーザーへの個別送信（またはグループ送信）
+            # オンラインユーザーへの個別送信
             target_members = GroupMember.objects.filter(group_id=group_id_int)
             target_user_ids = [m.member_id for m in target_members]
             online_users = OnlineUser.objects.filter(user_id__in=target_user_ids)
@@ -374,7 +383,7 @@ def post_group_message_api(request):
         return JsonResponse({'status': 'success', 'message': '送信成功'})
 
     except Exception as e:
-        print(f"[API ERROR] {e}")  # エラーログを出す
+        print(f"[API ERROR] {e}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
@@ -442,11 +451,13 @@ def get_group_messages_api(request, group_id):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+from django.conf import settings # ファイルの先頭になければ追加
+
 @csrf_exempt
 @require_POST
 def post_dm_message_api(request):
     """
-    DMメッセージ投稿API (画像対応版)
+    DMメッセージ投稿API (画像対応 & 削除ID対応版)
     """
     # 認証チェック (セッション or ヘッダー)
     sender = None
@@ -480,6 +491,14 @@ def post_dm_message_api(request):
             image=image_file
         )
 
+        # ★★★ 修正1: DBから再取得して情報を確定させる ★★★
+        new_msg.refresh_from_db()
+
+        # ★★★ 修正2: 画像URLを確実に生成する ★★★
+        image_url = None
+        if new_msg.image:
+            image_url = settings.MEDIA_URL + new_msg.image.name
+
         # 2. WebSocket配信
         # ルーム名を生成 (IDの小さい順_大きい順)
         user_ids = sorted([sender.id, recipient.id])
@@ -488,9 +507,10 @@ def post_dm_message_api(request):
         channel_layer = channel_layers['default']
         chat_data = {
             'type': 'chat_message',
+            'id': new_msg.id,  # ★★★ 修正3: 削除機能のためにIDを追加 ★★★
             'message': new_msg.content,
             'sender': sender.full_name or sender.username,
-            'image_url': new_msg.image.url if new_msg.image else None, # 画像URL
+            'image_url': image_url,
         }
 
         async_to_sync(channel_layer.group_send)(
@@ -505,6 +525,62 @@ def post_dm_message_api(request):
     except Exception as e:
         print(f"[DM API ERROR] {e}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def delete_message_api(request):
+    """メッセージ削除API"""
+    # 1. 認証チェック
+    user = None
+    header_username = request.headers.get('X-User-Login-Id')
+    if header_username:
+        try:
+            user = User.objects.get(username=header_username)
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'User not found'}, status=400)
+    elif request.user.is_authenticated:
+        user = request.user
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=401)
+
+    # 2. メッセージの特定と権限チェック
+    message_id = request.POST.get('message_id')
+    try:
+        msg = Message.objects.get(id=message_id)
+
+        # 本人確認（重要）
+        if msg.sender != user and not user.is_superuser:
+            return JsonResponse({'status': 'error', 'message': '削除権限がありません'}, status=403)
+
+        # 3. 削除対象のグループ特定（WebSocket配信用）
+        if msg.group:
+            # 通常グループ
+            target_group_name = f'chat_{msg.group.id}'
+        elif msg.recipient:
+            # DM (IDをソートして部屋名を再現)
+            user_ids = sorted([msg.sender.id, msg.recipient.id])
+            target_group_name = f'dm_{user_ids[0]}_{user_ids[1]}'
+        else:
+            # 全体連絡
+            target_group_name = 'chat_broadcast'
+
+        # 4. WebSocketで削除イベントを配信
+        channel_layer = channel_layers['default']
+        async_to_sync(channel_layer.group_send)(
+            target_group_name,
+            {
+                'type': 'chat_message_delete',  # Consumerでこのメソッドを呼ぶ
+                'message_id': message_id
+            }
+        )
+
+        # 5. DBから削除
+        msg.delete()
+
+        return JsonResponse({'status': 'success'})
+
+    except Message.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Message not found'}, status=404)
 
 
 @csrf_exempt
