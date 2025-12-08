@@ -6,9 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="bee8c49f-e2a0-4609-ae60-17f9bbaaa94d" name="変更" comment="掲示板の投稿削除ボタンの移動">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/distribution_log.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/distribution_log.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/manual_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/manual_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/rpi_data_log.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/rpi_data_log.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" beforeDir="false" afterPath="$PROJECT_DIR$/Sotsuken_Portable/templates/chat.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -211,15 +209,7 @@
       <workItem from="1764641177134" duration="6155000" />
       <workItem from="1764726880209" duration="5402000" />
       <workItem from="1764900353809" duration="11497000" />
-      <workItem from="1765159964589" duration="2167000" />
-    </task>
-    <task id="LOCAL-00014" summary="コミュニティ機能を実装(投稿・削除・返信機能)&#10;安否確認機能で自分の状況を確認できるよう修正（10/27）">
-      <option name="closed" value="true" />
-      <created>1761550199876</created>
-      <option name="number" value="00014" />
-      <option name="presentableId" value="LOCAL-00014" />
-      <option name="project" value="LOCAL" />
-      <updated>1761550199876</updated>
+      <workItem from="1765159964589" duration="4925000" />
     </task>
     <task id="LOCAL-00015" summary="ユーザーIDでログインする仕様にしました&#10;データベースのマイグレーションが必要となります">
       <option name="closed" value="true" />
@@ -605,7 +595,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764918245799</updated>
     </task>
-    <option name="localTasksCounter" value="63" />
+    <task id="LOCAL-00063" summary="掲示板の投稿削除ボタンの移動">
+      <option name="closed" value="true" />
+      <created>1765162458116</created>
+      <option name="number" value="00063" />
+      <option name="presentableId" value="LOCAL-00063" />
+      <option name="project" value="LOCAL" />
+      <updated>1765162458116</updated>
+    </task>
+    <option name="localTasksCounter" value="64" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
