@@ -313,6 +313,12 @@ class SafetyStatus(models.Model):
         blank=True
     )
 
+    location_name = models.CharField(
+        verbose_name="現在地",
+        max_length=100,
+        blank=True,
+        null=True)
+
     class Meta:
         verbose_name = "安否状況"
         verbose_name_plural = "安否状況"
@@ -320,6 +326,22 @@ class SafetyStatus(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.get_status_display()}"
+
+
+class SafetyStatusHistory(models.Model):
+    """安否状況の変更履歴を記録するモデル"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='safety_history')
+
+    # 記録時の内容をコピー
+    status = models.CharField(max_length=20, choices=SafetyStatus.STATUS_CHOICES)
+    message = models.TextField(blank=True, null=True)
+    location_name = models.CharField(max_length=100, blank=True, null=True)
+
+    # 記録日時
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-recorded_at']  # 新しい順
 
 
 class SupportRequest(models.Model):
@@ -537,10 +559,10 @@ class Message(models.Model):
     # 6. 既読フラグ (簡易的な実装)
     # 複雑な既読管理（誰が読んだか）は別の中間テーブル (ReadReceipt) を使いますが、
     # 簡易的に「宛先全体で既読か否か」のフラグを持たせます。
-    is_read = models.BooleanField(
-        verbose_name="既読",
-        default=False
-    )
+    # is_read = models.BooleanField(
+    #    verbose_name="既読",
+    #    default=False
+    #)
 
     image = models.ImageField(
         verbose_name="添付画像",
@@ -556,6 +578,36 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Msg from {self.sender.username if self.sender else 'Deleted'} to {self.group.name if self.group else 'DM/Other'}"
+
+
+class ReadState(models.Model):
+    """ユーザーごとのチャット既読状況を管理するモデル"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='read_states'
+    )
+
+    # グループチャットの場合
+    group = models.ForeignKey(
+        'Group', on_delete=models.CASCADE, null=True, blank=True
+    )
+
+    # DMの場合 (相手ユーザーを特定するためには、DM相手かDMルームIDが必要ですが、
+    # 簡易的に「DM相手」をキーにするのが楽です)
+    dm_partner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='dm_read_states'
+    )
+
+    last_read_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [
+            ('user', 'group'),
+            ('user', 'dm_partner')
+        ]
+
+    def __str__(self):
+        target = self.group.name if self.group else f"DM:{self.dm_partner}"
+        return f"{self.user} read {target} at {self.last_read_at}"
 
 
 class CommunityPost(models.Model):

@@ -15,6 +15,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required # ログイン必須にするためのデコレータ
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q
+from django.utils import timezone
 from django.views import generic
 from django.views.decorators.http import require_POST
 # generic から、使いたいクラスを直接インポートする
@@ -24,7 +25,7 @@ from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequest
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
     CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection, \
-    DistributionInfo, DistributionItem
+    DistributionInfo, DistributionItem, ReadState, SafetyStatusHistory
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -133,8 +134,17 @@ def safety_check_view(request):
             support_form = SupportRequestForm()
 
             if safety_form.is_valid():
+                status_obj = safety_form.save()
                 safety_form.save()
                 messages.success(request, '安否情報を更新しました。')
+
+                SafetyStatusHistory.objects.create(
+                    user=user,
+                    status=status_obj.status,
+                    message=status_obj.message,
+                    # location_name=status_obj.location_name  # フォームに追加していれば
+                )
+
                 return redirect('Sotsuken_Portable:safety_check')
 
         elif 'submit_support' in request.POST:
@@ -177,6 +187,18 @@ def safety_check_view(request):
     }
 
     return render(request, 'safety_check.html', context)
+
+
+@login_required
+def safety_history_view(request, user_id):
+    target_user = get_object_or_404(User, pk=user_id)
+    history_list = SafetyStatusHistory.objects.filter(user=target_user)
+
+    context = {
+        'target_user': target_user,
+        'history_list': history_list
+    }
+    return render(request, 'safety_history.html', context)
 
 
 # ★★★ 修正: 解決済みアクションのビュー ★★★
@@ -604,8 +626,16 @@ def chat_room_view(request, group_id):
 
         context = {
             'group': group,
-            'messages': messages,
+            'chat_messages': messages,
         }
+
+        # ★ 既読日時を更新
+        ReadState.objects.update_or_create(
+            user=request.user,
+            group=group,
+            defaults={'last_read_at': timezone.now()}
+        )
+
         return render(request, 'chat.html', context)
     except Group.DoesNotExist:
         return redirect('Sotsuken_Portable:chat_group_list')
@@ -684,6 +714,40 @@ def dm_user_list_view(request):
     memberships = current_user.group_memberships.all()
     chat_groups = [m.group for m in memberships]
 
+    # A. グループチャットの未読判定
+    for group in chat_groups:
+        # このユーザーがこのグループを最後に読んだ時間を取得
+        read_state = ReadState.objects.filter(user=current_user, group=group).first()
+
+        if read_state:
+            last_read = read_state.last_read_at
+        else:
+            # まだ一度も開いていない場合は、ずっと昔の日付にする（＝全メッセージ未読扱い）
+            last_read = timezone.datetime.min.replace(tzinfo=datetime.timezone.utc)
+
+        # 「最終閲覧日時」より新しく、かつ「自分以外が送信した」メッセージがあるか？
+        group.has_unread = Message.objects.filter(
+            group=group,
+            timestamp__gt=last_read
+        ).exclude(sender=current_user).exists()
+
+    # B. DMの未読判定
+    for user in dm_users:
+        # このユーザーとのDMを最後に読んだ時間を取得
+        read_state = ReadState.objects.filter(user=current_user, dm_partner=user).first()
+
+        if read_state:
+            last_read = read_state.last_read_at
+        else:
+            last_read = timezone.datetime.min.replace(tzinfo=datetime.timezone.utc)
+
+        # 「最終閲覧日時」より新しく、かつ「相手から自分宛て」のメッセージがあるか？
+        user.has_unread = Message.objects.filter(
+            sender=user,
+            recipient=current_user,
+            timestamp__gt=last_read
+        ).exists()
+
     context = {
         'search_query': search_query,
         'search_results': search_results,
@@ -747,8 +811,14 @@ def dm_room_view(request, user_id):
 
     context = {
         'other_user': other_user,
-        'messages': chat_history,
+        'chat_messages': chat_history,
     }
+
+    ReadState.objects.update_or_create(
+        user=request.user,
+        dm_partner=other_user,
+        defaults={'last_read_at': timezone.now()}
+    )
     return render(request, 'dm_room.html', context)
 
 
