@@ -313,6 +313,12 @@ class SafetyStatus(models.Model):
         blank=True
     )
 
+    location_name = models.CharField(
+        verbose_name="現在地",
+        max_length=100,
+        blank=True,
+        null=True)
+
     class Meta:
         verbose_name = "安否状況"
         verbose_name_plural = "安否状況"
@@ -320,6 +326,22 @@ class SafetyStatus(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.get_status_display()}"
+
+
+class SafetyStatusHistory(models.Model):
+    """安否状況の変更履歴を記録するモデル"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='safety_history')
+
+    # 記録時の内容をコピー
+    status = models.CharField(max_length=20, choices=SafetyStatus.STATUS_CHOICES)
+    message = models.TextField(blank=True, null=True)
+    location_name = models.CharField(max_length=100, blank=True, null=True)
+
+    # 記録日時
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-recorded_at']  # 新しい順
 
 
 class SupportRequest(models.Model):

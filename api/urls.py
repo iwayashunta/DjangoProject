@@ -28,5 +28,7 @@ urlpatterns = [
 
     path( 'get-all-users/', views.get_all_users_api, name='get_all_users_api' ),
 
+    path('delete-message/', views.delete_message_api, name='delete_message_api'),
+
 
 ]

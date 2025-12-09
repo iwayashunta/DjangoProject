@@ -25,7 +25,7 @@ from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequest
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
     CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection, \
-    DistributionInfo, DistributionItem, ReadState
+    DistributionInfo, DistributionItem, ReadState, SafetyStatusHistory
 from Sotsuken_Portable.decorators import admin_required
 
 
@@ -134,8 +134,17 @@ def safety_check_view(request):
             support_form = SupportRequestForm()
 
             if safety_form.is_valid():
+                status_obj = safety_form.save()
                 safety_form.save()
                 messages.success(request, '安否情報を更新しました。')
+
+                SafetyStatusHistory.objects.create(
+                    user=user,
+                    status=status_obj.status,
+                    message=status_obj.message,
+                    # location_name=status_obj.location_name  # フォームに追加していれば
+                )
+
                 return redirect('Sotsuken_Portable:safety_check')
 
         elif 'submit_support' in request.POST:
@@ -178,6 +187,18 @@ def safety_check_view(request):
     }
 
     return render(request, 'safety_check.html', context)
+
+
+@login_required
+def safety_history_view(request, user_id):
+    target_user = get_object_or_404(User, pk=user_id)
+    history_list = SafetyStatusHistory.objects.filter(user=target_user)
+
+    context = {
+        'target_user': target_user,
+        'history_list': history_list
+    }
+    return render(request, 'safety_history.html', context)
 
 
 # ★★★ 修正: 解決済みアクションのビュー ★★★
