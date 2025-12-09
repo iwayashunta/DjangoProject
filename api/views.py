@@ -272,37 +272,28 @@ def get_user_groups_api(request):
 
 
 @csrf_exempt
-@csrf_exempt
 @require_POST
 def post_group_message_api(request):
     """
     メッセージ投稿API (ラズパイからのヘッダー認証 & ブラウザからのセッション認証 両対応)
     """
+    # ... (認証部分はそのまま) ...
     user = None
-
-    # 1. ヘッダー認証（ラズパイ用）
     header_username = request.headers.get('X-User-Login-Id')
     if header_username:
         try:
             user = User.objects.get(username=header_username)
         except User.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': '指定されたユーザーが存在しません。'}, status=400)
-
-    # 2. セッション認証（メインサーバーブラウザ用）
     elif request.user.is_authenticated:
         user = request.user
-
-    # 認証失敗
     else:
         return JsonResponse({'status': 'error', 'message': '認証が必要です。'}, status=401)
 
-    # メイン処理
     try:
         group_id = request.POST.get('group_id')
         message = request.POST.get('message', '')
         image_file = request.FILES.get('image')
-
-        print(f"[API DEBUG] group_id: {group_id}, message: {message}, image: {image_file}")
 
         if not message and not image_file:
             return JsonResponse({'status': 'error', 'message': 'メッセージまたは画像が必要です。'}, status=400)
@@ -322,16 +313,18 @@ def post_group_message_api(request):
             )
             target_group_name = "chat_broadcast"
 
-            # ★★★ 修正: 保存直後にDBから再取得して、正しい画像URLを確定させる ★★★
             new_msg.refresh_from_db()
 
             chat_data = {
                 'type': 'chat_message',
                 'id': new_msg.id,
                 'message': new_msg.content,
-                'sender': user.full_name or user.username,
+
+                # ★★★ 修正: IDと表示名を分ける ★★★
+                'sender': user.username,  # 判定用 (user01)
+                'sender_full_name': user.full_name or user.username,  # 表示用 (管理者ちゃん)
+
                 'group_id': 'all',
-                # ★★★ 修正: Django標準の .url プロパティを使用 ★★★
                 'image_url': new_msg.image.url if new_msg.image else None,
             }
 
@@ -356,16 +349,18 @@ def post_group_message_api(request):
                 image=image_file
             )
 
-            # ★★★ 修正: 保存直後にDBから再取得 ★★★
             new_msg.refresh_from_db()
 
             chat_data = {
                 'type': 'chat_message',
                 'id': new_msg.id,
                 'message': new_msg.content,
-                'sender': user.full_name or user.username,
+
+                # ★★★ 修正: IDと表示名を分ける ★★★
+                'sender': user.username,  # 判定用
+                'sender_full_name': user.full_name or user.username,  # 表示用
+
                 'group_id': str(group_id_int),
-                # ★★★ 修正: Django標準の .url プロパティを使用 ★★★
                 'image_url': new_msg.image.url if new_msg.image else None,
             }
 
@@ -453,13 +448,11 @@ def get_group_messages_api(request, group_id):
 
 from django.conf import settings # ファイルの先頭になければ追加
 
+
 @csrf_exempt
 @require_POST
 def post_dm_message_api(request):
-    """
-    DMメッセージ投稿API (画像対応 & 削除ID対応版)
-    """
-    # 認証チェック (セッション or ヘッダー)
+    # ... (認証・バリデーション部分はそのまま) ...
     sender = None
     header_username = request.headers.get('X-User-Login-Id')
     if header_username:
@@ -486,30 +479,30 @@ def post_dm_message_api(request):
         new_msg = Message.objects.create(
             sender=sender,
             recipient=recipient,
-            group=None, # DMなのでNone
+            group=None,
             content=message,
             image=image_file
         )
-
-        # ★★★ 修正1: DBから再取得して情報を確定させる ★★★
         new_msg.refresh_from_db()
 
-        # ★★★ 修正2: 画像URLを確実に生成する ★★★
         image_url = None
         if new_msg.image:
             image_url = settings.MEDIA_URL + new_msg.image.name
 
         # 2. WebSocket配信
-        # ルーム名を生成 (IDの小さい順_大きい順)
         user_ids = sorted([sender.id, recipient.id])
         room_group_name = f'dm_{user_ids[0]}_{user_ids[1]}'
 
         channel_layer = channel_layers['default']
         chat_data = {
             'type': 'chat_message',
-            'id': new_msg.id,  # ★★★ 修正3: 削除機能のためにIDを追加 ★★★
+            'id': new_msg.id,
             'message': new_msg.content,
-            'sender': sender.full_name or sender.username,
+
+            # ★★★ 修正: IDと表示名を分ける ★★★
+            'sender': sender.username,  # 判定用
+            'sender_full_name': sender.full_name or sender.username,  # 表示用
+
             'image_url': image_url,
         }
 

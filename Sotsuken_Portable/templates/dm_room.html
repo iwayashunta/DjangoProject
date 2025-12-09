@@ -4,40 +4,54 @@
 
 {% block content %}
     <div class="flex flex-col h-[75vh]">
-        <div id="chat-log" class="flex-1 bg-white p-4 rounded-t-xl shadow-inner mb-4 overflow-y-auto space-y-4">
-            {# 過去ログの表示 (Alpine.js版メニュー) #}
+        <!-- メッセージリスト (親コンテナ) -->
+        <div id="chat-log" class="flex-1 bg-white p-4 rounded-t-xl shadow-inner mb-4 overflow-y-auto space-y-4 relative">
+
+            {# 戻るボタン #}
+            <div class="mb-2">
+                <a href="javascript:void(0);" onclick="history.back();"
+                   class="text-gray-500 hover:text-blue-600 flex items-center gap-1 text-sm font-semibold transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                    </svg>
+                    戻る
+                </a>
+            </div>
+
+            {# --- サーバーサイドレンダリング分 --- #}
             {% for msg in chat_messages %}
                 <div id="msg-{{ msg.id }}"
-                     class="text-base mb-4 relative group {% if msg.sender == user %}text-right{% endif %}"
-                     x-data="{ menuOpen: false }">
+                     class="message-container text-base mb-4 relative group {% if msg.sender.username == user.username %}text-right{% endif %}"
+                     data-msg-id="{{ msg.id }}">
 
                     <p class="font-bold text-sm text-gray-500">{{ msg.sender.full_name|default:msg.sender.username }}</p>
 
                     <div class="inline-block relative text-left">
-                        <!-- 吹き出し (クリックでメニュー開閉) -->
-                        <div @click="menuOpen = !menuOpen"
-                             @click.outside="menuOpen = false"
-                             class="cursor-pointer {% if msg.sender == user %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %} p-3 rounded-t-xl {% if msg.sender == user %}rounded-bl-xl{% else %}rounded-br-xl{% endif %} inline-block max-w-xs text-left break-words">
+
+                        <!-- 吹き出し (クリック対象) -->
+                        <div class="chat-bubble cursor-pointer inline-block max-w-xs text-left break-words rounded-t-xl
+                            {% if msg.image %}
+                                bg-transparent
+                            {% else %}
+                                {% if msg.sender.username == user.username %}
+                                    bg-blue-500 text-white rounded-bl-xl p-3
+                                {% else %}
+                                    bg-gray-200 rounded-br-xl p-3
+                                {% endif %}
+                            {% endif %}">
 
                             {% if msg.image %}
-                                <!-- ★修正: aタグなし。imgタグのみ (pointer-events-noneでクリック透過) -->
-                                <img src="{{ msg.image.url }}"
-                                     class="max-w-full h-auto rounded-lg mb-1 pointer-events-none"
-                                     style="max-height: 200px;">
-                                {% if msg.content %}<br>{% endif %}
+                                <img src="{{ msg.image.url }}" class="max-w-full h-auto rounded-xl border border-gray-200 mb-1 pointer-events-none bg-white">
                             {% endif %}
 
                             {{ msg.content|urlize|linebreaksbr }}
                         </div>
 
-                        <!-- ★メニュー (画像拡大・削除) -->
-                        <div x-show="menuOpen"
-                             x-transition
-                             style="display: none;"
-                             class="absolute z-20 bg-white shadow-xl border border-gray-200 rounded-lg p-1 min-w-[140px] flex flex-col gap-1 mt-1
-                                    {% if msg.sender == user %}right-0{% else %}left-0{% endif %}">
+                        <!-- メニュー (初期状態は hidden) -->
+                        <div class="chat-menu hidden absolute z-20 bg-white shadow-xl border border-gray-200 rounded-lg p-1 min-w-[140px] flex flex-col gap-1 mt-1
+                                    {% if msg.sender.username == user.username %}right-0{% else %}left-0{% endif %}">
 
-                            {# 1. 画像拡大ボタン #}
+                            {# 画像拡大 #}
                             {% if msg.image %}
                                 <a href="{{ msg.image.url }}" target="_blank"
                                    class="block text-left text-sm text-gray-700 px-3 py-2 hover:bg-gray-100 rounded no-underline">
@@ -45,20 +59,20 @@
                                 </a>
                             {% endif %}
 
-                            {# 2. 削除ボタン #}
-                            {% if msg.sender == user %}
-                                <button onclick="if(confirm('削除しますか？')) deleteMessage({{ msg.id }})"
-                                        class="block w-full text-left text-sm text-red-600 px-3 py-2 hover:bg-red-50 rounded">
+                            {# 削除 (自分のメッセージのみ) #}
+                            {% if msg.sender.username == user.username %}
+                                <button type="button" class="btn-delete block w-full text-left text-sm text-red-600 px-3 py-2 hover:bg-red-50 rounded">
                                     🗑️ 削除する
                                 </button>
                             {% endif %}
                         </div>
+
                     </div>
                 </div>
             {% endfor %}
         </div>
 
-        <!-- メッセージ入力フォーム (変更なし) -->
+        <!-- 入力フォーム -->
         <form id="chat-form" class="flex flex-col gap-2 p-2" autocomplete="off" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="flex items-center gap-2">
@@ -79,7 +93,8 @@
     </div>
 
     {{ other_user.id|json_script:"other-user-id" }}
-    {{ user.full_name|default:user.username|json_script:"current-user-name" }}
+    <!-- ★重要: 判定用には表示名ではなく username (ID) を渡す -->
+    {{ user.username|json_script:"current-user-name" }}
 
     <script>
         const otherUserId = JSON.parse(document.getElementById('other-user-id').textContent);
@@ -91,44 +106,188 @@
         const chatImageInput = document.querySelector('#chat-image-input');
         const chatMessageSubmit = document.querySelector('#chat-message-submit');
 
-        // --- 画面外クリックでJSメニューを閉じる ---
-        document.addEventListener('click', function () {
-            document.querySelectorAll('.js-chat-menu').forEach(el => el.classList.add('hidden'));
-        });
+        // =========================================================
+        // 1. DOM操作・表示ロジック
+        // =========================================================
 
-        // --- テキストエリア自動リサイズ ---
-        chatMessageInput.addEventListener('input', function () {
-            this.style.height = 'auto';
-            this.style.height = (this.style.scrollHeight) + 'px';
-            if (this.scrollHeight > 150) this.style.overflowY = "scroll";
-            else this.style.overflowY = "hidden";
-        });
+        function appendMessage(msgId, senderUsername, message, imageUrl, senderFullName, isTemp = false) {
+            const isMe = (senderUsername === currentUserName);
+            const displayName = senderFullName || senderUsername;
 
-        chatMessageInput.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            // コンテナ
+            const msgContainer = document.createElement('div');
+            msgContainer.id = 'msg-' + msgId;
+            msgContainer.className = `message-container text-base mb-4 relative group ${isMe ? 'text-right' : ''}`;
+
+            if (isTemp) {
+                msgContainer.classList.add('message-temp', 'opacity-70');
+            } else {
+                msgContainer.dataset.msgId = msgId;
+            }
+
+            // 送信者名
+            const senderP = document.createElement('p');
+            senderP.className = 'font-bold text-sm text-gray-500 mb-1';
+            senderP.textContent = displayName + (isTemp ? ' (送信中...)' : '');
+            msgContainer.appendChild(senderP);
+
+            // ラッパー
+            const wrapper = document.createElement('div');
+            wrapper.className = 'inline-block relative text-left';
+
+            // 吹き出し
+            const bubble = document.createElement('div');
+            let bubbleClass = "chat-bubble cursor-pointer rounded-t-xl inline-block max-w-xs text-left break-words";
+
+            if (imageUrl) {
+                bubbleClass += " bg-transparent";
+            } else {
+                if (isMe) {
+                    bubbleClass += " bg-blue-500 text-white rounded-bl-xl p-3";
+                } else {
+                    bubbleClass += " bg-gray-200 rounded-br-xl p-3";
+                }
+            }
+            bubble.className = bubbleClass;
+
+            // 画像
+            if (imageUrl) {
+                let fullImageUrl = imageUrl;
+                if (!imageUrl.startsWith('http') && !imageUrl.startsWith('blob:')) {
+                    fullImageUrl = window.location.origin + imageUrl;
+                }
+                const img = document.createElement('img');
+                img.src = fullImageUrl;
+                img.className = "max-w-full h-auto rounded-xl border border-gray-200 mb-1 pointer-events-none bg-white";
+                bubble.appendChild(img);
+            }
+
+            // テキスト
+            if (message) {
+                const textSpan = document.createElement('span');
+                textSpan.innerHTML = urlify(escapeHtml(message));
+                bubble.appendChild(textSpan);
+            }
+            wrapper.appendChild(bubble);
+
+            // メニュー (仮表示以外)
+            if (!isTemp) {
+                const menu = document.createElement('div');
+                menu.className = `chat-menu hidden absolute z-20 bg-white shadow-xl border border-gray-200 rounded-lg p-1 min-w-[140px] flex flex-col gap-1 mt-1 ${isMe ? 'right-0' : 'left-0'}`;
+
+                if (imageUrl) {
+                    let fullImageUrl = (imageUrl.startsWith('http') || imageUrl.startsWith('blob:')) ? imageUrl : window.location.origin + imageUrl;
+                    const viewLink = document.createElement('a');
+                    viewLink.href = fullImageUrl;
+                    viewLink.target = '_blank';
+                    viewLink.className = 'block text-left text-sm text-gray-700 px-3 py-2 hover:bg-gray-100 rounded no-underline';
+                    viewLink.textContent = '🔍 画像を拡大';
+                    menu.appendChild(viewLink);
+                }
+
+                if (isMe) {
+                    const delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.className = 'btn-delete block w-full text-left text-sm text-red-600 px-3 py-2 hover:bg-red-50 rounded';
+                    delBtn.textContent = '🗑️ 削除する';
+                    menu.appendChild(delBtn);
+                }
+                wrapper.appendChild(menu);
+            }
+
+            msgContainer.appendChild(wrapper);
+            chatLog.appendChild(msgContainer);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        // =========================================================
+        // 2. イベントリスナー (メニュー操作)
+        // =========================================================
+        chatLog.addEventListener('click', function(e) {
+            const bubble = e.target.closest('.chat-bubble');
+            if (bubble) {
+                e.stopPropagation();
+                const menu = bubble.nextElementSibling;
+                if (menu && menu.classList.contains('chat-menu')) {
+                    closeAllMenus();
+                    menu.classList.remove('hidden');
+                }
+                return;
+            }
+
+            const deleteBtn = e.target.closest('.btn-delete');
+            if (deleteBtn) {
                 e.preventDefault();
-                chatMessageSubmit.click();
+                if (confirm('削除しますか？')) {
+                    const msgContainer = deleteBtn.closest('.message-container');
+                    const msgId = msgContainer.dataset.msgId;
+                    if (msgId) deleteMessage(msgId);
+                }
+                closeAllMenus();
+                return;
             }
         });
 
-        // --- XSS対策 ---
-        function escapeHtml(text) {
-            if (!text) return text;
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        document.addEventListener('click', function() {
+            closeAllMenus();
+        });
+
+        function closeAllMenus() {
+            document.querySelectorAll('.chat-menu').forEach(menu => {
+                menu.classList.add('hidden');
+            });
         }
 
-        // --- WebSocket ---
+        // =========================================================
+        // 3. 送信処理 (即時反映 & API送信)
+        // =========================================================
+        chatForm.onsubmit = function (e) {
+            e.preventDefault();
+            const message = chatMessageInput.value;
+            const imageFile = chatImageInput.files[0];
+
+            if (message.trim() === '' && !imageFile) return;
+
+            // A. 即時反映 (Optimistic UI)
+            const tempId = 'temp-' + Date.now();
+            let previewUrl = null;
+            if (imageFile) {
+                previewUrl = URL.createObjectURL(imageFile);
+            }
+            // ★ 仮表示
+            appendMessage(tempId, currentUserName, message, previewUrl, null, true);
+
+            // B. サーバー送信
+            const formData = new FormData();
+            formData.append('recipient_id', otherUserId); // ★ DMなので recipient_id
+            formData.append('message', message);
+            if (imageFile) formData.append('image', imageFile);
+
+            const apiUrl = '/api/post-dm-message/';
+
+            chatMessageInput.value = '';
+            chatImageInput.value = '';
+            chatMessageInput.style.height = 'auto';
+
+            fetch(apiUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {'X-CSRFToken': getCookie('csrftoken')}
+            }).then(response => {
+                if (!response.ok) alert('送信失敗');
+            }).catch(error => {
+                console.error(error);
+                alert('通信エラー');
+            });
+        };
+
+        // =========================================================
+        // 4. WebSocket受信
+        // =========================================================
         const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
         const chatSocket = new WebSocket(
             ws_scheme + '://' + window.location.host + '/ws/chat/dm/' + otherUserId + '/'
         );
-
-        chatSocket.onopen = function (e) {
-            console.log('Connected');
-        };
-        chatSocket.onclose = function (e) {
-            console.error('Disconnected');
-        };
 
         chatSocket.onmessage = function (e) {
             const data = JSON.parse(e.data);
@@ -136,24 +295,35 @@
                 const msgElement = document.getElementById('msg-' + data.message_id);
                 if (msgElement) msgElement.remove();
             } else {
-                appendMessage(data.sender, data.message, data.image_url, data.id);
+                // 二重表示対策
+                const tempMsgs = document.querySelectorAll('.message-temp');
+                if (tempMsgs.length > 0) tempMsgs.forEach(el => el.remove());
+
+                appendMessage(data.id, data.sender, data.message, data.image_url, data.sender_full_name);
             }
         };
 
-        // --- 削除リクエスト ---
+        // --- Utils ---
         function deleteMessage(msgId) {
-            // 確認ダイアログはHTML/JSの呼び出し元で行うため、ここは即実行
             const formData = new FormData();
             formData.append('message_id', msgId);
             fetch('/api/delete-message/', {
                 method: 'POST',
                 body: formData,
                 headers: {'X-CSRFToken': getCookie('csrftoken')}
-            }).then(r => {
-                if (!r.ok) alert('削除失敗');
-            });
+            }).then(r => { if (!r.ok) alert('削除失敗'); });
         }
 
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+        function urlify(text) {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, '<a href="$&" target="_blank" class="underline hover:text-blue-200" onclick="event.stopPropagation()">$&</a>').replace(/\n/g, '<br>');
+        }
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -169,151 +339,17 @@
             return cookieValue;
         }
 
-        // --- 送信処理 ---
-        chatForm.onsubmit = function (e) {
-            e.preventDefault();
-            const message = chatMessageInput.value;
-            const imageFile = chatImageInput.files[0];
-
-            if (message.trim() === '' && !imageFile) return;
-
-            const formData = new FormData();
-            formData.append('recipient_id', otherUserId);
-            formData.append('message', message);
-            if (imageFile) {
-                formData.append('image', imageFile);
+        // テキストエリア調整
+        chatMessageInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = (this.style.scrollHeight) + 'px';
+        });
+        chatMessageInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                chatMessageSubmit.click();
             }
-
-            const apiUrl = '/api/post-dm-message/';
-
-            fetch(apiUrl, {
-                method: 'POST',
-                body: formData,
-                headers: {'X-CSRFToken': getCookie('csrftoken')}
-            })
-                .then(response => {
-                    if (response.ok) {
-                        chatMessageInput.value = '';
-                        chatImageInput.value = '';
-                        chatMessageInput.style.height = 'auto';
-                    } else {
-                        alert('送信失敗');
-                    }
-                })
-                .catch(error => console.error('通信エラー:', error));
-        };
-
-        // --- メッセージ追加 (JS版メニュー実装) ---
-        function appendMessage(sender, message, imageUrl, msgId) {
-            const isMe = (sender === currentUserName);
-
-            const messageDiv = document.createElement('div');
-            if (msgId) messageDiv.id = 'msg-' + msgId;
-            messageDiv.className = 'text-base mb-4 relative group' + (isMe ? ' text-right' : '');
-
-            const senderP = document.createElement('p');
-            senderP.className = 'font-bold text-sm text-gray-500 mb-1';
-            senderP.textContent = sender;
-
-            const bubbleContainer = document.createElement('div');
-            bubbleContainer.className = 'inline-block relative text-left';
-
-            const contentP = document.createElement('div');
-            contentP.className = (isMe ? 'bg-blue-500 text-white' : 'bg-gray-200') +
-                ' p-3 rounded-t-xl' +
-                (isMe ? ' rounded-bl-xl' : ' rounded-br-xl') +
-                ' text-left break-words max-w-xs';
-
-            // ★修正: 画像処理 (aタグを作らずimgのみ)
-            if (imageUrl) {
-                let fullImageUrl = imageUrl;
-                if (!imageUrl.startsWith('http')) fullImageUrl = window.location.origin + imageUrl;
-
-                const img = document.createElement('img');
-                img.src = fullImageUrl;
-                img.className = "max-w-full h-auto rounded-lg mb-1 pointer-events-none"; // クリック透過
-                img.style.maxHeight = "200px";
-                contentP.appendChild(img);
-            }
-
-            // テキスト処理
-            function urlify(text) {
-                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                return text.replace(urlRegex, '<a href="$&" target="_blank" class="underline hover:text-blue-200" onclick="event.stopPropagation()">$&</a>').replace(/\n/g, '<br>');
-            }
-
-            if (message) {
-                const textSpan = document.createElement('span');
-                const safeText = escapeHtml(message);
-                textSpan.innerHTML = urlify(safeText);
-                contentP.appendChild(textSpan);
-            }
-
-            bubbleContainer.appendChild(contentP);
-
-            // ★修正: JSでメニューを作成 (Alpine未使用)
-            const needsMenu = (isMe && msgId) || imageUrl;
-
-            if (needsMenu) {
-                contentP.style.cursor = 'pointer';
-
-                const menuDiv = document.createElement('div');
-                menuDiv.className = 'hidden absolute z-20 bg-white shadow-xl border border-gray-200 rounded-lg p-1 min-w-[140px] flex flex-col gap-1 mt-1 js-chat-menu';
-
-                if (isMe) menuDiv.style.right = '0';
-                else menuDiv.style.left = '0';
-
-                // 画像拡大ボタン
-                if (imageUrl) {
-                    let fullImageUrl = imageUrl;
-                    if (!imageUrl.startsWith('http')) fullImageUrl = window.location.origin + imageUrl;
-
-                    const viewBtn = document.createElement('a');
-                    viewBtn.href = fullImageUrl;
-                    viewBtn.target = "_blank";
-                    viewBtn.innerHTML = '🔍 画像を拡大';
-                    viewBtn.className = 'block text-left text-sm text-gray-700 px-3 py-2 hover:bg-gray-100 rounded text-decoration-none';
-                    viewBtn.onclick = function (e) {
-                        e.stopPropagation();
-                    };
-                    menuDiv.appendChild(viewBtn);
-                }
-
-                // 削除ボタン
-                if (isMe && msgId) {
-                    const delBtn = document.createElement('button');
-                    delBtn.innerHTML = '🗑️ 削除する';
-                    delBtn.className = 'block w-full text-left text-sm text-red-600 px-3 py-2 hover:bg-red-50 rounded';
-                    delBtn.onclick = function (e) {
-                        e.stopPropagation();
-                        if (confirm('本当に削除しますか？')) {
-                            menuDiv.classList.add('hidden');
-                            deleteMessage(msgId);
-                        }
-                    };
-                    menuDiv.appendChild(delBtn);
-                }
-
-                bubbleContainer.appendChild(menuDiv);
-
-                // メニュー開閉イベント
-                contentP.onclick = function (e) {
-                    e.stopPropagation();
-                    // 他のメニューを閉じる
-                    document.querySelectorAll('.js-chat-menu').forEach(el => {
-                        if (el !== menuDiv) el.classList.add('hidden');
-                    });
-                    // トグル
-                    if (menuDiv.classList.contains('hidden')) menuDiv.classList.remove('hidden');
-                    else menuDiv.classList.add('hidden');
-                };
-            }
-
-            messageDiv.appendChild(senderP);
-            messageDiv.appendChild(bubbleContainer);
-            chatLog.appendChild(messageDiv);
-            chatLog.scrollTop = chatLog.scrollHeight;
-        }
+        });
 
         window.onload = function () {
             chatLog.scrollTop = chatLog.scrollHeight;
