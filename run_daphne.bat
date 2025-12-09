@@ -1,0 +1,6 @@
+    @echo off
+    echo Activating virtual environment...
+    call .\.venv\Scripts\activate.bat
+
+    echo Starting Daphne server...
+    daphne -p 8000 Sotsuken_Portable_Project.asgi:application
