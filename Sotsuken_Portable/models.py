@@ -1,3 +1,4 @@
+import os
 import uuid, json
 
 from django.conf import settings
@@ -5,7 +6,8 @@ from django.contrib.auth.base_user import BaseUserManager
 # Create your models here.
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
-
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 
 '''
 class UserManager(BaseUserManager):
@@ -609,6 +611,24 @@ class ReadState(models.Model):
         target = self.group.name if self.group else f"DM:{self.dm_partner}"
         return f"{self.user} read {target} at {self.last_read_at}"
 
+# =========================================================
+# シグナル定義: モデル削除時にファイル実体も削除する
+# =========================================================
+@receiver(post_delete, sender=Message)
+def delete_message_image_file(sender, instance, **kwargs):
+    """
+    Messageモデルのレコードが削除された直後に呼び出され、
+    関連付けられていた画像ファイルを物理削除する。
+    """
+    if instance.image:
+        try:
+            # ファイルパスが存在すれば削除
+            if os.path.isfile(instance.image.path):
+                os.remove(instance.image.path)
+                print(f"[Signal] Deleted image file: {instance.image.path}")
+        except Exception as e:
+            print(f"[Signal] Error deleting image file: {e}")
+
 
 class CommunityPost(models.Model):
     """
@@ -1036,5 +1056,7 @@ class JmaArea(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.code})"
+
+
 
 
