@@ -5,115 +5,142 @@
 
 {% block head_extra %}
     <style>
-        /* 地図を表示するエリアの高さを指定（必須） */
         #map { height: 70vh; }
     </style>
 {% endblock %}
 
-
 {% block content %}
-    {# 地図を表示するためのコンテナ #}
     <div id="map" class="w-full rounded-lg shadow-lg"></div>
 
-    {# --- ここから地図を制御するJavaScript --- #}
     <script>
-        // Djangoから渡されたデータをJavaScript変数に格納
         const sheltersData = JSON.parse('{{ shelters_json|safe }}');
         const apiKey = '{{ google_maps_api_key }}';
 
-        let map; // mapオブジェクトをグローバルスコープで宣言
+        let map;
         let directionsService;
         let directionsRenderer;
-        let userLocation; // ユーザーの現在地を保存する変数
 
-        // Google Maps APIが読み込まれた後に実行されるコールバック関数
+        // --- リアルタイム更新で変更する変数 ---
+        let userLocationMarker; // 現在地マーカーを保持する変数
+        let locationSocket;     // WebSocketインスタンスを保持する変数
+
         function initMap() {
-            // 1. 地図を初期化 (中心座標は東京駅あたり、ズームレベル13)
             const mapOptions = {
-                center: { lat: 35.6812, lng: 139.7671 },
-                zoom: 13,
+                center: { lat: 34.385, lng: 132.455 }, // 広島市役所あたり
+                zoom: 12,
             };
             map = new google.maps.Map(document.getElementById("map"), mapOptions);
 
-            // ルート描画用のサービスを初期化
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer();
             directionsRenderer.setMap(map);
 
-            // 2. 避難所のマーカーを地図上に追加
+            // 避難所のマーカーを設置 (既存のまま)
             sheltersData.forEach(function(shelter) {
                 const marker = new google.maps.Marker({
                     position: { lat: shelter.lat, lng: shelter.lng },
                     map: map,
                     title: shelter.name,
                 });
-
-                // マーカークリック時に情報ウィンドウを表示
                 const contentString = `<b>${shelter.name}</b><br>` +
                                       `住所: ${shelter.address}<br>` +
                                       `収容状況: ${shelter.occupancy} / ${shelter.capacity}<br>` +
                                       `<button onclick="calculateAndDisplayRoute({lat: ${shelter.lat}, lng: ${shelter.lng}})">ここへのルートを表示</button>`;
-                const infowindow = new google.maps.InfoWindow({
-                    content: contentString,
-                });
-                marker.addListener("click", () => {
-                    infowindow.open(map, marker);
-                });
+                const infowindow = new google.maps.InfoWindow({ content: contentString });
+                marker.addListener("click", () => { infowindow.open(map, marker); });
             });
 
-            // 3. ユーザーの現在地を取得して表示
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    userLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                    };
-                    
-                    // 現在地にマーカーを置く
-                    new google.maps.Marker({
-                        position: userLocation,
-                        map: map,
-                        title: "あなたの現在地",
-                        icon: { // 青い丸のアイコンにカスタマイズ
-                            path: google.maps.SymbolPath.CIRCLE,
-                            scale: 8,
-                            fillColor: "#4285F4",
-                            fillOpacity: 1,
-                            strokeWeight: 2,
-                            strokeColor: "#ffffff",
-                        },
-                    });
-
-                    // 地図の中心を現在地に移動
-                    map.setCenter(userLocation);
-                    map.setZoom(15);
-                });
-            }
+            // ★ 新しく追加: リアルタイム位置情報更新を開始
+            startRealtimeLocation();
         }
 
-        // ルートを計算して表示する関数
-        function calculateAndDisplayRoute(destination) {
-            if (!userLocation) {
-                alert("現在地が取得できていません。");
+        // --- ★ ここからWebSocketと位置情報監視のロジック ---
+        function startRealtimeLocation() {
+            if (!navigator.geolocation) {
+                alert("お使いのブラウザは位置情報機能に対応していません。");
                 return;
             }
 
+            // 1. WebSocket接続をセットアップ
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            const wsUrl = wsProtocol + window.location.host + '/ws/location/';
+            locationSocket = new WebSocket(wsUrl);
+
+            locationSocket.onopen = () => console.log("Location WebSocket connection established.");
+            locationSocket.onclose = () => console.error('Location WebSocket closed.');
+            locationSocket.onerror = (err) => console.error('WebSocket error:', err);
+
+            // 2. 位置情報の継続的な監視を開始
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    const userPos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                    };
+
+                    // WebSocketでサーバーに位置情報を送信
+                    if (locationSocket.readyState === WebSocket.OPEN) {
+                        locationSocket.send(JSON.stringify(userPos));
+                    }
+
+                    // 地図上のマーカーを更新
+                    updateUserMarker(userPos);
+                },
+                () => { alert("位置情報の取得に失敗しました。"); },
+                { enableHighAccuracy: true }
+            );
+        }
+
+        function updateUserMarker(position) {
+            if (!userLocationMarker) {
+                // 最初の位置情報取得時にマーカーを作成
+                userLocationMarker = new google.maps.Marker({
+                    position: position,
+                    map: map,
+                    title: "あなたの現在地",
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: "#4285F4",
+                        fillOpacity: 1,
+                        strokeWeight: 2,
+                        strokeColor: "#ffffff",
+                    },
+                });
+                // 地図の中心を現在地に移動
+                map.setCenter(position);
+                map.setZoom(15);
+            } else {
+                // 既存のマーカーの位置を更新
+                userLocationMarker.setPosition(position);
+            }
+        }
+        // --- ★ ここまでが追加・変更されたロジック ---
+
+
+        // ルートを計算して表示する関数 (★ 修正)
+        function calculateAndDisplayRoute(destination) {
+            // userLocation変数ではなく、マーカーの現在位置を始点にする
+            if (!userLocationMarker) {
+                alert("現在地が取得できていません。");
+                return;
+            }
+            const origin = userLocationMarker.getPosition().toJSON();
+
             directionsService.route({
-                origin: userLocation,
+                origin: origin,
                 destination: destination,
-                travelMode: 'WALKING' // 徒歩ルートをリクエスト
-            }, function(response, status) {
+                travelMode: 'WALKING'
+            }, (response, status) => {
                 if (status === 'OK') {
                     directionsRenderer.setDirections(response);
                 } else {
-                    window.alert('Directions request failed due to ' + status);
+                    window.alert('ルート検索に失敗しました: ' + status);
                 }
             });
         }
     </script>
     
-    {# Google Maps JavaScript APIのスクリプトを読み込む #}
-    {# callback=initMap で、API読み込み完了後にinitMap関数を実行する #}
     <script async defer
         src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap">
     </script>
