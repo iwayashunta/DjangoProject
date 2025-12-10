@@ -13,7 +13,7 @@
         <p class="italic">"{{ comment.text }}"</p>
     </div>
 
-    <form method="post">
+    <form method="post" onsubmit="disableButton(this)">
         {% csrf_token %}
         <div class="flex justify-center gap-4">
             {# キャンセルボタンは元の投稿詳細ページに戻る #}

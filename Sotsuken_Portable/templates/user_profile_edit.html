@@ -22,7 +22,7 @@
     <!-- ユーザー情報変更フォーム -->
     <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
         <h3 class="text-lg font-semibold mb-4 border-b pb-2">ユーザー情報</h3>
-        <form method="post" class="space-y-4">
+        <form method="post" class="space-y-4" onsubmit="return disableButton(this)">
             {% csrf_token %}
 
             <!-- 氏名フィールド -->
@@ -54,7 +54,7 @@
     <!-- パスワード変更フォーム -->
     <div class="bg-white p-6 rounded-xl shadow-lg">
         <h3 class="text-lg font-semibold mb-4 border-b pb-2">パスワード変更</h3>
-        <form method="post" class="space-y-4">
+        <form method="post" class="space-y-4" onsubmit="return disableButton(this)">
             {% csrf_token %}
 
             <!-- 各フィールドを手動でレンダリング -->

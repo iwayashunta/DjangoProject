@@ -32,7 +32,7 @@
                             {% else %}
                                 {# 他のユーザーはフォームにする #}
                                 <form action="{% url 'Sotsuken_Portable:user_change_role' user.id %}" method="post"
-                                      class="flex items-center justify-center gap-2">
+                                      class="flex items-center justify-center gap-2" onsubmit="return disableButton(this)">
                                     {% csrf_token %}
                                     <select name="role" class="border border-gray-300 rounded-md px-2 py-1 text-sm">
                                         {% for role_value, role_display in user.ROLE_CHOICES %}

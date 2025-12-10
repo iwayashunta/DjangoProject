@@ -8,7 +8,7 @@
     <!-- 1. ユーザー検索セクション (変更なし) -->
     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
         <h2 class="text-lg font-bold mb-3 text-blue-800">ユーザーを探す</h2>
-        <form method="get" action="" class="flex gap-2">
+        <form method="get" action="" class="flex gap-2" onsubmit="return disableButton(this)">
             <input type="text" name="q" value="{{ search_query|default:'' }}"
                    placeholder="ID または 氏名を入力"
                    class="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">

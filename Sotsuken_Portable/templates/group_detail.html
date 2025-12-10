@@ -65,7 +65,7 @@
     {# --- 一般メンバー向けの脱退ボタン --- #}
     <div class="mt-8 pt-8 border-t">
         <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">グループ設定</h3>
-        <form method="post" action="{% url 'Sotsuken_Portable:group_leave' group.pk %}"
+        <form method="post" action="{% url 'Sotsuken_Portable:group_leave' group.pk %} "
               onsubmit="return confirm('本当にこのグループから脱退しますか？');">
             {% csrf_token %}
             <div class="text-center">

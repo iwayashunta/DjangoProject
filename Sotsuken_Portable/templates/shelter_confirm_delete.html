@@ -18,7 +18,7 @@
             <p class="text-sm text-gray-600 mt-1">{{ shelter.address }}</p>
         </div>
 
-        <form method="post">
+        <form method="post" onsubmit="return disableButton(this)">
             {% csrf_token %}
             <div class="flex justify-center gap-4">
                 <a href="{% url 'Sotsuken_Portable:shelter_management' %}" class="w-full bg-gray-200 text-gray-800 p-3 rounded-lg hover:bg-gray-300 font-semibold">キャンセル</a>

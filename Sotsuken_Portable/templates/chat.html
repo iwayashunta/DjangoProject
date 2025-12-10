@@ -84,7 +84,7 @@
         </div>
 
         <!-- 入力フォーム -->
-        <form id="chat-form" class="flex flex-col gap-2 p-2" autocomplete="off" enctype="multipart/form-data">
+        <form id="chat-form" class="flex flex-col gap-2 p-2" autocomplete="off" enctype="multipart/form-data" onsubmit="return disableButton(this)">
             {% csrf_token %}
             <div class="flex items-center gap-2">
                 <label class="text-sm text-gray-600 font-bold">添付画像:</label>
@@ -285,10 +285,16 @@
 
         chatForm.onsubmit = function (e) {
             e.preventDefault();
+            const submitBtn = document.querySelector('#chat-message-submit');
+            if (submitBtn.disabled) return;
             const message = chatMessageInput.value;
             const imageFile = chatImageInput.files[0];
 
             if (message.trim() === '' && !imageFile) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = '送信中...'; // テキストを変えると親切
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed'); // Tailwindで薄くする
 
             // --- A. 即時反映 (仮表示) ---
             const tempId = 'temp-' + Date.now();
@@ -327,6 +333,15 @@
             }).catch(err => {
                 console.error(err);
                 alert('通信エラーが発生しました');
+            })
+            .finally(() => {
+            // ★追加4: 成功・失敗に関わらず、最後にボタンを復活させる
+            submitBtn.disabled = false;
+            submitBtn.textContent = '送信';
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            // PCなら入力欄にフォーカスを戻す
+            chatMessageInput.focus();
             });
         };
 

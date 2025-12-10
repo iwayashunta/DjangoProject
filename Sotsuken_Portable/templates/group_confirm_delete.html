@@ -10,7 +10,7 @@
         この操作を行うと、全てのメンバーがグループから削除され、元に戻すことはできません。
     </p>
 
-    <form method="post">
+    <form method="post" onsubmit="disableButton(this)">
         {% csrf_token %}
         <div class="flex justify-center gap-4">
             <a href="{% url 'Sotsuken_Portable:group_detail' group.pk %}" class="bg-gray-500 text-white py-2 px-6 rounded-lg hover:bg-gray-600">
@@ -22,4 +22,19 @@
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block body_extra %}
+    <script>
+    function disableButton(form) {
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = '処理中...';
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+        // trueを返さないとフォーム送信自体がキャンセルされてしまうので注意
+        return true;
+        }
+    </script>
 {% endblock %}

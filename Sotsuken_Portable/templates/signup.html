@@ -34,7 +34,7 @@
             <h2 class="text-3xl font-bold mb-8 text-center text-blue-700 tracking-wide">アカウント作成</h2>
 
             {# クラス名 signup-form を追加してCSSを適用 #}
-            <form method="post" class="signup-form space-y-6"> {# space-y-6 で項目間の縦幅を広げる #}
+            <form method="post" class="signup-form space-y-6" onsubmit="return disableButton(this)"> {# space-y-6 で項目間の縦幅を広げる #}
                 {% csrf_token %}
 
                 {% for field in form %}

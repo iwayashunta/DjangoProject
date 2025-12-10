@@ -57,7 +57,7 @@
                             <!-- ▼▼▼ 対応状況 変更フォーム ▼▼▼ -->
                             <td class="p-2 text-center">
                                 <form action="{% url 'Sotsuken_Portable:sos_report_update_status' report.id %}"
-                                      method="post" class="flex items-center justify-center gap-2">
+                                      method="post" class="flex items-center justify-center gap-2" onsubmit="return disableButton(this)">
                                     {% csrf_token %}
                                     <select name="status"
                                             class="border border-gray-300 rounded-md px-2 py-1 text-sm bg-white">

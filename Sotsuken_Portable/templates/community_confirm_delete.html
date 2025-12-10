@@ -10,7 +10,7 @@
         この操作は元に戻せません。
     </p>
 
-    <form method="post">
+    <form method="post" onsubmit="disableButton(this)">
         {% csrf_token %}
         <div class="flex justify-center gap-4">
             {# キャンセルボタンは詳細ページに戻る #}

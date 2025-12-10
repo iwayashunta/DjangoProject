@@ -243,10 +243,16 @@
         // =========================================================
         chatForm.onsubmit = function (e) {
             e.preventDefault();
+            const submitBtn = document.querySelector('#chat-message-submit');
+            if (submitBtn.disabled) return;
             const message = chatMessageInput.value;
             const imageFile = chatImageInput.files[0];
 
             if (message.trim() === '' && !imageFile) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = '送信中...'; // テキストを変えると親切
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed'); // Tailwindで薄くする
 
             // A. 即時反映 (Optimistic UI)
             const tempId = 'temp-' + Date.now();
@@ -278,6 +284,15 @@
             }).catch(error => {
                 console.error(error);
                 alert('通信エラー');
+            })
+            .finally(() => {
+                // ★追加4: 成功・失敗に関わらず、最後にボタンを復活させる
+                submitBtn.disabled = false;
+                submitBtn.textContent = '送信';
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                // PCなら入力欄にフォーカスを戻す
+                chatMessageInput.focus();
             });
         };
 

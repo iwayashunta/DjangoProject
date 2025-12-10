@@ -13,7 +13,7 @@
             新しい配布情報を登録
         </h2>
         
-        <form method="post" class="space-y-4">
+        <form method="post" class="space-y-4" onsubmit="return disableButton(this)">
             {% csrf_token %}
             
             {% for field in form %}

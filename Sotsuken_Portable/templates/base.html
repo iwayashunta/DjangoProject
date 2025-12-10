@@ -1,79 +1,107 @@
 {% load static %}
-<!-- base.html -->
+<!DOCTYPE html>
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}災害情報共有アプリ{% endblock %}</title> <!-- 変更 -->
+    <title>{% block title %}災害情報共有アプリ{% endblock %}</title>
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+
     <!-- 共通のスタイルシート -->
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
+
     {% block head_extra %}
     {% endblock %}
 </head>
 <body class="bg-gray-100 antialiased">
-<div class="app-container flex flex-col h-screen">
-    <!-- アプリ共通のヘッダー -->
-    <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
-        <h1 id="screen-title" class="text-xl font-bold text-center">{% block header_title %}
-            災害情報共有アプリ{% endblock %}</h1> <!-- 変更 -->
-    </header>
-    <main class="flex-1 overflow-y-auto p-4 pb-20 md:p-8 md:pb-24">
-        {% if messages %}
-            <div class="max-w-4xl mx-auto mb-4">
-                {% for message in messages %}
-                    {# message.tags は success, info, warning, error などのCSSクラス名を自動でつけてくれる #}
-                    <div class="p-4 rounded-md
-                            {% if message.tags == 'success' %} bg-green-100 text-green-800
-                            {% elif message.tags == 'error' %} bg-red-100 text-red-800
-                            {% else %} bg-blue-100 text-blue-800 {% endif %}"
-                         role="alert">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-        {% block content %}
-        {% endblock %}
-    </main>
-    <!-- ... フッターなど ... -->
-    <footer class="bg-white p-2 shadow-inner border-t border-gray-200 flex justify-around items-center sticky bottom-0 z-10">
-        <a href="{% url 'Sotsuken_Portable:index' %}"
-           class="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors p-1 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                 stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-            </svg>
-            <span class="text-xs">ホーム</span>
-        </a>
-        <a href="{% url 'Sotsuken_Portable:user_menu' %}"
-           class="relative flex flex-col items-center text-gray-600 hover:text-purple-600 transition-colors p-1 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                 stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-            </svg>
-            <span class="text-xs">メニュー</span>
-            {% if global_has_unread %}
-                <span class="absolute top-1 right-3 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+    <div class="app-container flex flex-col h-screen">
+        <!-- アプリ共通のヘッダー -->
+        <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
+            <h1 id="screen-title" class="text-xl font-bold text-center">
+                {% block header_title %}災害情報共有アプリ{% endblock %}
+            </h1>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 pb-20 md:p-8 md:pb-24">
+            {% if messages %}
+                <div class="max-w-4xl mx-auto mb-4">
+                    {% for message in messages %}
+                        <div class="p-4 rounded-md mb-2
+                                {% if message.tags == 'success' %} bg-green-100 text-green-800 border border-green-200
+                                {% elif message.tags == 'error' %} bg-red-100 text-red-800 border border-red-200
+                                {% else %} bg-blue-100 text-blue-800 border border-blue-200 {% endif %}"
+                             role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
             {% endif %}
-        </a>
-        {% if user.is_authenticated and user.role in "admin,rescuer" %}
-            <a href="{% url 'Sotsuken_Portable:admin_menu' %}"
-               class="flex flex-col items-center text-gray-600 hover:text-red-600 transition-colors p-1 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                     stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.253.608 3.249 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+
+            {% block content %}
+            {% endblock %}
+        </main>
+
+        <!-- フッター -->
+        <footer class="bg-white p-2 shadow-inner border-t border-gray-200 flex justify-around items-center sticky bottom-0 z-10">
+            <a href="{% url 'Sotsuken_Portable:index' %}"
+               class="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors p-1 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
-                <span class="text-xs">管理者</span>
+                <span class="text-xs">ホーム</span>
             </a>
-        {% endif %}
-    </footer>
-</div>
-<script src="{% static 'js/common.js' %}"></script>
-{% block body_extra %}
-{% endblock %}
+            <a href="{% url 'Sotsuken_Portable:user_menu' %}"
+               class="relative flex flex-col items-center text-gray-600 hover:text-purple-600 transition-colors p-1 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+                <span class="text-xs">メニュー</span>
+                {% if global_has_unread %}
+                    <span class="absolute top-1 right-3 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+                {% endif %}
+            </a>
+            {% if user.is_authenticated and user.role in "admin,rescuer" %}
+                <a href="{% url 'Sotsuken_Portable:admin_menu' %}"
+                   class="flex flex-col items-center text-gray-600 hover:text-red-600 transition-colors p-1 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.253.608 3.249 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span class="text-xs">管理者</span>
+                </a>
+            {% endif %}
+        </footer>
+    </div>
+
+    <script src="{% static 'js/common.js' %}"></script>
+
+    <!-- ★ボタン連打防止スクリプト (全ページ共通)★ -->
+    <script>
+        function disableButton(form) {
+            const btn = form.querySelector('button[type="submit"]');
+            if (btn) {
+                // 既に無効化されていれば送信キャンセル
+                if (btn.disabled) return false;
+
+                btn.disabled = true;
+                btn.dataset.originalText = btn.innerText; // 元の文字を覚えておく
+                btn.innerText = '処理中...';
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+                // 10秒経っても画面遷移しなければ復活させる（タイムアウト安全策）
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerText = btn.dataset.originalText;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }, 10000);
+            }
+            return true;
+        }
+    </script>
+
+    {% block body_extra %}
+    {% endblock %}
 </body>
+</html>

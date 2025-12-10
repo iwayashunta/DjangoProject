@@ -15,7 +15,7 @@
             </div>
         {% endif %}
 
-        <form id="sos-form" method="post">
+        <form id="sos-form" method="post" onsubmit="return disableButton(this)">
             {% csrf_token %}
             {# 位置情報を裏で送信するための隠しフィールド #}
             <input type="hidden" name="latitude" id="latitude">

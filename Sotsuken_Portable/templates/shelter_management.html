@@ -8,7 +8,7 @@
 <div class="p-4 md:p-8 max-w-4xl mx-auto">
     
     <!-- 新規避難所登録フォーム -->
-    <form method="post" class="bg-white p-6 rounded-xl shadow-lg mb-8">
+    <form method="post" class="bg-white p-6 rounded-xl shadow-lg mb-8" onsubmit="disableButton(this)">
         {% csrf_token %}
         <h3 class="text-lg font-semibold mb-4 text-orange-700">新規避難所の登録</h3>
         

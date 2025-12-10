@@ -46,7 +46,7 @@
         </a>
 
         <!-- ログアウトボタン -->
-        <form method="post" action="{% url 'Sotsuken_Portable:logout' %}">
+        <form method="post" action="{% url 'Sotsuken_Portable:logout' %} " onsubmit="return disableButton(this)">
             {% csrf_token %}
             <button type="submit" class="block w-full text-center bg-gray-500 text-white p-2 rounded-lg hover:bg-gray-600 transition-colors">
                 ログアウト
