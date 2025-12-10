@@ -650,27 +650,23 @@ def dm_user_list_view(request):
     search_query = request.GET.get('q')
     search_results = []
 
-    # --- 1. 検索機能 ---
+    # --- 1. 検索機能 (変更なし) ---
     if search_query:
-        # IDまたは名前で検索（自分自身は除外）
         users = User.objects.filter(
             Q(username__icontains=search_query) | Q(full_name__icontains=search_query)
         ).exclude(id=current_user.id)
 
         for user in users:
-            # そのユーザーとの関係性を判定して、userオブジェクトに属性を追加する
             user.can_chat = False
-            user.connection_status = 'none'  # none, requesting, received, accepted
+            user.connection_status = 'none'
 
-            # A. 特権階級チェック（災害用特例）
-            # 相手が管理者/救助隊、または自分が管理者/救助隊なら無条件でチャット可能
-            if user.role in ['admin', 'rescuer'] or current_user.role in ['admin', 'rescuer']:
+            # A. 特権階級チェック
+            if user.role in ['admin', 'rescuer'] or current_user.role in ['admin',
+                                                                          'rescuer'] or current_user.is_superuser:
                 user.can_chat = True
-                user.connection_status = 'special'  # 特別権限
-
+                user.connection_status = 'special'
             # B. 友達関係チェック
             else:
-                # 自分と相手の間のConnectionを探す
                 conn = Connection.objects.filter(
                     (Q(requester=current_user, receiver=user) |
                      Q(requester=user, receiver=current_user))
@@ -681,67 +677,85 @@ def dm_user_list_view(request):
                     if conn.status == 'accepted':
                         user.can_chat = True
                     elif conn.status == 'requesting':
-                        # 自分が申請したのか、されたのかを区別
                         if conn.requester == current_user:
-                            user.connection_status = 'sent_request'  # 申請中
+                            user.connection_status = 'sent_request'
                         else:
-                            user.connection_status = 'received_request'  # 承認待ち
+                            user.connection_status = 'received_request'
 
             search_results.append(user)
 
-    # ★★★ 追加: 自分宛ての未承認リクエストを取得 ★★★
+    # 自分宛ての未承認リクエストを取得 (変更なし)
     received_requests = Connection.objects.filter(
         receiver=current_user,
         status='requesting'
     )
-    # 申請者のユーザーオブジェクトのリストにする（テンプレートで使いやすくするため）
     requesting_users = [req.requester for req in received_requests]
 
-    # --- 2. 既存のチャット可能なユーザー一覧（友達など） ---
-    # 既に 'accepted' な関係にあるユーザーを取得
-    connections = Connection.objects.filter(
-        (Q(requester=current_user) | Q(receiver=current_user)),
-        status='accepted'
-    )
-    friend_ids = []
-    for c in connections:
-        friend_ids.append(c.receiver.id if c.requester == current_user else c.requester.id)
+    # --- 2. DMリスト (★修正: 管理者なら履歴ベース、一般なら友達ベース) ---
+    dm_users = []
 
-    # 管理者などは検索しなくても最初からリストに出すなどの仕様もアリですが
-    # ここでは「友達登録済みユーザー」を表示します
-    dm_users = User.objects.filter(id__in=friend_ids)
+    # 管理者(admin/rescuer)またはスーパーユーザーの場合
+    if current_user.role in ['admin', 'rescuer'] or current_user.is_superuser:
+        # メッセージ履歴があるユーザーを取得 (自分が送信 or 自分に受信)
+        # DMの場合、groupはnull, recipientはnot null
 
+        # 1. 自分が送った相手のID
+        sent_ids = Message.objects.filter(sender=current_user, recipient__isnull=False).values_list('recipient',
+                                                                                                    flat=True)
+
+        # 2. 自分に送ってきた相手のID
+        received_ids = Message.objects.filter(recipient=current_user).values_list('sender', flat=True)
+
+        # IDの集合を作成して重複排除
+        contacted_ids = set(sent_ids) | set(received_ids)
+        # 自分自身が含まれていた場合は除外(通常ありえないが念のため)
+        contacted_ids.discard(current_user.id)
+
+        # IDリストからユーザーオブジェクトを取得
+        dm_users = User.objects.filter(id__in=contacted_ids)
+
+    else:
+        # 一般ユーザー: 既存の「友達(accepted)」ロジック
+        connections = Connection.objects.filter(
+            (Q(requester=current_user) | Q(receiver=current_user)),
+            status='accepted'
+        )
+        friend_ids = []
+        for c in connections:
+            if c.requester == current_user:
+                friend_ids.append(c.receiver.id)
+            else:
+                friend_ids.append(c.requester.id)
+
+        dm_users = User.objects.filter(id__in=friend_ids)
+
+    # --- 3. グループチャット一覧 & 未読判定 (変更なし) ---
     memberships = current_user.group_memberships.all()
     chat_groups = [m.group for m in memberships]
 
     # A. グループチャットの未読判定
     for group in chat_groups:
-        # このユーザーがこのグループを最後に読んだ時間を取得
         read_state = ReadState.objects.filter(user=current_user, group=group).first()
-
         if read_state:
             last_read = read_state.last_read_at
         else:
-            # まだ一度も開いていない場合は、ずっと昔の日付にする（＝全メッセージ未読扱い）
             last_read = timezone.datetime.min.replace(tzinfo=datetime.timezone.utc)
 
-        # 「最終閲覧日時」より新しく、かつ「自分以外が送信した」メッセージがあるか？
         group.has_unread = Message.objects.filter(
             group=group,
             timestamp__gt=last_read
         ).exclude(sender=current_user).exists()
 
     # B. DMの未読判定
+    # dm_users の中身がロールによって切り替わっているので、
+    # そのまま回せば「履歴のあるユーザー」または「友達」の未読がチェックされます
     for user in dm_users:
-        # このユーザーとのDMを最後に読んだ時間を取得
         read_state = ReadState.objects.filter(user=current_user, dm_partner=user).first()
-
         if read_state:
             last_read = read_state.last_read_at
         else:
             last_read = timezone.datetime.min.replace(tzinfo=datetime.timezone.utc)
 
-        # 「最終閲覧日時」より新しく、かつ「相手から自分宛て」のメッセージがあるか？
         user.has_unread = Message.objects.filter(
             sender=user,
             recipient=current_user,

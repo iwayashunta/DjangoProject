@@ -3,9 +3,10 @@
 {% block header_title %}チャット{% endblock %}
 
 {% block content %}
-<div class="bg-white p-6 rounded-xl shadow-lg space-y-8"> <!-- space-y-8を追加して間隔を整理 -->
 
-    <!-- 1. ユーザー検索セクション (変更なし) -->
+<div class="bg-white p-6 rounded-xl shadow-lg space-y-8">
+
+    <!-- 1. ユーザー検索セクション -->
     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
         <h2 class="text-lg font-bold mb-3 text-blue-800">ユーザーを探す</h2>
         <form method="get" action="" class="flex gap-2" onsubmit="return disableButton(this)">
@@ -32,7 +33,6 @@
                                 {% if user.role == 'rescuer' %}<span class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded ml-2">救助隊</span>{% endif %}
                             </div>
 
-                            <!-- 状態に応じたボタンの出し分け -->
                             <div>
                                 {% if user.can_chat %}
                                     <a href="{% url 'Sotsuken_Portable:dm_room' user.id %}" class="bg-green-500 text-white text-sm px-3 py-2 rounded hover:bg-green-600">
@@ -60,7 +60,7 @@
         {% endif %}
     </div>
 
-    <!-- 友達申請の承認待ちリスト (変更なし) -->
+    <!-- 友達申請の承認待ちリスト -->
     {% if requesting_users %}
     <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
         <h3 class="text-md font-bold mb-2 text-yellow-800">届いている友達申請</h3>
@@ -78,48 +78,60 @@
     </div>
     {% endif %}
 
-    <!-- ★★★ グループチャット セクション (修正) ★★★ -->
+    <!-- グループチャット -->
     <div>
         <h2 class="text-xl font-bold mb-4 border-b pb-2">グループチャット</h2>
         <div class="space-y-2">
             {% for group in chat_groups %}
-            {# flex justify-between items-center を追加して左右に配置 #}
             <a href="{% url 'Sotsuken_Portable:chat_room' group.pk %}" class="block p-4 bg-gray-100 hover:bg-blue-100 rounded-lg flex justify-between items-center transition-colors">
                 <span class="font-medium">{{ group.name }}</span>
-
-                {# 未読がある場合のみバッジを表示 #}
                 {% if group.has_unread %}
-                    <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">
-                        New
-                    </span>
+                    <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">New</span>
                 {% endif %}
             </a>
             {% empty %}
             <p class="text-gray-500">参加しているグループはありません。</p>
-            <a href="{% url 'Sotsuken_Portable:group_list' %}" class="text-blue-600 hover:underline mt-2 inline-block">グループ管理へ</a>
             {% endfor %}
         </div>
     </div>
 
-    <!-- ★★★ 個人チャット (DM) セクション (修正) ★★★ -->
+    <!-- DMリスト (管理者向けロジック対応) -->
     <div>
-        <h2 class="text-xl font-bold mb-4 border-b pb-2">友達リスト (DM)</h2>
+        <h2 class="text-xl font-bold mb-4 border-b pb-2">
+            {% if user.role == 'admin' or user.role == 'rescuer' or user.is_superuser %}
+                メッセージ履歴 (管理者用)
+            {% else %}
+                友達リスト (DM)
+            {% endif %}
+        </h2>
+
         <div class="space-y-2">
             {% for u in dm_users %}
             <a href="{% url 'Sotsuken_Portable:dm_room' u.pk %}" class="block p-4 bg-gray-100 hover:bg-green-100 rounded-lg flex justify-between items-center transition-colors">
-                <span class="font-medium">{{ u.full_name|default:u.username }}</span>
+                <div>
+                    <span class="font-medium">{{ u.full_name|default:u.username }}</span>
+                    <!-- ★修正: ユーザーIDを併記 -->
+                    <span class="text-xs text-gray-500 ml-1">(@{{ u.username }})</span>
+                </div>
 
                 <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-400">友達</span>
+                    {% if user.role == 'admin' or user.role == 'rescuer' %}
+                        <span class="text-xs text-gray-400 bg-white border px-1 rounded">履歴</span>
+                    {% else %}
+                        <span class="text-xs text-gray-400">友達</span>
+                    {% endif %}
 
-                    {# 未読がある場合のみ赤丸を表示 #}
                     {% if u.has_unread %}
                         <span class="w-3 h-3 bg-red-500 rounded-full block shadow-sm" title="未読あり"></span>
                     {% endif %}
                 </div>
             </a>
             {% empty %}
-            <p class="text-gray-500">友達登録済みのユーザーはいません。</p>
+                {% if user.role == 'admin' or user.role == 'rescuer' %}
+                    <p class="text-gray-500">メッセージ履歴のあるユーザーはいません。</p>
+                {% else %}
+                    <p class="text-gray-500">友達登録済みのユーザーはいません。</p>
+                {% endif %}
             {% endfor %}
         </div>
     </div>
