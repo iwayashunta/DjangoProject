@@ -31,7 +31,7 @@
                         <!-- 吹き出し (クリック対象) -->
                         <div class="chat-bubble cursor-pointer inline-block max-w-xs text-left break-words rounded-t-xl
                             {% if msg.image %}
-                                bg-transparent
+                                bg-transparent border-0 p-0
                             {% else %}
                                 {% if msg.sender.username == user.username %}
                                     bg-blue-500 text-white rounded-bl-xl p-3
@@ -41,10 +41,16 @@
                             {% endif %}">
 
                             {% if msg.image %}
-                                <img src="{{ msg.image.url }}" class="max-w-full h-auto rounded-xl border border-gray-200 mb-1 pointer-events-none bg-white">
+                                <img src="{{ msg.image.url }}"
+                                    class="max-w-full h-auto rounded-xl border border-gray-200 pointer-events-none bg-white"
+                                    style="transform: translateZ(0);">
                             {% endif %}
 
-                            {{ msg.content|urlize|linebreaksbr }}
+                            {% if msg.content %}
+                                <div class="{% if msg.image %}mt-1 p-2 rounded-lg {% if msg.sender.username == user.username %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %}{% endif %}">
+                                    {{ msg.content|urlize|linebreaksbr }}
+                                </div>
+                            {% endif %}
                         </div>
 
                         <!-- メニュー (初期状態は hidden) -->
@@ -159,6 +165,7 @@
                 const img = document.createElement('img');
                 img.src = fullImageUrl;
                 img.className = "max-w-full h-auto rounded-xl border border-gray-200 mb-1 pointer-events-none bg-white";
+                img.style.transform = "translateZ(0)";
                 bubble.appendChild(img);
             }
 
