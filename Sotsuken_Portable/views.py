@@ -127,53 +127,61 @@ def safety_check_view(request):
 
     # --- 2. フォームの処理 (POST) ---
     if request.method == 'POST':
+
+        # ▼▼▼ パターンA: 安否報告 ▼▼▼
         if 'submit_safety' in request.POST:
-            # 安否報告
             instance = my_status if my_status else SafetyStatus(user=user)
             safety_form = SafetyStatusForm(request.POST, instance=instance)
-            support_form = SupportRequestForm()
+            support_form = SupportRequestForm()  # もう片方は空で初期化
 
             if safety_form.is_valid():
+                # save()は1回でOKです。戻り値でオブジェクトを受け取れます。
                 status_obj = safety_form.save()
-                safety_form.save()
+
                 messages.success(request, '安否情報を更新しました。')
 
+                # 履歴の作成
                 SafetyStatusHistory.objects.create(
                     user=user,
                     status=status_obj.status,
                     message=status_obj.message,
-                    # location_name=status_obj.location_name  # フォームに追加していれば
                 )
-
                 return redirect('Sotsuken_Portable:safety_check')
+            else:
+                # バリデーションエラー時
+                print("Safety Form Errors:", safety_form.errors)  # ★デバッグ用
+                messages.error(request, '安否報告の入力内容にエラーがあります。')
 
+        # ▼▼▼ パターンB: 支援要請 ▼▼▼
         elif 'submit_support' in request.POST:
-            # 支援要請
             support_form = SupportRequestForm(request.POST)
-            safety_form = SafetyStatusForm(instance=my_status)
+            safety_form = SafetyStatusForm(instance=my_status)  # もう片方は現状維持
 
             if support_form.is_valid():
                 instance = support_form.save(commit=False)
                 instance.requester = user
-                # 新規作成時はデフォルトで 'pending' になるので指定不要ですが、念のため
                 instance.status = 'pending'
                 instance.save()
+
                 messages.success(request, '支援要請を送信しました。')
                 return redirect('Sotsuken_Portable:safety_check')
+            else:
+                # バリデーションエラー時
+                # ★ここが重要！なぜ保存されなかったかがターミナルに出ます
+                print("Support Form Errors:", support_form.errors)
+                messages.error(request, '支援要請の送信に失敗しました。入力内容を確認してください。')
 
     # --- 3. フォーム初期化 (GET or Error) ---
+    # POST処理でエラーだった場合、入力内容を保持したままフォームを表示するために
+    # ここで None の場合のみ初期化するようにします。
     if not safety_form:
         safety_form = SafetyStatusForm(instance=my_status)
     if not support_form:
         support_form = SupportRequestForm()
 
     # --- 4. 表示用データの取得 ---
-
-    # 安否リスト
     safety_list = SafetyStatus.objects.exclude(user=user).order_by('-last_updated')
 
-    # ★★★ 修正: 支援要請リストの取得条件 ★★★
-    # 「解決済(resolved)」と「キャンセル(cancelled)」以外を表示する
     request_list = SupportRequest.objects.exclude(
         status__in=['resolved', 'cancelled']
     ).order_by('-requested_at')

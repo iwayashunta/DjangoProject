@@ -80,23 +80,38 @@
     <!-- ★ボタン連打防止スクリプト (全ページ共通)★ -->
     <script>
         function disableButton(form) {
-            const btn = form.querySelector('button[type="submit"]');
-            if (btn) {
-                // 既に無効化されていれば送信キャンセル
-                if (btn.disabled) return false;
+            // 送信ボタンを取得（複数ある場合は、クリックされたものを特定するのが理想ですが、
+            // 簡易的に form内の submit ボタンを対象にします）
+            const buttons = form.querySelectorAll('button[type="submit"]');
 
-                btn.disabled = true;
-                btn.dataset.originalText = btn.innerText; // 元の文字を覚えておく
-                btn.innerText = '処理中...';
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            // ボタンが見つからなければそのまま送信
+            if (buttons.length === 0) return true;
 
-                // 10秒経っても画面遷移しなければ復活させる（タイムアウト安全策）
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.innerText = btn.dataset.originalText;
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                }, 10000);
-            }
+            // ★ここが魔法の修正★
+            // setTimeout で処理を「ほんの少し」遅らせることで、
+            // ブラウザが「ボタンの値を送信データに含める」時間を確保します。
+            setTimeout(() => {
+                buttons.forEach(btn => {
+                    if (!btn.disabled) {
+                        btn.disabled = true;
+                        btn.dataset.originalText = btn.innerText;
+                        btn.innerText = '処理中...';
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                });
+            }, 10); // 10ミリ秒後に無効化
+
+            // 10秒経っても画面遷移しなければ復活させる（タイムアウト安全策）
+            setTimeout(() => {
+                buttons.forEach(btn => {
+                    if(btn.disabled) {
+                        btn.disabled = false;
+                        if(btn.dataset.originalText) btn.innerText = btn.dataset.originalText;
+                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                });
+            }, 10000);
+
             return true;
         }
     </script>
