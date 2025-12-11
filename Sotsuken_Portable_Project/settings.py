@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 
+from corsheaders.defaults import default_headers
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -41,9 +43,11 @@ INSTALLED_APPS = [
     'Sotsuken_Portable',
     #'Sotsuken_Portable.apps.SotsukenPortableConfig',
     'api',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -203,3 +207,21 @@ CSRF_TRUSTED_ORIGINS = [
 
 # プロキシ経由でHTTPS通信している場合に必要
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8001",
+    "http://127.0.0.1:8001",
+]
+
+# ローカルネットワーク(プライベートIP)からのポート8001アクセスのみ許可
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://192\.168\.\d{1,3}\.\d{1,3}:8001$",
+    r"^http://10\.\d{1,3}\.\d{1,3}\.\d{1,3}:8001$",
+    r"^http://172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}:8001$",
+]
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'x-user-login-id',  # ★現場アプリで使っている認証用ヘッダーを許可
+]

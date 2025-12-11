@@ -355,25 +355,32 @@ def post_group_message_api(request):
                 'type': 'chat_message',
                 'id': new_msg.id,
                 'message': new_msg.content,
-
-                # ★★★ 修正: IDと表示名を分ける ★★★
-                'sender': user.username,  # 判定用
-                'sender_full_name': user.full_name or user.username,  # 表示用
-
+                'sender': user.username,
+                'sender_full_name': user.full_name or user.username,
                 'group_id': str(group_id_int),
                 'image_url': new_msg.image.url if new_msg.image else None,
             }
 
-            # オンラインユーザーへの個別送信
-            target_members = GroupMember.objects.filter(group_id=group_id_int)
-            target_user_ids = [m.member_id for m in target_members]
-            online_users = OnlineUser.objects.filter(user_id__in=target_user_ids)
+            # ▼▼▼▼▼ 修正箇所：ここから ▼▼▼▼▼
 
-            for online_user in online_users:
-                async_to_sync(channel_layer.send)(
-                    online_user.channel_name,
-                    chat_data
-                )
+            # 修正前：OnlineUserを使って個別送信していた（削除またはコメントアウト）
+            # target_members = GroupMember.objects.filter(group_id=group_id_int)
+            # target_user_ids = [m.member_id for m in target_members]
+            # online_users = OnlineUser.objects.filter(user_id__in=target_user_ids)
+            # for online_user in online_users:
+            #     async_to_sync(channel_layer.send)(
+            #         online_user.channel_name,
+            #         chat_data
+            #     )
+
+            # 修正後：グループ名指定で一斉送信する (broadcastと同じ方式)
+            # consumer側で group_add しているので、これで届きます
+            target_group_name = f"chat_{group_id_int}"
+
+            async_to_sync(channel_layer.group_send)(
+                target_group_name,
+                chat_data
+            )
 
         return JsonResponse({'status': 'success', 'message': '送信成功'})
 

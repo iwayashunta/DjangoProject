@@ -358,6 +358,11 @@
         chatSocket.onmessage = function (e) {
             const data = JSON.parse(e.data);
 
+            // ★デバッグ用ログ
+            console.log("WebSocket受信:", data);
+            console.log("自分(JS):", currentUserName, " 送信者(Server):", data.sender);
+            console.log("判定結果:", data.sender === currentUserName);
+
             if (data.type === 'delete') {
                 const msgElement = document.getElementById('msg-' + data.message_id);
                 if (msgElement) msgElement.remove();
