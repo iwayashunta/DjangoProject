@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 
 from Sotsuken_Portable.models import RPiData, User, Shelter, DistributionItem, \
-    DistributionRecord, FieldReportLog, Message, GroupMember, OnlineUser  # User, Shelter をインポート
+    DistributionRecord, FieldReportLog, Message, GroupMember, OnlineUser, Group  # User, Shelter をインポート
 
 
 @csrf_exempt
@@ -296,13 +296,14 @@ def post_group_message_api(request):
         image_file = request.FILES.get('image')
 
         if not message and not image_file:
-            return JsonResponse({'status': 'error', 'message': 'メッセージまたは画像が必要です。'}, status=400)
+            return JsonResponse({'status': 'error', 'message': 'データ不足'}, status=400)
 
         channel_layer = channel_layers['default']
         new_msg = None
+        target_group_name = ""
 
         # ---------------------------------------------------------
-        # A. 全体連絡 ('all')
+        # 分岐: 全体連絡 ('all') か 通常グループか
         # ---------------------------------------------------------
         if str(group_id) == 'all':
             new_msg = Message.objects.create(
@@ -312,75 +313,48 @@ def post_group_message_api(request):
                 image=image_file
             )
             target_group_name = "chat_broadcast"
+            # 修正: group_id は文字列 'all' で返す
+            res_group_id = 'all'
 
-            new_msg.refresh_from_db()
-
-            chat_data = {
-                'type': 'chat_message',
-                'id': new_msg.id,
-                'message': new_msg.content,
-
-                # ★★★ 修正: IDと表示名を分ける ★★★
-                'sender': user.username,  # 判定用 (user01)
-                'sender_full_name': user.full_name or user.username,  # 表示用 (管理者ちゃん)
-
-                'group_id': 'all',
-                'image_url': new_msg.image.url if new_msg.image else None,
-            }
-
-            async_to_sync(channel_layer.group_send)(
-                target_group_name,
-                chat_data
-            )
-
-        # ---------------------------------------------------------
-        # B. 通常グループ
-        # ---------------------------------------------------------
         else:
-            try:
-                group_id_int = int(group_id)
-            except ValueError:
-                return JsonResponse({'status': 'error', 'message': '無効なグループIDです'}, status=400)
+            # ★修正: int()変換をやめ、そのまま保存・使用する
+            # (UUID対応モデルなら、文字列のまま渡せばOK)
+            # (Integerモデルでも、数字文字列ならDjangoがよしなに処理してくれる)
+
+            # グループの存在確認 (念のため)
+            if not Group.objects.filter(id=group_id).exists():
+                return JsonResponse({'status': 'error', 'message': 'グループが存在しません'}, status=404)
 
             new_msg = Message.objects.create(
                 sender=user,
-                group_id=group_id_int,
+                group_id=group_id,  # 文字列のまま渡す
                 content=message,
                 image=image_file
             )
 
-            new_msg.refresh_from_db()
+            # WebSocketのグループ名を作成 (chat_1, chat_uuid...)
+            target_group_name = f"chat_{group_id}"
+            res_group_id = str(group_id)
 
-            chat_data = {
-                'type': 'chat_message',
-                'id': new_msg.id,
-                'message': new_msg.content,
-                'sender': user.username,
-                'sender_full_name': user.full_name or user.username,
-                'group_id': str(group_id_int),
-                'image_url': new_msg.image.url if new_msg.image else None,
-            }
+        # ---------------------------------------------------------
+        # 共通: WebSocket配信
+        # ---------------------------------------------------------
+        new_msg.refresh_from_db()
 
-            # ▼▼▼▼▼ 修正箇所：ここから ▼▼▼▼▼
+        chat_data = {
+            'type': 'chat_message',
+            'id': str(new_msg.id),  # UUID対応のため文字列化
+            'message': new_msg.content,
+            'sender': user.username,
+            'sender_full_name': user.full_name or user.username,
+            'group_id': res_group_id,
+            'image_url': new_msg.image.url if new_msg.image else None,
+        }
 
-            # 修正前：OnlineUserを使って個別送信していた（削除またはコメントアウト）
-            # target_members = GroupMember.objects.filter(group_id=group_id_int)
-            # target_user_ids = [m.member_id for m in target_members]
-            # online_users = OnlineUser.objects.filter(user_id__in=target_user_ids)
-            # for online_user in online_users:
-            #     async_to_sync(channel_layer.send)(
-            #         online_user.channel_name,
-            #         chat_data
-            #     )
-
-            # 修正後：グループ名指定で一斉送信する (broadcastと同じ方式)
-            # consumer側で group_add しているので、これで届きます
-            target_group_name = f"chat_{group_id_int}"
-
-            async_to_sync(channel_layer.group_send)(
-                target_group_name,
-                chat_data
-            )
+        async_to_sync(channel_layer.group_send)(
+            target_group_name,
+            chat_data
+        )
 
         return JsonResponse({'status': 'success', 'message': '送信成功'})
 
@@ -459,7 +433,12 @@ from django.conf import settings # ファイルの先頭になければ追加
 @csrf_exempt
 @require_POST
 def post_dm_message_api(request):
-    # ... (認証・バリデーション部分はそのまま) ...
+    """
+    DMメッセージ投稿API (UUID対応 & ID/表示名分離版)
+    """
+    # ---------------------------------------------------------
+    # 1. 送信者(sender)の特定
+    # ---------------------------------------------------------
     sender = None
     header_username = request.headers.get('X-User-Login-Id')
     if header_username:
@@ -473,6 +452,9 @@ def post_dm_message_api(request):
         return JsonResponse({'status': 'error', 'message': '認証が必要です'}, status=401)
 
     try:
+        # ---------------------------------------------------------
+        # 2. データ取得 & 保存
+        # ---------------------------------------------------------
         recipient_id = request.POST.get('recipient_id')
         message = request.POST.get('message', '')
         image_file = request.FILES.get('image')
@@ -480,9 +462,10 @@ def post_dm_message_api(request):
         if not recipient_id or (not message and not image_file):
             return JsonResponse({'status': 'error', 'message': '宛先と、メッセージまたは画像が必要です'}, status=400)
 
+        # UUIDなので int() 変換は不要（そのまま渡す）
         recipient = User.objects.get(id=recipient_id)
 
-        # 1. DB保存
+        # DB保存
         new_msg = Message.objects.create(
             sender=sender,
             recipient=recipient,
@@ -494,21 +477,28 @@ def post_dm_message_api(request):
 
         image_url = None
         if new_msg.image:
-            image_url = settings.MEDIA_URL + new_msg.image.name
+            image_url = new_msg.image.url
 
-        # 2. WebSocket配信
+        # ---------------------------------------------------------
+        # 3. WebSocket配信 (UUID対応)
+        # ---------------------------------------------------------
+        # ルーム名を生成 (UUID同士でも sorted は動作します)
         user_ids = sorted([sender.id, recipient.id])
+        # UUIDを文字列化して結合
         room_group_name = f'dm_{user_ids[0]}_{user_ids[1]}'
 
         channel_layer = channel_layers['default']
         chat_data = {
             'type': 'chat_message',
-            'id': new_msg.id,
+
+            # ★UUIDオブジェクトはJSON化できないので str() で文字列にする
+            'id': str(new_msg.id),
+
             'message': new_msg.content,
 
-            # ★★★ 修正: IDと表示名を分ける ★★★
-            'sender': sender.username,  # 判定用
-            'sender_full_name': sender.full_name or sender.username,  # 表示用
+            # ★IDと表示名を分ける
+            'sender': sender.username,  # 判定用 (user01)
+            'sender_full_name': sender.full_name or sender.username,  # 表示用 (管理者ちゃん)
 
             'image_url': image_url,
         }
@@ -570,7 +560,9 @@ def delete_message_api(request):
             target_group_name,
             {
                 'type': 'chat_message_delete',  # Consumerでこのメソッドを呼ぶ
-                'message_id': message_id
+                'message_id': message_id,
+                # ★★★ 追加: 削除者のIDを渡す ★★★
+                'sender': user.username,
             }
         )
 
@@ -700,6 +692,7 @@ def get_all_users_api(request):
     data = []
     for user in users:
         data.append({
+            'id': str(user.id),  # ★追加: UUIDを文字列にして渡す
             'username': user.username,
             'password': user.password,  # ハッシュ化されたパスワード文字列
             'full_name': user.full_name,

@@ -45,6 +45,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_send(self.group_name, chat_data)
 
     async def chat_message(self, event):
+        print(f"DEBUG: Consumers received event: {event}")
         await self.send(text_data=json.dumps({
             'type': 'message',
             'id': event.get('id'),
@@ -84,16 +85,27 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
 
 class DMChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        my_id = self.scope['user'].id
+        # UUIDオブジェクトかもしれないので str() で確実に文字列化
+        my_id = str(self.scope['user'].id)
+        # URLから取得したID (これは元々文字列)
         other_user_id = self.scope['url_route']['kwargs']['user_id']
+
         if not self.scope['user'].is_authenticated:
             await self.close()
             return
-        if int(my_id) > int(other_user_id):
-            self.room_group_name = f'dm_{other_user_id}_{my_id}'
-        else:
-            self.room_group_name = f'dm_{my_id}_{other_user_id}'
-        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+
+        # ★修正: int() をやめて、文字列のリストとしてソートする
+        # これにより "4b33..." と "a123..." のようなUUID同士でも正しく順序が決まります
+        user_ids = sorted([my_id, other_user_id])
+
+        # ソートされた順序で結合
+        self.room_group_name = f'dm_{user_ids[0]}_{user_ids[1]}'
+
+        # Channelsのグループに参加
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
         await self.accept()
 
     async def disconnect(self, close_code):
@@ -116,6 +128,7 @@ class DMChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def chat_message(self, event):
+        print(f"DEBUG: Consumers received event: {event}")
         await self.send(text_data=json.dumps({
             'type': 'message',
             'id': event.get('id'),
@@ -127,7 +140,7 @@ class DMChatConsumer(AsyncWebsocketConsumer):
         }))
 
     async def chat_message_delete(self, event):
-        await self.send(text_data=json.dumps({'type': 'delete', 'message_id': event['message_id']}))
+        await self.send(text_data=json.dumps({'type': 'delete', 'message_id': event['message_id'],'sender': event.get('sender'),}))
 
     @database_sync_to_async
     def save_dm_message(self, sender, recipient_id, message_content):

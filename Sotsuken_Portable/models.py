@@ -5,39 +5,36 @@ from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 # Create your models here.
 from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
-'''
-class UserManager(BaseUserManager):
-    # create_userメソッドを修正
-    def create_user(self, username, password=None, **extra_fields):
-        if not username:
-            raise ValueError('The Login ID field must be set')
 
-        email = extra_fields.get('email')
-        if email:
-            extra_fields['email'] = self.normalize_email(email)
+# =========================================================
+# 1. 共通の抽象モデル (他のモデルでも継承して使います)
+# =========================================================
+class UUIDModel(models.Model):
+    """
+    IDをUUIDにするための共通基底クラス。
+    これを継承したモデルは、自動的に id が UUID になります。
+    """
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
 
-        # usernameにusernameをコピーしておく（任意だが互換性のために推奨）
-        extra_fields.setdefault('username', username)
+    class Meta:
+        abstract = True
 
-        user = self.model(username=username, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    # create_superuserメソッドを修正
-    def create_superuser(self, username, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        # ... (is_staff, is_superuserのチェック) ...
-
-        return self.create_user(username, password, **extra_fields)
-    '''
-
+# =========================================================
+# 2. Userモデルの定義
+# =========================================================
 class User(AbstractUser):
+    # --- AbstractUserのデフォルトID(連番)をUUIDで上書き ---
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     # ロール定義
     ROLE_CHOICES = (
         ('general', '一般ユーザー'),
@@ -56,36 +53,51 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='general')
     safety_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unknown')
 
-    # 1. ログインIDフィールドを追加 (ユニーク制約付き)
-    #    ユーザーが自分で決める or システムが自動生成する
-    # username = models.CharField(
-        # verbose_name='ログインID',
-        # max_length=50,
-        # unique=True,
-        # help_text='ログイン時に使用する一意のIDです。'
-    # )
+    # ★ バリデーション定義: 半角英数字のみ許可
+    username_validator = RegexValidator(
+        regex=r'^[a-zA-Z0-9]+$',
+        message='ログインIDは半角英数字のみ使用可能です。',
+    )
 
-    # 2. 氏名フィールド
+    # ★ ログインID (username) の再定義
+    username = models.CharField(
+        verbose_name='ログインID',
+        max_length=150,
+        unique=True,
+        help_text='半角英数字のみ。150文字以内。',
+        validators=[username_validator],  # バリデーター適用
+        error_messages={
+            'unique': "このログインIDは既に使用されています。",
+        },
+    )
+
+    # ★ 氏名フィールド
     full_name = models.CharField(verbose_name='氏名', max_length=150)
 
-    # 3. emailフィールドのユニーク制約は外す（連絡先としてのみ使用）
-    email = models.EmailField(verbose_name='メールアドレス')
+    # ★ メールアドレス (ユニーク制約を追加)
+    email = models.EmailField(
+        verbose_name='メールアドレス',
+        unique=True,  # 重複禁止
+        error_messages={
+            'unique': "このメールアドレスは既に登録されています。",
+        },
+    )
 
-    # 4. ログインに使うフィールドを 'username' に設定
+    # ログイン設定
     USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email', 'full_name'] # createsuperuserで聞かれる項目
 
-    # 5. createsuperuserコマンドで聞かれる項目に 'email' を追加
-    REQUIRED_FIELDS = ['email']
-
-    # 6. usernameのユニーク制約は外したままでOK
-    # username = models.CharField(('username'), max_length=150, unique=False, blank=True)
-
-    # --- カスタムマネージャーの修正 ---
-    # objects = UserManager()  # UserManagerは後述
-
-    # オプション：最終位置情報
-    last_known_latitude = models.FloatField(null=True, blank=True)
-    last_known_longitude = models.FloatField(null=True, blank=True)
+    # オプション：最終位置情報 (精度確保のためDecimal推奨)
+    last_known_latitude = models.DecimalField(
+        verbose_name="最終確認緯度",
+        max_digits=9, decimal_places=6,
+        null=True, blank=True
+    )
+    last_known_longitude = models.DecimalField(
+        verbose_name="最終確認経度",
+        max_digits=9, decimal_places=6,
+        null=True, blank=True
+    )
 
     last_known_location = models.CharField(
         verbose_name="最終確認場所",
@@ -100,26 +112,19 @@ class User(AbstractUser):
         null=True
     )
 
-    # groups フィールドにユニークな related_name を追加
+    # groups / permissions の related_name 対応
     groups = models.ManyToManyField(
         Group,
         verbose_name=('groups'),
         blank=True,
-        help_text=(
-            'The groups this user belongs to. A user will get all permissions '
-            'granted to each of their groups.'
-        ),
-        related_name="sotsuken_user_set",  # ユニークな名前に変更
+        related_name="sotsuken_user_set",
         related_query_name="user",
     )
-
-    # user_permissions フィールドにユニークな related_name を追加
     user_permissions = models.ManyToManyField(
         Permission,
         verbose_name=('user permissions'),
         blank=True,
-        help_text=('Specific permissions for this user.'),
-        related_name="sotsuken_user_permissions_set",  # ユニークな名前に変更
+        related_name="sotsuken_user_permissions_set",
         related_query_name="user",
     )
 
@@ -127,18 +132,14 @@ class User(AbstractUser):
         return self.full_name or self.username
 
     class Meta:
-        # DjangoにカスタムUserモデルを使用することを伝えます
         verbose_name = 'ユーザー'
         verbose_name_plural = 'ユーザー'
-
-    AbstractUser._meta.get_field('username').verbose_name = 'ログインID'
-    AbstractUser._meta.get_field('username').help_text = 'ログイン時に使用する一意のIDです。'
 
     # ユーザー名としてメールアドレスを使用する場合
     # USERNAME_FIELD = 'email'
     # REQUIRED_FIELDS = ['username']
 
-class Connection(models.Model):
+class Connection(UUIDModel):
     """ユーザー間の繋がり（友達関係）を管理するモデル"""
     STATUS_CHOICES = (
         ('requesting', '申請中'), # 自分 -> 相手
@@ -167,7 +168,7 @@ class Connection(models.Model):
     def __str__(self):
         return f"{self.requester} -> {self.receiver} ({self.get_status_display()})"
 
-class Group(models.Model):
+class Group(UUIDModel):
     """
     ユーザーをまとめるためのグループ（家族、地域コミュニティなど）を定義するモデル。
     """
@@ -209,7 +210,7 @@ class Group(models.Model):
     def __str__(self):
         return self.name
 
-class GroupMember(models.Model):
+class GroupMember(UUIDModel):
     """
     どのUserがどのGroupに所属しているかを管理する中間モデル。
     """
@@ -304,13 +305,17 @@ class SafetyStatus(models.Model):
     )
 
     # 5. 位置情報 (最終確認時の緯度・経度)
-    latitude = models.FloatField(
+    latitude = models.DecimalField(
         verbose_name="緯度",
+        max_digits=9,
+        decimal_places=6,
         null=True,
         blank=True
     )
-    longitude = models.FloatField(
+    longitude = models.DecimalField(
         verbose_name="経度",
+        max_digits=9,
+        decimal_places=6,
         null=True,
         blank=True
     )
@@ -330,7 +335,7 @@ class SafetyStatus(models.Model):
         return f"{self.user.username} - {self.get_status_display()}"
 
 
-class SafetyStatusHistory(models.Model):
+class SafetyStatusHistory(UUIDModel):
     """安否状況の変更履歴を記録するモデル"""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='safety_history')
 
@@ -346,7 +351,7 @@ class SafetyStatusHistory(models.Model):
         ordering = ['-recorded_at']  # 新しい順
 
 
-class SupportRequest(models.Model):
+class SupportRequest(UUIDModel):
     """
     ユーザーからの構造化された支援要請を記録するモデル。
     """
@@ -420,8 +425,8 @@ class SupportRequest(models.Model):
     )
 
     # 7. 要請時の位置情報
-    latitude = models.FloatField(verbose_name="緯度", null=True, blank=True)
-    longitude = models.FloatField(verbose_name="経度", null=True, blank=True)
+    latitude = models.DecimalField(verbose_name="緯度", max_digits=9,decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(verbose_name="経度", max_digits=9,decimal_places=6, null=True, blank=True)
 
     class Meta:
         verbose_name = "支援要請"
@@ -432,7 +437,7 @@ class SupportRequest(models.Model):
         return f"要請({self.get_category_display()}) from {self.requester.username if self.requester else 'Deleted User'}"
 
 
-class SOSReport(models.Model):
+class SOSReport(UUIDModel):
     """
     緊急SOS発信の履歴を記録するモデル。
     """
@@ -469,8 +474,8 @@ class SOSReport(models.Model):
     )
 
     # 3. 発信時の位置情報 (必須)
-    latitude = models.FloatField(verbose_name="緯度")
-    longitude = models.FloatField(verbose_name="経度")
+    latitude = models.DecimalField(verbose_name="緯度", max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(verbose_name="経度", max_digits=9,decimal_places=6)
 
     # 4. 状況 (自動メッセージなどがあれば記録)
     situation_notes = models.TextField(
@@ -497,7 +502,7 @@ class SOSReport(models.Model):
         return f"SOS Report ({self.get_status_display()}) at {self.reported_at.strftime('%Y-%m-%d %H:%M')}"
 
 
-class Message(models.Model):
+class Message(UUIDModel):
     """
     チャット（グループチャット、ダイレクトメッセージ）のメッセージを記録するモデル。
     """
@@ -582,7 +587,7 @@ class Message(models.Model):
         return f"Msg from {self.sender.username if self.sender else 'Deleted'} to {self.group.name if self.group else 'DM/Other'}"
 
 
-class ReadState(models.Model):
+class ReadState(UUIDModel):
     """ユーザーごとのチャット既読状況を管理するモデル"""
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='read_states'
@@ -630,7 +635,7 @@ def delete_message_image_file(sender, instance, **kwargs):
             print(f"[Signal] Error deleting image file: {e}")
 
 
-class CommunityPost(models.Model):
+class CommunityPost(UUIDModel):
     """
     ユーザーコミュニティ（情報掲示板）の投稿を記録するモデル。
     """
@@ -701,7 +706,7 @@ class CommunityPost(models.Model):
         return self.title
 
 
-class Comment(models.Model):
+class Comment(UUIDModel):
     """
     コミュニティ投稿へのリプライ（コメント）を記録するモデル。
     """
@@ -735,7 +740,7 @@ class Comment(models.Model):
         return f'{self.author.username}: {self.text[:20]}'
 
 
-class Shelter(models.Model):
+class Shelter(UUIDModel):
     """
     避難所の情報（場所、キャパシティ、空き状況）を管理するモデル。
     """
@@ -769,16 +774,16 @@ class Shelter(models.Model):
     )
 
     # 3. 位置情報 (緯度・経度/必須)
-    latitude = models.FloatField(verbose_name="緯度", null=True, blank=True)
-    longitude = models.FloatField(verbose_name="経度", null=True, blank=True)
+    latitude = models.DecimalField(verbose_name="緯度", max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(verbose_name="経度", max_digits=9, decimal_places=6, null=True, blank=True)
 
     # 4. 最大収容人数 (必須)
-    max_capacity = models.IntegerField(
+    max_capacity = models.PositiveIntegerField(
         verbose_name="最大収容人数"
     )
 
     # 5. 現在の収容人数 (変動データ)
-    current_occupancy = models.IntegerField(
+    current_occupancy = models.PositiveIntegerField(
         verbose_name="現在の収容人数",
         default=0
     )
@@ -813,7 +818,7 @@ class Shelter(models.Model):
 
 from django.db import models
 
-class RPiData(models.Model):
+class RPiData(UUIDModel):
     """
     Raspberry Piなどの現場デバイスから送られる構造化データを記録するモデル。
     """
@@ -861,8 +866,8 @@ class RPiData(models.Model):
     )
 
     # 5. データ取得時の位置情報
-    latitude = models.FloatField(verbose_name="緯度", null=True, blank=True)
-    longitude = models.FloatField(verbose_name="経度", null=True, blank=True)
+    latitude = models.DecimalField(verbose_name="緯度", max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(verbose_name="経度", max_digits=9, decimal_places=6, null=True, blank=True)
 
     # 6. 処理フラグ (データがサーバーで処理済みかを示す)
     is_processed = models.BooleanField(
@@ -879,7 +884,7 @@ class RPiData(models.Model):
     def __str__(self):
         return f"RPi Data: {self.get_data_type_display()} from {self.device_id} at {self.received_at.strftime('%Y-%m-%d %H:%M')}"
 
-class OfficialAlert(models.Model):
+class OfficialAlert(UUIDModel):
     """
     行政などからの公式な緊急情報を管理するモデル。
     """
@@ -918,7 +923,7 @@ class OfficialAlert(models.Model):
     def __str__(self):
         return self.title
 
-class DistributionItem(models.Model):
+class DistributionItem(UUIDModel):
     """配布する物資の種類を管理するモデル（例：朝食、水、毛布）"""
     name = models.CharField(verbose_name="物資名", max_length=100, unique=True)
     description = models.TextField(verbose_name="説明", blank=True, null=True)
@@ -927,7 +932,7 @@ class DistributionItem(models.Model):
         return self.name
 
 
-class DistributionInfo(models.Model):
+class DistributionInfo(UUIDModel):
     """炊き出し・物資配布状況のお知らせを管理するモデル"""
 
     STATUS_CHOICES = [
@@ -985,7 +990,7 @@ class DistributionInfo(models.Model):
     def __str__(self):
         return self.title
 
-class DistributionRecord(models.Model):
+class DistributionRecord(UUIDModel):
     """誰が、いつ、何を受け取ったかの記録"""
     user = models.ForeignKey(User, verbose_name="受け取りユーザー", on_delete=models.CASCADE)
     item = models.ForeignKey(DistributionItem, verbose_name="受け取り物資", on_delete=models.CASCADE)
@@ -999,7 +1004,7 @@ class DistributionRecord(models.Model):
 
 
 
-class FieldReportLog(models.Model):
+class FieldReportLog(UUIDModel):
     """
     現場デバイス(RPi)から送信された、現場状況報告の履歴を記録するモデル。
     """
@@ -1032,7 +1037,7 @@ class OnlineUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     channel_name = models.CharField(max_length=255)
 
-class Manual(models.Model):
+class Manual(UUIDModel):
     """
     マニュアルを管理するモデル
     """
@@ -1047,12 +1052,12 @@ class Manual(models.Model):
         verbose_name = "マニュアル"
         verbose_name_plural = "マニュアル"
 
-class JmaArea(models.Model):
+class JmaArea(UUIDModel):
     """気象庁のエリアコードと、その代表座標（県庁所在地など）を管理するモデル"""
     name = models.CharField(verbose_name="地域名", max_length=50) # 例: 東京地方
     code = models.CharField(verbose_name="エリアコード", max_length=20, unique=True) # 例: 130000
-    latitude = models.FloatField(verbose_name="代表緯度")
-    longitude = models.FloatField(verbose_name="代表経度")
+    latitude = models.DecimalField(verbose_name="代表緯度", max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(verbose_name="代表経度", max_digits=9, decimal_places=6)
 
     def __str__(self):
         return f"{self.name} ({self.code})"

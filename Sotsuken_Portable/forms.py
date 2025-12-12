@@ -1,10 +1,16 @@
+import re
+
 from django import forms
+from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
 from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment, Group, Shelter, \
     DistributionInfo  # カスタムUserモデルをインポート
+
+User = get_user_model()
+
 
 
 class SafetyStatusForm(forms.ModelForm):
@@ -214,8 +220,8 @@ class ShelterForm(forms.ModelForm):
 
 class SignUpForm(UserCreationForm):
     """
-    ユーザー登録用のフォーム (厳格なパスワード検証付き)
-    AbstractUserの'username'を'ログインID'として使用する
+    ユーザー登録用のフォーム
+    モデルの変更（英数字ID、ユニークEmail）に対応
     """
 
     class Meta(UserCreationForm.Meta):
@@ -225,45 +231,52 @@ class SignUpForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         """
-        フォームの初期化メソッドで、フィールドのラベルを変更する
+        フォームの初期化メソッド
         """
         super().__init__(*args, **kwargs)
-        # 'username'フィールドのラベルを「ログインID」に変更
+
+        # username (ログインID) の設定
         self.fields['username'].label = 'ログインID'
-        self.fields['username'].help_text = 'ログイン時に使用する一意のIDです。'
-        # ▼ 追加: パスワード入力欄（password1）のヘルプテキストを上書き
-        #   UserCreationForm ではパスワードのフィールド名は 'password1' です
+        self.fields['username'].help_text = '半角英数字のみ使用可能です。'
+
+        # full_name (氏名) の設定
+        self.fields['full_name'].required = True  # 必須にする
+
+        # email (メールアドレス) の設定
+        self.fields['email'].required = True  # 必須にする
+
+        # パスワード入力欄のヘルプテキスト設定
+        # UserCreationForm ではフィールド名は 'password1' と 'password2' です
         if 'password1' in self.fields:
             self.fields['password1'].help_text = (
-                "このパスワードは他の個人情報と似ているため使用できません。<br>"
-                "パスワードは最低8文字以上必要です。<br>"
-                "よく使われるパスワードにはできません。<br>"
-                "数字だけのパスワードにはできません。"
+                "<ul>"
+                "<li>パスワードは最低8文字以上必要です。</li>"
+                "<li>他の個人情報と似ているものは使用できません。</li>"
+                "<li>よく使われるパスワードは使用できません。</li>"
+                "<li>数字だけのパスワードは使用できません。</li>"
+                "</ul>"
             )
 
-    def clean_password2(self):
+    def clean_username(self):
         """
-        パスワードの強度検証を追加する
+        ログインIDのバリデーション（英数字チェック）
         """
-        # self.cleaned_dataから直接パスワードを取得
-        password = self.cleaned_data.get("password")
-        password2 = self.cleaned_data.get("password2")
+        username = self.cleaned_data.get('username')
+        # モデル側にもValidatorはありますが、フォームでも明示的にチェックして親切なエラーを出す
+        if not re.match(r'^[a-zA-Z0-9]+$', username):
+            raise ValidationError("ログインIDは半角英数字のみで入力してください。")
+        return username
 
-        # パスワード1と2が入力されていて、かつ一致するかをまずチェック
-        if password and password2 and password != password2:
-            raise forms.ValidationError("パスワードが一致しません。")
-
-        # settings.py の AUTH_PASSWORD_VALIDATORS を使って強度を検証
-        # passwordがNoneでないことを確認してから検証
-        if password:
-            try:
-                validate_password(password, self.instance)
-            except ValidationError as e:
-                # 検証エラーをフォームのエラーとして追加
-                self.add_error('password2', e)
-
-        # 最後に、検証済みのパスワード2を返す
-        return password2
+    def clean_email(self):
+        """
+        メールアドレスのバリデーション（重複チェック）
+        """
+        email = self.cleaned_data.get('email')
+        if email:
+            # 大文字小文字を区別せずに重複チェック (iexact)
+            if User.objects.filter(email__iexact=email).exists():
+                raise ValidationError("このメールアドレスは既に登録されています。")
+        return email
 
 
 class UserSearchForm(forms.Form):

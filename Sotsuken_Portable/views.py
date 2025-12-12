@@ -1175,13 +1175,13 @@ def my_status_qr_view(request):
         safety_status = user.safety_status_record
         qr_data = {
             "t": "us",  # type: user_status
-            "uid": user.id,
+            "uid": str(user.id),
             "fn": user.full_name,
             "ss": safety_status.status, # 'safe' や 'help' などの内部コード
             "lu": safety_status.last_updated.strftime('%Y%m%d%H%M') # ハイフン等も削除
         }
     except SafetyStatus.DoesNotExist:
-        qr_data = {"t": "us", "uid": user.id, "fn": user.full_name, "ss": "unknown"}
+        qr_data = {"t": "us", "uid": str(user.id), "fn": user.full_name, "ss": "unknown"}
 
     context = {'qr_data_json': json.dumps(qr_data, ensure_ascii=False)}
     return render(request, 'my_status_qr.html', context)
