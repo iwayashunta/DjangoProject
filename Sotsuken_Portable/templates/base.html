@@ -118,5 +118,93 @@
 
     {% block body_extra %}
     {% endblock %}
+<!-- ★★★ 緊急SOS通知カード (右下固定・作業を邪魔しない) ★★★ -->
+<div id="sos-alert-card" class="fixed bottom-4 right-4 z-50 hidden max-w-sm w-full">
+    <div class="bg-red-600 text-white rounded-lg shadow-2xl overflow-hidden border-2 border-white animate-pulse">
+        <!-- ヘッダー -->
+        <div class="px-4 py-3 bg-red-800 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <svg class="w-6 h-6 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span class="font-bold text-lg">緊急SOS受信！</span>
+            </div>
+            <button onclick="closeSosAlert()" class="text-white hover:text-gray-300">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- コンテンツ -->
+        <div class="p-4">
+            <p class="font-bold text-lg mb-1" id="sos-reporter-name">ユーザー名</p>
+            <p class="text-sm text-red-100 mb-4">
+                時刻: <span id="sos-time">00:00</span><br>
+                位置: <span id="sos-location">35.xxx, 139.xxx</span>
+            </p>
+
+            <div class="flex gap-2">
+                <a href="{% url 'Sotsuken_Portable:sos_report_list' %}"
+                   class="flex-1 bg-white text-red-600 text-center py-2 rounded font-bold hover:bg-gray-100 transition-colors">
+                    詳細・対応へ
+                </a>
+                <button onclick="stopSoundOnly()"
+                        class="px-3 py-2 border border-white rounded text-xs hover:bg-red-700">
+                    音を止める
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- 音声ファイル (staticに配置するのが理想ですが、一旦CDNで) -->
+    <audio id="sos-sound" src="https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3" preload="auto" loop></audio>
+</div>
+
+<script>
+    const userRole = "{{ user.role }}";
+    const isSuperuser = "{{ user.is_superuser }}" === "True";
+
+    if (userRole === 'admin' || userRole === 'rescuer' || isSuperuser) {
+        const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+        // ★修正: 中央サーバーのURLを動的に取得するよう注意 (開発環境ならこれでOK)
+        const alertSocket = new WebSocket(
+            wsScheme + '://' + window.location.host + '/ws/alerts/'
+        );
+
+        alertSocket.onopen = () => console.log("Alert WS Connected");
+
+        alertSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.type === 'sos_alert') {
+                showSosAlert(data);
+            }
+        };
+    }
+
+    function showSosAlert(data) {
+        document.getElementById('sos-reporter-name').textContent = data.reporter_name;
+        document.getElementById('sos-time').textContent = data.timestamp;
+        document.getElementById('sos-location').textContent = data.location;
+
+        const card = document.getElementById('sos-alert-card');
+        card.classList.remove('hidden');
+
+        // 音を再生 (ループ再生)
+        const audio = document.getElementById('sos-sound');
+        audio.currentTime = 0;
+        audio.play().catch(e => console.log("Audio autoplay blocked"));
+    }
+
+    function closeSosAlert() {
+        document.getElementById('sos-alert-card').classList.add('hidden');
+        stopSoundOnly();
+    }
+
+    function stopSoundOnly() {
+        const audio = document.getElementById('sos-sound');
+        audio.pause();
+        audio.currentTime = 0;
+    }
+</script>
 </body>
 </html>

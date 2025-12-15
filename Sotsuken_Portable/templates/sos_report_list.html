@@ -23,7 +23,7 @@
                         <th class="p-2 text-left">発信日時</th>
                         <th class="p-2 text-left">発信者</th>
                         <th class="p-2 text-left">位置情報 (緯度, 経度)</th>
-                        <th class="p-2 text-center">対応状況</th>
+                        <th class="p-2 text-center w-64">対応状況</th>
                         <th class="p-2 text-center">操作</th>
                     </tr>
                     </thead>
@@ -54,24 +54,48 @@
                                     {{ report.latitude|floatformat:6 }}, {{ report.longitude|floatformat:6 }}
                                 </a>
                             </td>
-                            <!-- ▼▼▼ 対応状況 変更フォーム ▼▼▼ -->
-                            <td class="p-2 text-center">
+                            <!-- ▼▼▼ 対応状況 & メッセージ編集フォーム ▼▼▼ -->
+                            <td class="p-2 align-top"> <!-- align-topを追加して上揃えに -->
                                 <form action="{% url 'Sotsuken_Portable:sos_report_update_status' report.id %}"
-                                      method="post" class="flex items-center justify-center gap-2" onsubmit="return disableButton(this)">
+                                      method="post"
+                                      class="flex flex-col gap-2"
+                                      onsubmit="return disableButton(this)"
+                                      x-data="{ showMessage: {% if report.rescue_team_message %}true{% else %}false{% endif %} }">
+                                    <!-- メッセージがあれば最初から開く -->
                                     {% csrf_token %}
-                                    <select name="status"
-                                            class="border border-gray-300 rounded-md px-2 py-1 text-sm bg-white">
-                                        {% for status_value, status_display in report.STATUS_CHOICES %}
-                                            <option value="{{ status_value }}"
-                                                    {% if report.status == status_value %}selected{% endif %}>
-                                                {{ status_display }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                    <button type="submit"
-                                            class="bg-green-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-green-700">
-                                        更新
-                                    </button>
+
+                                    <!-- ステータス選択と更新ボタン -->
+                                    <div class="flex items-center gap-2">
+                                        <select name="status"
+                                                class="border border-gray-300 rounded-md px-2 py-1 text-sm bg-white flex-1">
+                                            {% for status_value, status_display in report.STATUS_CHOICES %}
+                                                <option value="{{ status_value }}"
+                                                        {% if report.status == status_value %}selected{% endif %}>
+                                                    {{ status_display }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit"
+                                                class="bg-green-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-green-700 whitespace-nowrap">
+                                            更新
+                                        </button>
+                                    </div>
+
+                                    <!-- メッセージ入力エリア (開閉式) -->
+                                    <div>
+                                        <!-- トグルボタン -->
+                                        <button type="button" @click="showMessage = !showMessage"
+                                                class="text-xs text-blue-600 hover:underline flex items-center gap-1 mb-1">
+                                            <span x-text="showMessage ? '▼ メッセージを隠す' : '▶ 救助隊メッセージを追加'"></span>
+                                        </button>
+
+                                        <!-- 入力欄 -->
+                                        <textarea name="rescue_team_message"
+                                                  x-show="showMessage"
+                                                  rows="2"
+                                                  class="w-full text-sm border border-gray-300 rounded p-1 focus:ring-2 focus:ring-blue-500"
+                                                  placeholder="要救助者への連絡事項（例: 向かっています）">{{ report.rescue_team_message|default:"" }}</textarea>
+                                    </div>
                                 </form>
                             </td>
 

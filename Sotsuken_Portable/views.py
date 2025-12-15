@@ -259,12 +259,16 @@ def emergency_sos_view(request):
                 saved_guest_name = guest_name_input if guest_name_input.strip() else '匿名'
 
             # SOSレポートをデータベースに作成
-            SOSReport.objects.create(
+            report = SOSReport.objects.create(
                 reporter=reporter_user,
                 guest_name=saved_guest_name,
                 latitude=latitude,
                 longitude=longitude,
             )
+
+            # ★追加: 作成したレポートのIDをセッションに保存しておく
+            # これにより、未ログインユーザーでも「自分のSOS」を特定できる
+            request.session['last_sos_id'] = str(report.id)
 
             # 完了ページへリダイレクト
             return redirect('Sotsuken_Portable:emergency_sos_done')
@@ -282,7 +286,24 @@ def emergency_sos_done_view(request):
     """
     SOS発信完了ページを表示するビュー
     """
-    return render(request, 'emergency_sos_done.html')
+    # セッションから「さっき出したSOSのID」を取得
+    report_id = request.session.get('last_sos_id')
+    report = None
+
+    if report_id:
+        try:
+            report = SOSReport.objects.get(id=report_id)
+        except SOSReport.DoesNotExist:
+            pass
+
+    # ログインユーザーなら、セッションになくても最新の自分のSOSを取得しても良い
+    if not report and request.user.is_authenticated:
+        report = SOSReport.objects.filter(reporter=request.user).order_by('-reported_at').first()
+
+    context = {
+        'report': report,
+    }
+    return render(request, 'emergency_sos_done.html', context)
 
 
 @login_required
@@ -534,11 +555,14 @@ def sos_report_list_view(request):
 def sos_report_update_status_view(request, report_id):
     report = get_object_or_404(SOSReport, pk=report_id)
     new_status = request.POST.get('status')
+    # ★追加: メッセージの取得
+    new_message = request.POST.get('rescue_team_message', '')
 
     # SOSReportモデルで定義されている有効なステータスかチェック
     valid_statuses = [status[0] for status in SOSReport.STATUS_CHOICES]
     if new_status in valid_statuses:
         report.status = new_status
+        report.rescue_team_message = new_message
         report.save()
         messages.success(request, f"レポート(ID:{report.id})の状況を「{report.get_status_display()}」に更新しました。")
     else:
@@ -1078,29 +1102,68 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
     template_name = 'group_detail.html'
     context_object_name = 'group'
 
-    # (セキュリティ) 自分が所属していないグループの詳細ページは見られないようにする
+    # 1. 閲覧権限のフィルタリングを修正
     def get_queryset(self):
-        return Group.objects.filter(memberships__member=self.request.user)
+        user = self.request.user
+        # システム管理者、またはスーパーユーザーなら全てのグループを表示可能にする
+        if user.role == 'admin' or user.is_superuser:
+            return Group.objects.all()
 
+        # 一般ユーザーは自分が所属しているグループのみ（既存ロジック）
+        return Group.objects.filter(memberships__member=user)
 
-class GroupDeleteView(LoginRequiredMixin, generic.DeleteView):
-    model = Group
-    template_name = 'group_confirm_delete.html'
-    success_url = reverse_lazy('Sotsuken_Portable:group_list')
-    context_object_name = 'group'
-
-    def dispatch(self, request, *args, **kwargs):
-        """権限チェック: グループ管理者のみ削除可能"""
+    # 2. テンプレートに「削除権限フラグ」を渡す
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
         group = self.get_object()
-        user = request.user
 
-        # ログインユーザーが、このグループのメンバーであり、かつ役割が 'admin' であるかを確認
+        # システム管理者 または スーパーユーザーか？
+        is_system_admin = (user.role == 'admin' or user.is_superuser)
+
+        # このグループ内の管理者（GroupMember.role == 'admin'）か？
         is_group_admin = group.memberships.filter(member=user, role='admin').exists()
 
-        if not is_group_admin:
-            raise PermissionDenied
+        # どちらかに該当すれば削除ボタンを表示するフラグをセット
+        context['can_delete_group'] = is_system_admin or is_group_admin
 
-        return super().dispatch(request, *args, **kwargs)
+        return context
+
+
+class GroupDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Group
+    template_name = 'common_confirm_delete.html' # 先ほど作った共通テンプレートを使い回せます！
+    success_url = reverse_lazy('Sotsuken_Portable:group_list')
+
+    def test_func(self):
+        """
+        削除権限のチェック:
+        1. システム管理者 (role='admin')
+        2. スーパーユーザー (is_superuser)
+        3. そのグループのグループ管理者 (role='admin' in GroupMember)
+        のいずれかならOK
+        """
+        user = self.request.user
+        group = self.get_object()
+
+        # A. システム全体の管理者なら無条件でOK
+        if user.role == 'admin' or user.is_superuser:
+            return True
+
+        # B. そのグループの管理者かどうかチェック
+        # (自分がメンバーで、かつグループ内権限が 'admin' かどうか)
+        return GroupMember.objects.filter(
+            group=group,
+            member=user,
+            role='admin'
+        ).exists()
+
+    def handle_no_permission(self):
+        """権限がない場合のリダイレクト先（オプション）"""
+        from django.shortcuts import redirect
+        from django.contrib import messages
+        messages.error(self.request, "このグループを削除する権限がありません。")
+        return redirect('Sotsuken_Portable:group_detail', pk=self.get_object().pk)
 
 
 class GroupLeaveView(LoginRequiredMixin, generic.View):

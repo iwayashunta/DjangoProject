@@ -12,4 +12,7 @@ websocket_urlpatterns = [
     # DMチャット（UUID対応）
     # ★ここを修正: \d+ から [^/]+ に変更
     re_path(r'ws/chat/dm/(?P<user_id>[^/]+)/$', consumers.DMChatConsumer.as_asgi()),
+
+    # ★追加: 緊急アラート用
+    re_path(r'ws/alerts/$', consumers.AlertConsumer.as_asgi()),
 ]

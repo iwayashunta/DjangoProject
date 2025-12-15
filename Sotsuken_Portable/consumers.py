@@ -178,3 +178,41 @@ class LocationConsumer(AsyncWebsocketConsumer):
         self.user.last_known_latitude = lat
         self.user.last_known_longitude = lng
         self.user.save(update_fields=['last_known_latitude', 'last_known_longitude'])
+
+class AlertConsumer(AsyncWebsocketConsumer):
+    """
+    緊急SOS通知専用のConsumer
+    管理者・救助隊のみが受信グループに参加できる
+    """
+    async def connect(self):
+        self.user = self.scope['user']
+
+        # 権限チェック: 管理者または救助隊のみ接続許可
+        if self.user.is_authenticated and (self.user.role in ['admin', 'rescuer'] or self.user.is_superuser):
+            self.group_name = 'emergency_broadcast'
+            await self.channel_layer.group_add(
+                self.group_name,
+                self.channel_name
+            )
+            await self.accept()
+            print(f"[AlertWS] User {self.user.username} joined emergency channel.")
+        else:
+            # 権限がないユーザーは接続拒否（または何もせずにclose）
+            await self.close()
+
+    async def disconnect(self, close_code):
+        if hasattr(self, 'group_name'):
+            await self.channel_layer.group_discard(
+                self.group_name,
+                self.channel_name
+            )
+
+    # 通知メッセージの受信・転送
+    async def sos_alert(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'sos_alert',
+            'report_id': event['report_id'],
+            'reporter_name': event['reporter_name'],
+            'timestamp': event['timestamp'],
+            'location': event['location'],
+        }))

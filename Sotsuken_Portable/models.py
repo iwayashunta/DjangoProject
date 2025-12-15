@@ -1,13 +1,15 @@
 import os
 import uuid, json
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 # Create your models here.
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models.signals import post_delete
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 
@@ -491,6 +493,12 @@ class SOSReport(UUIDModel):
         max_length=20,
         choices=STATUS_CHOICES,
         default='pending'
+    )
+
+    rescue_team_message = models.TextField(
+        verbose_name="救助隊からの連絡",
+        blank=True, null=True,
+        help_text="要救助者に表示するメッセージ（例: もうすぐ到着します）"
     )
 
     class Meta:
@@ -1073,6 +1081,41 @@ class JmaArea(UUIDModel):
 
     def __str__(self):
         return f"{self.name} ({self.code})"
+
+
+# =========================================================
+# シグナル定義: SOS受信時のリアルタイム通知
+# =========================================================
+@receiver(post_save, sender=SOSReport)
+def notify_sos_alert(sender, instance, created, **kwargs):
+    """
+    SOSReportが新規作成されたら、管理者のWebSocketグループに通知を送る
+    """
+    if created:  # 新規登録時のみ（更新時は通知しない）
+        channel_layer = get_channel_layer()
+
+        # 名前解決
+        reporter_name = "匿名"
+        if instance.reporter:
+            reporter_name = instance.reporter.full_name or instance.reporter.username
+        elif instance.guest_name:
+            reporter_name = instance.guest_name
+
+        # 通知データの作成
+        alert_data = {
+            'type': 'sos_alert',  # Consumerのメソッド名に対応
+            'report_id': str(instance.id),
+            'reporter_name': reporter_name,
+            'timestamp': instance.reported_at.strftime('%H:%M'),
+            'location': f"{instance.latitude}, {instance.longitude}",
+        }
+
+        # グループ送信
+        async_to_sync(channel_layer.group_send)(
+            "emergency_broadcast",
+            alert_data
+        )
+        print(f"[Signal] SOS Alert sent for {reporter_name}")
 
 
 
