@@ -291,13 +291,13 @@ def map_view(request):
     for shelter in shelters:
         shelters_data.append({
             'name': shelter.name,
-            'lat': shelter.latitude,
-            'lng': shelter.longitude,
+            'lat': float(shelter.latitude) if shelter.latitude else None,
+            'lng': float(shelter.longitude) if shelter.longitude else None,
             'address': shelter.address,
             'capacity': shelter.max_capacity,
             'occupancy': shelter.current_occupancy,
         })
-    shelters_json = json.dumps(shelters_data)
+    shelters_json = json.dumps(shelters_data, ensure_ascii=False)
 
     context = {
         'shelters_json': shelters_json,
@@ -1356,7 +1356,7 @@ def get_nearby_alerts_view(request):
 
     # エリア数が少なければ全件ループで十分高速です
     for area in JmaArea.objects.all():
-        d = math.sqrt((area.latitude - lat) ** 2 + (area.longitude - lon) ** 2)
+        d = math.sqrt((float(area.latitude) - lat) ** 2 + (float(area.longitude) - lon) ** 2)
         if d < min_dist:
             min_dist = d
             nearest_area = area
