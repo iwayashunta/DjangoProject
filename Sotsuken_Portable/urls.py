@@ -117,4 +117,16 @@ urlpatterns = [
     path('ajax/get-nearby-alerts/', views.get_nearby_alerts_view, name='get_nearby_alerts'),
     # ★修正
     path('safety/history/<uuid:user_id>/', views.safety_history_view, name='safety_history'),
+
+    # --- 物資マスタ管理 ---
+    path('management/items/', views.DistributionItemListView.as_view(), name='distribution_item_list'),
+    path('management/items/add/', views.DistributionItemCreateView.as_view(), name='distribution_item_add'),
+    path('management/items/<uuid:pk>/edit/', views.DistributionItemUpdateView.as_view(), name='distribution_item_edit'),
+    path('management/items/<uuid:pk>/delete/', views.DistributionItemDeleteView.as_view(), name='distribution_item_delete'),
+
+    # --- 公式アナウンス管理 ---
+    path('management/alerts/', views.OfficialAlertListView.as_view(), name='official_alert_list'),
+    path('management/alerts/add/', views.OfficialAlertCreateView.as_view(), name='official_alert_add'),
+    path('management/alerts/<uuid:pk>/edit/', views.OfficialAlertUpdateView.as_view(), name='official_alert_edit'),
+    path('management/alerts/<uuid:pk>/delete/', views.OfficialAlertDeleteView.as_view(), name='official_alert_delete'),
 ]

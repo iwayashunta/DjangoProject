@@ -7,7 +7,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
 from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment, Group, Shelter, \
-    DistributionInfo  # カスタムUserモデルをインポート
+    DistributionInfo, DistributionItem, OfficialAlert  # カスタムUserモデルをインポート
 
 User = get_user_model()
 
@@ -354,3 +354,55 @@ class DistributionInfoForm(forms.ModelForm):
             """
             cleaned_data = super().clean()
             return cleaned_data
+
+
+# --- 配布物資マスタ用のフォーム ---
+class DistributionItemForm(forms.ModelForm):
+    class Meta:
+        model = DistributionItem
+        fields = ['name', 'description']
+        labels = {
+            'name': '物資名',
+            'description': '説明',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # 共通のデザイン（枠線、角丸、フォーカス時の色など）
+        common_classes = "w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+
+        # 各フィールドにクラスを適用
+        self.fields['name'].widget.attrs.update({
+            'class': common_classes,
+            'placeholder': '例: 飲料水 (500ml)'
+        })
+        self.fields['description'].widget.attrs.update({
+            'class': common_classes,
+            'rows': 4,  # 説明欄は少し高さをとる
+            'placeholder': '補足説明があれば入力してください'
+        })
+
+
+# --- 公式アナウンス用のフォーム（ついでに作っておくと便利） ---
+class OfficialAlertForm(forms.ModelForm):
+    class Meta:
+        model = OfficialAlert
+        fields = ['title', 'content', 'severity', 'is_active']
+        labels = {
+            'title': 'タイトル',
+            'content': '内容',
+            'severity': '重要度',
+            'is_active': '有効にする',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        common_classes = "w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+
+        self.fields['title'].widget.attrs['class'] = common_classes
+        self.fields['content'].widget.attrs.update({'class': common_classes, 'rows': 4})
+        self.fields['severity'].widget.attrs['class'] = common_classes
+        # チェックボックスは少し違うスタイルで
+        self.fields['is_active'].widget.attrs[
+            'class'] = "h-5 w-5 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"

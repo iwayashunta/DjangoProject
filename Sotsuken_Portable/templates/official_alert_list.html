@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}公式アナウンス管理{% endblock %}
+{% block header_title %}公式アナウンス管理{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-800">配信済みアナウンス一覧</h2>
+        <a href="{% url 'Sotsuken_Portable:official_alert_add' %}" 
+           class="bg-orange-600 text-white px-4 py-2 rounded shadow hover:bg-orange-700 font-bold transition-colors flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+            </svg>
+            新規作成
+        </a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-gray-100 border-b border-gray-200">
+                <tr>
+                    <th class="p-3 font-semibold text-gray-600 w-24 text-center">状態</th>
+                    <th class="p-3 font-semibold text-gray-600 w-24 text-center">重要度</th>
+                    <th class="p-3 font-semibold text-gray-600">タイトル / 内容</th>
+                    <th class="p-3 font-semibold text-gray-600 w-32">更新日時</th>
+                    <th class="p-3 font-semibold text-gray-600 w-24 text-center">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for alert in alerts %}
+                <tr class="hover:bg-gray-50">
+                    <!-- 状態 -->
+                    <td class="p-3 text-center">
+                        {% if alert.is_active %}
+                            <span class="inline-block px-2 py-1 text-xs font-bold text-green-800 bg-green-100 rounded-full">有効</span>
+                        {% else %}
+                            <span class="inline-block px-2 py-1 text-xs font-bold text-gray-500 bg-gray-200 rounded-full">無効</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- 重要度 (色分け) -->
+                    <td class="p-3 text-center">
+                        {% if alert.severity == 'emergency' %}
+                            <span class="inline-block px-2 py-1 text-xs font-bold text-white bg-red-600 rounded">緊急</span>
+                        {% elif alert.severity == 'warning' %}
+                            <span class="inline-block px-2 py-1 text-xs font-bold text-black bg-yellow-400 rounded">警報</span>
+                        {% else %}
+                            <span class="inline-block px-2 py-1 text-xs font-bold text-blue-800 bg-blue-100 rounded">情報</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- タイトルと内容 -->
+                    <td class="p-3">
+                        <div class="font-bold text-gray-800">{{ alert.title }}</div>
+                        <div class="text-sm text-gray-500 mt-1 line-clamp-1">{{ alert.content }}</div>
+                    </td>
+
+                    <!-- 日時 -->
+                    <td class="p-3 text-sm text-gray-500">
+                        {{ alert.published_at|date:"Y/m/d" }}<br>
+                        {{ alert.published_at|date:"H:i" }}
+                    </td>
+
+                    <!-- 操作 -->
+                    <td class="p-3 text-center space-y-1">
+                        <a href="{% url 'Sotsuken_Portable:official_alert_edit' alert.pk %}" class="block text-blue-600 hover:underline text-sm font-semibold">編集</a>
+                        <a href="{% url 'Sotsuken_Portable:official_alert_delete' alert.pk %}" class="block text-red-600 hover:underline text-sm font-semibold">削除</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="p-8 text-center text-gray-500">
+                        現在、アナウンスはありません。
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-6">
+        <a href="{% url 'Sotsuken_Portable:admin_menu' %}" class="text-gray-500 hover:text-gray-700 hover:underline flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            管理メニューに戻る
+        </a>
+    </div>
+</div>
+{% endblock %}

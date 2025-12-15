@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}物資の登録・編集{% endblock %}
+{% block header_title %}物資の登録・編集{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 max-w-lg mx-auto">
+    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+        <h2 class="text-lg font-bold mb-6 text-gray-800 border-b pb-2">
+            {% if form.instance.pk %}物資情報の編集{% else %}物資の新規登録{% endif %}
+        </h2>
+
+        <form method="post" onsubmit="return disableButton(this)">
+            {% csrf_token %}
+
+            <!-- 物資名フィールド -->
+            <div class="mb-6">
+                <label for="{{ form.name.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">
+                    {{ form.name.label }}
+                </label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.name.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- 説明フィールド -->
+            <div class="mb-6">
+                <label for="{{ form.description.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">
+                    {{ form.description.label }}
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- ボタンエリア -->
+            <div class="flex justify-between items-center mt-8 pt-4 border-t border-gray-100">
+                <a href="{% url 'Sotsuken_Portable:distribution_item_list' %}"
+                   class="text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors">
+                   キャンセル
+                </a>
+                <button type="submit"
+                        class="bg-blue-600 text-white px-8 py-3 rounded-lg shadow-md hover:bg-blue-700 font-bold transition-all transform hover:scale-105">
+                    保存する
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

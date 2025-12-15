@@ -1,32 +1,69 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}管理者メニュー{% endblock %}
-{% block header_title %}管理者メニュー{% endblock %}
+{% block title %}管理者ダッシュボード{% endblock %}
+{% block header_title %}管理者ダッシュボード{% endblock %}
 
 {% block content %}
-<div class="flex flex-col items-center justify-center h-full">
-    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
-        <h2 class="text-2xl font-bold mb-8 text-red-700">管理者メニュー</h2>
-        
-        <h3 class="text-lg font-semibold mt-4 mb-2 text-gray-700 border-b pb-1">RPi/現場連携機能</h3>
-        <div class="grid grid-cols-2 gap-4 mt-4">
-            <a href="{% url 'Sotsuken_Portable:rpi_checkin_logs' %}" class="bg-indigo-500 text-white p-3 rounded-lg hover:bg-indigo-600">避難所受付データ</a>
-            <a href="{% url 'Sotsuken_Portable:distribution_logs' %}" class="bg-yellow-500 text-white p-3 rounded-lg hover:bg-yellow-600">炊き出し確認データ</a>
-        </div>
+<div class="p-4 md:p-8 space-y-8">
 
-        <h3 class="text-lg font-semibold mt-6 mb-2 text-gray-700 border-b pb-1">データ管理機能</h3>
-        <div class="space-y-4 mt-4">
-            <a href="{% url 'Sotsuken_Portable:shelter_management' %}" class="w-full bg-orange-500 text-white p-3 rounded-lg mb-4 hover:bg-orange-600 block">避難所管理</a>
-            <a href="{% url 'Sotsuken_Portable:user_management' %}" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 block">登録ユーザー管理</a>
-            <!-- 炊き出し・物資登録 -->
-            <a href="{% url 'Sotsuken_Portable:add_distribution_info' %}" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 block flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                炊き出し・物資情報の登録
+    <!-- 1. ユーザー・組織管理 -->
+    <section class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-blue-500">
+        <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+            <span class="text-2xl mr-2">👥</span> ユーザー・組織管理
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="{% url 'Sotsuken_Portable:user_management' %}" class="block p-4 bg-gray-50 hover:bg-blue-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-blue-700">全ユーザー管理</div>
+                <div class="text-sm text-gray-500">権限変更、アカウント削除、検索</div>
             </a>
-            <a href="{% url 'Sotsuken_Portable:sos_report_list' %}" class="w-full bg-red-500 text-white p-3 rounded-lg hover:bg-red-600 block">SOSレポート確認・出力</a>
+            <a href="{% url 'Sotsuken_Portable:group_list' %}" class="block p-4 bg-gray-50 hover:bg-blue-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-blue-700">グループ管理</div>
+                <div class="text-sm text-gray-500">グループの確認、強制解散</div>
+            </a>
         </div>
-    </div>
+    </section>
+
+    <!-- 2. 避難所・現場管理 -->
+    <section class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-green-500">
+        <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+            <span class="text-2xl mr-2">⛺</span> 避難所・現場管理
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="{% url 'Sotsuken_Portable:shelter_management' %}" class="block p-4 bg-gray-50 hover:bg-green-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-green-700">避難所データ管理</div>
+                <div class="text-sm text-gray-500">避難所の追加・編集・削除</div>
+            </a>
+            <a href="{% url 'Sotsuken_Portable:rpi_checkin_logs' %}" class="block p-4 bg-gray-50 hover:bg-green-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-green-700">入退所ログ確認</div>
+                <div class="text-sm text-gray-500">ラズパイからのチェックイン記録</div>
+            </a>
+            <a href="{% url 'Sotsuken_Portable:sos_report_list' %}" class="block p-4 bg-gray-50 hover:bg-green-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-green-700">SOSレポート対応</div>
+                <div class="text-sm text-gray-500">緊急SOSの確認とステータス更新</div>
+            </a>
+        </div>
+    </section>
+
+    <!-- 3. 物資・情報発信管理 (★ここを強化) -->
+    <section class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-orange-500">
+        <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+            <span class="text-2xl mr-2">📦</span> 物資・情報発信
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="{% url 'Sotsuken_Portable:distribution_item_list' %}" class="block p-4 bg-gray-50 hover:bg-orange-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-orange-700">【マスタ】配布物資の種類設定</div>
+                <div class="text-sm text-gray-500">「水」「毛布」などの品目登録・編集</div>
+            </a>
+            <a href="{% url 'Sotsuken_Portable:official_alert_list' %}" class="block p-4 bg-gray-50 hover:bg-orange-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-orange-700">公式アナウンス配信</div>
+                <div class="text-sm text-gray-500">トップページに表示する緊急情報の管理</div>
+            </a>
+            <a href="{% url 'Sotsuken_Portable:add_distribution_info' %}" class="block p-4 bg-gray-50 hover:bg-orange-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-orange-700">炊き出し・配布予定の登録</div>
+                <div class="text-sm text-gray-500">各避難所での配布スケジュールの作成</div>
+            </a>
+        </div>
+    </section>
+
 </div>
 {% endblock %}

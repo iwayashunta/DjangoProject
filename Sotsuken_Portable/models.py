@@ -894,6 +894,18 @@ class OfficialAlert(UUIDModel):
         ('emergency', '緊急'),
     ]
 
+    # ★追加: 情報源の種別
+    SOURCE_CHOICES = (
+        ('jma', '気象庁自動取込'),
+        ('hq', '対策本部（手動）'),
+    )
+    source = models.CharField(
+        verbose_name="情報源",
+        max_length=10,
+        choices=SOURCE_CHOICES,
+        default='hq'  # 管理画面から作る時はデフォルトで「本部」になる
+    )
+
     title = models.CharField(verbose_name="タイトル", max_length=200)
     content = models.TextField(verbose_name="内容")
     severity = models.CharField(

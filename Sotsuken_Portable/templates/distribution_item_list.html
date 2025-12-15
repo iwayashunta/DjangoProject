@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}配布物資マスタ管理{% endblock %}
+{% block header_title %}配布物資マスタ管理{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold">登録済み物資一覧</h2>
+        <a href="{% url 'Sotsuken_Portable:distribution_item_add' %}" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+            ＋ 新規登録
+        </a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-100 border-b">
+                <tr>
+                    <th class="p-3 text-left">名称</th>
+                    <th class="p-3 text-left">説明</th>
+                    <th class="p-3 text-center">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for item in items %}
+                <tr>
+                    <td class="p-3 font-bold">{{ item.name }}</td>
+                    <td class="p-3 text-gray-600 text-sm">{{ item.description|default:"-" }}</td>
+                    <td class="p-3 text-center space-x-2">
+                        <a href="{% url 'Sotsuken_Portable:distribution_item_edit' item.pk %}" class="text-blue-600 hover:underline">編集</a>
+                        <a href="{% url 'Sotsuken_Portable:distribution_item_delete' item.pk %}" class="text-red-600 hover:underline">削除</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="p-4 text-center text-gray-500">登録データがありません。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{% url 'Sotsuken_Portable:admin_menu' %}" class="text-gray-500 hover:underline">← 管理メニューに戻る</a>
+    </div>
+</div>
+{% endblock %}

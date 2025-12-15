@@ -8,7 +8,7 @@ from channels.layers import channel_layers
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -19,10 +19,11 @@ from django.utils import timezone
 from django.views import generic
 from django.views.decorators.http import require_POST
 # generic から、使いたいクラスを直接インポートする
-from django.views.generic import ListView, DetailView, CreateView, TemplateView
+from django.views.generic import ListView, DetailView, CreateView, TemplateView, UpdateView, DeleteView
 
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
-    GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm
+    GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm, \
+    DistributionItemForm, OfficialAlertForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
     CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection, \
     DistributionInfo, DistributionItem, ReadState, SafetyStatusHistory
@@ -316,6 +317,10 @@ def emergency_info_view(request):
     # 2. 全ての有効な配布情報を取得
     all_distributions = DistributionInfo.objects.exclude(status='ended').order_by('status', 'start_time')
 
+    shelters = Shelter.objects.all()
+
+    official_alerts = OfficialAlert.objects.filter(is_active=True).order_by('-published_at')
+
     # 3. ★★★ ユーザーの場所に基づく振り分け ★★★
     my_shelter_distributions = []
     other_distributions = []
@@ -343,6 +348,7 @@ def emergency_info_view(request):
         'shelters': shelters,
         'my_distributions': my_shelter_distributions,  # あなたの避難所用
         'other_distributions': other_distributions,  # その他
+        'official_alerts': official_alerts,  # ★追加
     }
     return render(request, 'emergency_info.html', context)
 
@@ -1384,4 +1390,60 @@ def get_nearby_alerts_view(request):
         'area_name': nearest_area.name,
         'alerts': alert_data
     }, json_dumps_params={'ensure_ascii': False})
+
+# --- 管理者権限チェック用Mixin ---
+class AdminRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.role in ['admin', 'rescuer'] or self.request.user.is_superuser
+
+# ==========================================
+# 1. 配布物資マスタ管理 (DistributionItem)
+# ==========================================
+class DistributionItemListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
+    model = DistributionItem
+    template_name = 'distribution_item_list.html'
+    context_object_name = 'items'
+
+class DistributionItemCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
+    model = DistributionItem
+    form_class = DistributionItemForm
+    template_name = 'distribution_item_form.html'
+    success_url = reverse_lazy('Sotsuken_Portable:distribution_item_list')
+
+class DistributionItemUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
+    model = DistributionItem
+    form_class = DistributionItemForm
+    template_name = 'distribution_item_form.html'
+    success_url = reverse_lazy('Sotsuken_Portable:distribution_item_list')
+
+class DistributionItemDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
+    model = DistributionItem
+    template_name = 'common_confirm_delete.html' # 共通の削除確認画面を使うと楽
+    success_url = reverse_lazy('Sotsuken_Portable:distribution_item_list')
+
+# ==========================================
+# 2. 公式アナウンス管理 (OfficialAlert)
+# ==========================================
+class OfficialAlertListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
+    model = OfficialAlert
+    template_name = 'official_alert_list.html'
+    context_object_name = 'alerts'
+    ordering = ['-published_at']
+
+class OfficialAlertCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
+    model = OfficialAlert
+    form_class = OfficialAlertForm
+    template_name = 'official_alert_form.html'
+    success_url = reverse_lazy('Sotsuken_Portable:official_alert_list')
+
+class OfficialAlertUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
+    model = OfficialAlert
+    form_class = OfficialAlertForm
+    template_name = 'official_alert_form.html'
+    success_url = reverse_lazy('Sotsuken_Portable:official_alert_list')
+
+class OfficialAlertDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
+    model = OfficialAlert
+    template_name = 'common_confirm_delete.html'
+    success_url = reverse_lazy('Sotsuken_Portable:official_alert_list')
 
