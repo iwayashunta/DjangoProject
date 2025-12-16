@@ -168,19 +168,23 @@ class MyPasswordChangeForm(PasswordChangeForm):
         self.fields['new_password2'].help_text = '確認のため、もう一度同じパスワードを入力してください。'
 
 
+from django import forms
+from .models import Shelter
+
+
 class ShelterForm(forms.ModelForm):
     class Meta:
         model = Shelter
-        # フォームに表示するフィールドを指定
-        fields = ['management_id', 'name', 'address', 'max_capacity', 'current_occupancy', 'is_pet_friendly',
-                  'opening_status']
-        # フォームのラベルを日本語で分かりやすく設定
+        # 1. fields に latitude, longitude を追加
+        fields = ['management_id', 'name', 'address', 'latitude', 'longitude',
+                  'max_capacity', 'current_occupancy', 'is_pet_friendly', 'opening_status']
+
         labels = {
             'management_id': '避難所管理ID',
             'name': '避難所名',
             'address': '住所',
-            # 'latitude': '緯度',  # 一旦消してます
-            # 'longitude': '経度', # 一旦消してます
+            'latitude': '緯度',
+            'longitude': '経度',
             'max_capacity': '最大収容人数',
             'current_occupancy': '現在の避難者数',
             'is_pet_friendly': 'ペット受け入れ可',
@@ -191,6 +195,7 @@ class ShelterForm(forms.ModelForm):
             'management_id': '他の避難所と絶対に重複しない、半角英数字のIDを入力してください。例: TKY-SHIBUYA-01',
             'current_occupancy': 'この値は現場レポートによっても自動更新されます。',
         }
+
         widgets = {
             'management_id': forms.TextInput(attrs={
                 'class': 'w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
@@ -203,6 +208,21 @@ class ShelterForm(forms.ModelForm):
             'address': forms.TextInput(attrs={
                 'class': 'w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             }),
+
+            # 2. 緯度・経度のウィジェットを追加
+            'latitude': forms.NumberInput(attrs={
+                'class': 'w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                'id': 'id_latitude',  # JSで値を入れるためのID
+                'placeholder': '例: 35.6895',
+                'step': '0.000001'  # 小数点入力を許可
+            }),
+            'longitude': forms.NumberInput(attrs={
+                'class': 'w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                'id': 'id_longitude',  # JSで値を入れるためのID
+                'placeholder': '例: 139.6917',
+                'step': '0.000001'  # 小数点入力を許可
+            }),
+
             'max_capacity': forms.NumberInput(attrs={
                 'class': 'w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             }),

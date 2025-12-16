@@ -1065,14 +1065,20 @@ class CommentDeleteView(LoginRequiredMixin, generic.DeleteView):
         return super().dispatch(request, *args, **kwargs)
 
 # 1. 自分が所属するグループ一覧ビュー
-class GroupListView(LoginRequiredMixin, generic.ListView):
+class GroupListView(LoginRequiredMixin, ListView):
     model = Group
     template_name = 'group_list.html'
     context_object_name = 'group_list'
 
-    # 表示するグループを、自分が所属しているものだけに絞り込む
     def get_queryset(self):
-        return Group.objects.filter(memberships__member=self.request.user)
+        user = self.request.user
+
+        # システム管理者 または スーパーユーザー なら「全てのグループ」を返す
+        if user.role == 'admin' or user.is_superuser:
+            return Group.objects.all().order_by('-created_at')
+
+        # 一般ユーザーなら「自分が参加しているグループ」のみ返す
+        return Group.objects.filter(memberships__member=user).order_by('-created_at')
 
 
 # 2. 新規グループ作成ビュー

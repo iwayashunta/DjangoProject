@@ -5,17 +5,41 @@
 {% block content %}
 <div class="bg-white p-6 rounded-xl shadow-lg">
     <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold">参加中のグループ</h2>
-        <a href="{% url 'Sotsuken_Portable:group_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">新しいグループを作成</a>
+        <h2 class="text-2xl font-bold">
+            {# 見出しの出し分け #}
+            {% if user.role == 'admin' or user.is_superuser %}
+                全グループ一覧 (管理者ビュー)
+            {% else %}
+                参加中のグループ
+            {% endif %}
+        </h2>
+        <a href="{% url 'Sotsuken_Portable:group_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 font-bold shadow transition-colors">
+            ＋ 新しいグループを作成
+        </a>
     </div>
 
     <div class="space-y-3">
         {% for group in group_list %}
-        <a href="{% url 'Sotsuken_Portable:group_detail' group.pk %}" class="block p-4 border rounded-lg hover:bg-gray-50">
-            <h3 class="text-lg font-semibold">{{ group.name }}</h3>
+        <a href="{% url 'Sotsuken_Portable:group_detail' group.pk %}" class="block p-4 border rounded-lg hover:bg-blue-50 transition-colors flex justify-between items-center group">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 group-hover:text-blue-700">{{ group.name }}</h3>
+                <p class="text-sm text-gray-500">作成者: {{ group.creator.full_name|default:group.creator.username }}</p>
+            </div>
+
+            <!-- 矢印アイコン -->
+            <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
         </a>
         {% empty %}
-        <p>まだ参加しているグループはありません。</p>
+        <div class="text-center py-8 text-gray-500">
+            {% if user.role == 'admin' or user.is_superuser %}
+                <p>現在、システム内にグループは存在しません。</p>
+            {% else %}
+                <p>まだ参加しているグループはありません。</p>
+                <p class="text-sm mt-2">右上のボタンから作成するか、招待QRコードを読み取ってください。</p>
+            {% endif %}
+        </div>
         {% endfor %}
     </div>
 </div>

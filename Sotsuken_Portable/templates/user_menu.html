@@ -1,42 +1,61 @@
+<!-- user_menu.html -->
 {% extends "base.html" %}
 
 {% block title %}メインメニュー{% endblock %}
 {% block header_title %}メインメニュー{% endblock %}
 
 {% block content %}
-<div class="flex flex-col items-center justify-center h-full">
-    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
-        <h2 class="text-2xl font-bold mb-8 text-gray-800">メインメニュー</h2>
-        <div class="grid grid-cols-2 gap-4">
-            
-            {# チャット機能へのリンク #}
-            <a href="{% url 'Sotsuken_Portable:dm_user_list' %}" class="bg-purple-500 text-white p-4 rounded-xl hover:bg-purple-600 transition-all font-semibold shadow-lg block">
-                チャット
+<div class="p-4 md:p-8 space-y-6">
+
+    <!-- 1. コミュニケーション -->
+    <section class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-purple-500">
+        <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+            <span class="text-2xl mr-2">💬</span> 連絡・共有
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="{% url 'Sotsuken_Portable:dm_user_list' %}" class="block p-4 bg-gray-50 hover:bg-purple-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-purple-700">チャット (DM・グループ)</div>
+                <div class="text-sm text-gray-500">個人連絡やグループでの会話</div>
             </a>
-
-            {# コミュニティ機能へのリンク #}
-            <a href="{% url 'Sotsuken_Portable:community_list' %}" class="bg-pink-500 text-white p-4 rounded-xl hover:bg-pink-600 transition-all font-semibold shadow-lg block">
-                コミュニティ
+            <a href="{% url 'Sotsuken_Portable:community_list' %}" class="block p-4 bg-gray-50 hover:bg-pink-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-pink-600">コミュニティ掲示板</div>
+                <div class="text-sm text-gray-500">地域の情報共有・助け合い</div>
             </a>
-
-            {# グループ管理機能へのリンク #}
-            <a href="{% url 'Sotsuken_Portable:group_list' %}" class="bg-teal-500 text-white p-4 rounded-xl hover:bg-teal-600 transition-all font-semibold shadow-lg block">
-                グループ管理
-            </a>
-
-            {# QRコード機能へのリンク #}
-            <a href="{% url 'Sotsuken_Portable:user_id_qr' %}" class="bg-orange-500 text-white p-4 rounded-xl hover:bg-orange-600 transition-all font-semibold shadow-lg block">
-                QRコード
-            </a>
-
-
-            {# 設定機能へのリンク #}
-            <a href="{% url 'Sotsuken_Portable:settings' %}" class="bg-gray-600 text-white p-4 rounded-xl hover:bg-gray-700 transition-all font-semibold shadow-lg block col-span-2">
-                設定
-            </a>
-
-            
         </div>
-    </div>
+    </section>
+
+    <!-- 2. グループ・アカウント -->
+    <section class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-teal-500">
+        <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+            <span class="text-2xl mr-2">🆔</span> 組織・アカウント
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="{% url 'Sotsuken_Portable:group_list' %}" class="block p-4 bg-gray-50 hover:bg-teal-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-teal-700">グループ管理</div>
+                <div class="text-sm text-gray-500">所属グループの確認・作成・脱退</div>
+            </a>
+            <a href="{% url 'Sotsuken_Portable:user_id_qr' %}" class="block p-4 bg-gray-50 hover:bg-orange-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-orange-600">QRコード表示</div>
+                <div class="text-sm text-gray-500">避難所受付や安否情報の確認に使用</div>
+            </a>
+        </div>
+    </section>
+
+    <!-- 3. 設定 -->
+    <section class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-gray-500">
+        <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+            <span class="text-2xl mr-2">⚙️</span> その他
+        </h3>
+        <div class="grid grid-cols-1 gap-4">
+            <a href="{% url 'Sotsuken_Portable:settings' %}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg border transition shadow-sm flex justify-between items-center">
+                <div>
+                    <div class="font-bold text-gray-700">アプリ設定</div>
+                    <div class="text-sm text-gray-500">プロフィール編集・パスワード変更</div>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </a>
+        </div>
+    </section>
+
 </div>
 {% endblock %}

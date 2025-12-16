@@ -5,17 +5,81 @@
 {% block header_title %}避難支援ホーム{% endblock %}
 
 {% block content %}
-<div class="flex flex-col items-center justify-center h-full">
-    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
-        <h2 class="text-2xl font-bold mb-8 text-gray-800">避難支援ホーム</h2>
-        <div class="grid grid-cols-2 gap-4">
-            <!-- buttonをaタグに変更し、Djangoのurlタグで遷移先を指定 -->
-            <a href="{% url 'Sotsuken_Portable:safety_check' %}" class="bg-blue-500 text-white p-4 rounded-xl hover:bg-blue-600 transition-all font-semibold shadow-lg block">安否確認・支援要請</a>
-            <a href="{% url 'Sotsuken_Portable:emergency_sos' %}" class="bg-red-500 text-white p-4 rounded-xl hover:bg-red-600 transition-all font-semibold shadow-lg block">緊急SOS発信</a>
-            <a href="{% url 'Sotsuken_Portable:map' %}" class="bg-green-500 text-white p-4 rounded-xl hover:bg-green-600 transition-all font-semibold shadow-lg block">マップ</a>
-            <a href="{% url 'Sotsuken_Portable:emergency_info' %}" class="bg-yellow-500 text-white p-4 rounded-xl hover:bg-yellow-600 transition-all font-semibold shadow-lg block">緊急情報</a>
-            <a href="{% url 'Sotsuken_Portable:manual_list' %}" class="bg-gray-600 text-white p-4 rounded-xl hover:bg-gray-700 transition-all font-semibold shadow-lg block col-span-2">マニュアル</a>
+<div class="p-4 md:p-8 space-y-6">
+
+    <!-- 1. 緊急アクション (最優先) -->
+    <section class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-red-500">
+        <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+            <span class="text-2xl mr-2">🚨</span> 緊急アクション
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- SOSボタン (特に目立たせる) -->
+            <a href="{% url 'Sotsuken_Portable:emergency_sos' %}"
+               class="flex items-center p-4 bg-red-50 hover:bg-red-100 rounded-xl border-2 border-red-200 transition-all shadow-sm group">
+                <div class="p-3 bg-red-500 text-white rounded-full mr-4 group-hover:scale-110 transition-transform shadow-md animate-pulse">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-bold text-lg text-red-700">緊急SOS発信</div>
+                    <div class="text-xs text-red-600">位置情報を送信して救助を要請</div>
+                </div>
+            </a>
+
+            <!-- 安否確認 -->
+            <a href="{% url 'Sotsuken_Portable:safety_check' %}"
+               class="flex items-center p-4 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-all shadow-sm group">
+                <div class="p-3 bg-blue-500 text-white rounded-full mr-4 group-hover:scale-110 transition-transform shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-bold text-lg text-blue-700">安否・支援要請</div>
+                    <div class="text-xs text-blue-600">自身の無事を報告 / 物資の要請</div>
+                </div>
+            </a>
         </div>
-    </div>
+    </section>
+
+    <!-- 2. 情報収集 -->
+    <section class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-green-500">
+        <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+            <span class="text-2xl mr-2">📍</span> 情報収集
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- マップ -->
+            <a href="{% url 'Sotsuken_Portable:map' %}" class="block p-4 bg-gray-50 hover:bg-green-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-green-700 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-6m0 0l5.447 2.724A1 1 0 0121 18.382V7.618a1 1 0 01-1.447-.894L15 7m-6 13V7m6 13V7"></path></svg>
+                    避難所マップ
+                </div>
+                <div class="text-sm text-gray-500 mt-1">周辺の避難所と混雑状況を確認</div>
+            </a>
+
+            <!-- 緊急情報 -->
+            <a href="{% url 'Sotsuken_Portable:emergency_info' %}" class="block p-4 bg-gray-50 hover:bg-yellow-50 rounded-lg border transition shadow-sm">
+                <div class="font-bold text-yellow-700 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                    緊急情報・炊き出し
+                </div>
+                <div class="text-sm text-gray-500 mt-1">行政情報や物資配布のお知らせ</div>
+            </a>
+        </div>
+    </section>
+
+    <!-- 3. その他 -->
+    <a href="{% url 'Sotsuken_Portable:manual_list' %}" class="block p-4 bg-white rounded-xl shadow-md hover:bg-gray-50 transition border-l-8 border-gray-500 flex items-center justify-between">
+        <div class="flex items-center">
+            <span class="text-2xl mr-3">📖</span>
+            <div>
+                <div class="font-bold text-gray-700">防災マニュアル</div>
+                <div class="text-sm text-gray-500">オフラインでも閲覧可能</div>
+            </div>
+        </div>
+        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+    </a>
+
 </div>
 {% endblock %}

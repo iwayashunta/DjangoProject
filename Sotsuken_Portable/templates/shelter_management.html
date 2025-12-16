@@ -5,36 +5,104 @@
 {% block header_title %}避難所管理{% endblock %}
 
 {% block content %}
-<div class="p-4 md:p-8 max-w-4xl mx-auto">
-    
-    <!-- 新規避難所登録フォーム -->
-    <form method="post" class="bg-white p-6 rounded-xl shadow-lg mb-8" onsubmit="disableButton(this)">
-        {% csrf_token %}
-        <h3 class="text-lg font-semibold mb-4 text-orange-700">新規避難所の登録</h3>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- {{ form.as_p }} を使う代わりに、TailwindCSSでスタイリングするために各フィールドを手動で描画 -->
-            {% for field in form %}
-            <div class="mb-2">
-                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
-                {{ field }}
-                {% if field.name == 'is_pet_friendly' %}<span class="text-sm ml-2">はい</span>{% endif %}
-                {% if field.errors %}
-                    <p class="text-red-500 text-xs mt-1">{{ field.errors.as_text }}</p>
-                {% endif %}
+    <div class="p-4 md:p-8 max-w-4xl mx-auto">
+
+        <!-- 新規避難所登録フォーム -->
+        <form method="post" class="bg-white p-6 rounded-xl shadow-lg mb-8" onsubmit="return disableButton(this)">
+            {% csrf_token %}
+            <h3 class="text-lg font-semibold mb-4 text-orange-700">新規避難所の登録</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <!-- 管理ID -->
+                <div class="mb-2">
+                    <label for="{{ form.management_id.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700">{{ form.management_id.label }}</label>
+                    {{ form.management_id }}
+                    <p class="text-xs text-gray-500 mt-1">
+                        ※IDを変更すると関連データとのリンクが切れる可能性がありますのでご注意ください。</p>
+                </div>
+
+                <!-- 開設状況 -->
+                <div class="mb-2">
+                    <label for="{{ form.opening_status.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700">{{ form.opening_status.label }}</label>
+                    {{ form.opening_status }}
+                </div>
+
+                <!-- 既存のフィールド (name, address, max_capacity, is_pet_friendly) -->
+                <div class="mb-2">
+                    <label for="{{ form.name.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700">{{ form.name.label }}</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="mb-2">
+                    <label for="{{ form.address.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700">{{ form.address.label }}</label>
+                    {{ form.address }}
+                </div>
+
+                <div class="mb-2">
+                    <label for="{{ form.max_capacity.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700">{{ form.max_capacity.label }}</label>
+                    {{ form.max_capacity }}
+                </div>
+
+                <!-- ★★★ 追加: 現在の収容人数 ★★★ -->
+                <div class="mb-2">
+                    <label for="{{ form.current_occupancy.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700">{{ form.current_occupancy.label }}</label>
+                    {{ form.current_occupancy }}
+                </div>
+
+
+                <div class="mb-2 flex items-center h-full pt-6">
+                    {{ form.is_pet_friendly }}
+                    <label for="{{ form.is_pet_friendly.id_for_label }}"
+                           class="ml-2 block text-sm font-medium text-gray-700">
+                        ペット同伴可
+                    </label>
+                </div>
+
+                <!-- ★★★ 追加: 緯度・経度入力エリア ★★★ -->
+                <div class="md:col-span-2 border-t pt-4 mt-2">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">位置情報 (ピン用)</label>
+
+                    <div class="flex gap-4 items-end">
+                        <div class="flex-1">
+                            <label class="text-xs text-gray-500">緯度</label>
+                            {{ form.latitude }}
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-xs text-gray-500">経度</label>
+                            {{ form.longitude }}
+                        </div>
+
+                        <!-- 現在地取得ボタン -->
+                        <button type="button" onclick="getLocation()"
+                                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-bold h-10 mb-0.5">
+                            📍 現在地を取得
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">※空欄でも登録できます。入力すると地図にピンが立ちます。</p>
+                </div>
             </div>
-            {% endfor %}
-        </div>
 
-        <button type="submit" class="mt-4 w-full bg-orange-500 text-white p-3 rounded-lg hover:bg-orange-600 transition-colors font-semibold">この内容で登録する</button>
-    </form>
+            <button type="submit"
+                    class="mt-6 w-full bg-orange-500 text-white p-3 rounded-lg hover:bg-orange-600 transition-colors font-semibold">
+                この内容で登録する
+            </button>
+        </form>
 
-    <!-- 既存避難所リスト -->
-    <div class="bg-white p-6 rounded-xl shadow-lg">
-        <h3 class="text-lg font-semibold mb-2">登録済み避難所リスト</h3>
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-[600px]">
-                <thead>
+        <!-- 既存避難所リスト -->
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h3 class="text-lg font-semibold mb-2">登録済み避難所リスト</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[600px]">
+                    <thead>
                     <tr class="border-b">
                         <th class="p-2 text-left">避難所名</th>
                         <th class="p-2 text-center">最大収容人数</th>
@@ -42,51 +110,101 @@
                         <th class="p-2 text-center">ペット可否</th>
                         <th class="p-2 text-center">操作</th>
                     </tr>
-                </thead>
-                <tbody>
+                    </thead>
+                    <tbody>
                     {% for shelter in shelter_list %}
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-2 font-semibold">{{ shelter.name }}</td>
-                        <td class="p-2 text-center">{{ shelter.max_capacity }}人</td>
-                        <td class="p-2 text-center">{{ shelter.current_occupancy }}人</td>
-                         <td class="p-2 text-center">
-                        {% if shelter.is_pet_friendly %}
-                            <span class="inline-flex items-center px-3 py-1 text-sm rounded-full font-semibold bg-cyan-100 text-cyan-800">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-2 font-semibold">{{ shelter.name }}</td>
+                            <td class="p-2 text-center">{{ shelter.max_capacity }}人</td>
+                            <td class="p-2 text-center">{{ shelter.current_occupancy }}人</td>
+                            <td class="p-2 text-center">
+                                {% if shelter.is_pet_friendly %}
+                                    <span class="inline-flex items-center px-3 py-1 text-sm rounded-full font-semibold bg-cyan-100 text-cyan-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20"
+                                     fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                          clip-rule="evenodd"/>
                                 </svg>
                                 可
                             </span>
-                        {% else %}
-                            <span class="inline-flex items-center px-3 py-1 text-sm rounded-full font-semibold bg-gray-200 text-gray-700">
+                                {% else %}
+                                    <span class="inline-flex items-center px-3 py-1 text-sm rounded-full font-semibold bg-gray-200 text-gray-700">
                                 不可
                             </span>
-                        {% endif %}
-                    </td>
-                        <td class="p-2 text-center space-x-2">
-                            <!-- 次のステップで実装する編集・削除ボタンを配置 -->
-                            <a href="{% url 'Sotsuken_Portable:shelter_edit' shelter.management_id %}" class="inline-block bg-blue-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-blue-700">編集</a>
-                            <a href="{% url 'Sotsuken_Portable:shelter_delete' shelter.management_id %}" class="inline-block bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-red-700">削除</a>
-                        </td>
-                    </tr>
+                                {% endif %}
+                            </td>
+                            <td class="p-2 text-center space-x-2">
+                                <!-- 次のステップで実装する編集・削除ボタンを配置 -->
+                                <a href="{% url 'Sotsuken_Portable:shelter_edit' shelter.management_id %}"
+                                   class="inline-block bg-blue-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-blue-700">編集</a>
+                                <a href="{% url 'Sotsuken_Portable:shelter_delete' shelter.management_id %}"
+                                   class="inline-block bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-red-700">削除</a>
+                            </td>
+                        </tr>
                     {% empty %}
-                    <tr><td colspan="5" class="p-4 text-center text-gray-500">登録されている避難所はありません。</td></tr>
+                        <tr>
+                            <td colspan="5" class="p-4 text-center text-gray-500">登録されている避難所はありません。</td>
+                        </tr>
                     {% endfor %}
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
 {% endblock %}
 
 {% block body_extra %}
-<style>
-    /* フォームの入力欄にTailwindCSSのスタイルを一括で適用 */
-    input[type="text"], input[type="number"], input[type="email"], input[type="url"], select {
-        @apply mt-1 p-2 w-full border border-gray-300 rounded-lg;
-    }
-    input[type="checkbox"] {
-        @apply h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500;
-    }
-</style>
+    <style>
+        /* フォームの入力欄にTailwindCSSのスタイルを一括で適用 */
+        input[type="text"], input[type="number"], input[type="email"], input[type="url"], select {
+            @apply mt-1 p-2 w-full border border-gray-300 rounded-lg;
+        }
+
+        input[type="checkbox"] {
+            @apply h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500;
+        }
+    </style>
+
+    <!-- ★★★ 追加: 位置情報取得スクリプト ★★★ -->
+    <script>
+        function getLocation() {
+            if (!navigator.geolocation) {
+                alert("このブラウザは位置情報に対応していません。");
+                return;
+            }
+
+            // ボタンの見た目を変えて処理中であることを示す
+            const btn = document.querySelector('button[onclick="getLocation()"]');
+            const originalText = btn.innerText;
+            btn.innerText = "取得中...";
+            btn.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    // 成功時
+                    document.getElementById('id_latitude').value = position.coords.latitude.toFixed(6);
+                    document.getElementById('id_longitude').value = position.coords.longitude.toFixed(6);
+
+                    btn.innerText = "完了！";
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                    }, 2000);
+                },
+                (error) => {
+                    // エラー時
+                    console.error(error);
+                    alert("位置情報を取得できませんでした。\nGPSが有効か確認してください。");
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                },
+                {
+                    enableHighAccuracy: true, // 高精度モード
+                    timeout: 5000,
+                    maximumAge: 0
+                }
+            );
+        }
+    </script>
 {% endblock %}

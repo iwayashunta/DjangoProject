@@ -7,37 +7,120 @@
 {% block content %}
 <div class="p-4 md:p-8 max-w-4xl mx-auto">
     
-    <form method="post" class="bg-white p-6 rounded-xl shadow-lg">
+    <form method="post" class="bg-white p-6 rounded-xl shadow-lg" onsubmit="return disableButton(this)">
         {% csrf_token %}
-        <h3 class="text-lg font-semibold mb-4 text-blue-700">「{{ shelter.name }}」の情報を編集</h3>
-        
+        <h3 class="text-lg font-semibold mb-6 text-blue-700 border-b pb-2">「{{ shelter.name }}」の情報を編集</h3>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {% for field in form %}
+
+            <!-- 管理ID -->
             <div class="mb-2">
-                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
-                {{ field }}
-                {% if field.name == 'is_pet_friendly' %}<span class="text-sm ml-2">はい</span>{% endif %}
-                {% if field.errors %}<p class="text-red-500 text-xs mt-1">{{ field.errors.as_text }}</p>{% endif %}
+                <label for="{{ form.management_id.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.management_id.label }}</label>
+                {{ form.management_id }}
+                <p class="text-xs text-gray-500 mt-1">※IDを変更すると関連データとのリンクが切れる可能性がありますのでご注意ください。</p>
             </div>
-            {% endfor %}
+
+            <!-- 開設状況 -->
+            <div class="mb-2">
+                <label for="{{ form.opening_status.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.opening_status.label }}</label>
+                {{ form.opening_status }}
+            </div>
+
+            <!-- 避難所名 -->
+            <div class="mb-2">
+                <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.name.label }}</label>
+                {{ form.name }}
+                {% if form.name.errors %}<p class="text-red-500 text-xs mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+            </div>
+
+            <!-- 住所 -->
+            <div class="mb-2">
+                <label for="{{ form.address.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.address.label }}</label>
+                {{ form.address }}
+            </div>
+
+            <!-- 最大収容人数 -->
+            <div class="mb-2">
+                <label for="{{ form.max_capacity.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.max_capacity.label }}</label>
+                {{ form.max_capacity }}
+            </div>
+
+            <!-- 現在の収容人数 -->
+            <div class="mb-2">
+                <label for="{{ form.current_occupancy.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.current_occupancy.label }}</label>
+                {{ form.current_occupancy }}
+            </div>
+
+            <!-- ペット同伴可 -->
+            <div class="mb-2 flex items-center h-full pt-6 md:col-span-2">
+                {{ form.is_pet_friendly }}
+                <label for="{{ form.is_pet_friendly.id_for_label }}" class="ml-2 block text-sm font-medium text-gray-700">
+                    {{ form.is_pet_friendly.label }}
+                </label>
+            </div>
+
+            <!-- 位置情報エリア -->
+            <div class="md:col-span-2 border-t pt-4 mt-2">
+                <label class="block text-sm font-bold text-gray-700 mb-2">位置情報 (ピン用)</label>
+
+                <div class="flex gap-4 items-end">
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500">緯度</label>
+                        {{ form.latitude }}
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500">経度</label>
+                        {{ form.longitude }}
+                    </div>
+
+                    <!-- 現在地取得ボタン -->
+                    <button type="button" onclick="getLocation()"
+                            class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-bold h-10 mb-0.5">
+                        📍 現在地で更新
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <div class="flex justify-center gap-4 mt-6">
-            <a href="{% url 'Sotsuken_Portable:shelter_management' %}" class="w-full text-center bg-gray-200 text-gray-800 p-3 rounded-lg hover:bg-gray-300 font-semibold">キャンセル</a>
-            <button type="submit" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 font-semibold">この内容で更新</button>
+        <div class="flex justify-center gap-4 mt-8 pt-4 border-t border-gray-100">
+            <a href="{% url 'Sotsuken_Portable:shelter_management' %}" class="w-full text-center bg-gray-200 text-gray-800 p-3 rounded-lg hover:bg-gray-300 font-semibold transition-colors">キャンセル</a>
+            <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 font-semibold transition-colors">この内容で更新</button>
         </div>
     </form>
 </div>
-{% endblock %}
 
-{% block body_extra %}
-<style>
-    /* フォームの入力欄にTailwindCSSのスタイルを一括で適用 */
-    input[type="text"], input[type="number"], input[type="email"], input[type="url"], select {
-        @apply mt-1 p-2 w-full border border-gray-300 rounded-lg;
+<!-- 位置情報取得スクリプト -->
+<script>
+    function getLocation() {
+        if (!navigator.geolocation) {
+            alert("このブラウザは位置情報に対応していません。");
+            return;
+        }
+
+        const btn = document.querySelector('button[onclick="getLocation()"]');
+        const originalText = btn.innerText;
+        btn.innerText = "取得中...";
+        btn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                document.getElementById('id_latitude').value = position.coords.latitude.toFixed(6);
+                document.getElementById('id_longitude').value = position.coords.longitude.toFixed(6);
+
+                btn.innerText = "完了！";
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            },
+            (error) => {
+                console.error(error);
+                alert("位置情報を取得できませんでした。");
+                btn.innerText = originalText;
+                btn.disabled = false;
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
     }
-    input[type="checkbox"] {
-        @apply h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500;
-    }
-</style>
+</script>
 {% endblock %}
