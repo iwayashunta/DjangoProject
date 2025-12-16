@@ -1,5 +1,6 @@
 import re
 
+import self
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
@@ -330,6 +331,7 @@ class DistributionInfoForm(forms.ModelForm):
 
         labels = {
             'related_item': '配布品目（リストから選択）',
+            'new_item_name': '配布品目（リストにない場合）',  # ★追加
             'title': '配布内容のタイトル',
             'info_type': '情報の種類',
             'status': '現在の状況',
@@ -341,12 +343,20 @@ class DistributionInfoForm(forms.ModelForm):
         }
 
         help_texts = {
-            'related_item': 'ラズパイ側で管理している品目と紐付ける場合に選択してください（任意）。',
-            'location_name': '「避難所」を選択した場合は入力不要です。公園など、リストにない場所の場合に入力してください。',
+            'related_item': '既存のマスタから選ぶ場合はこちら。',
+            'new_item_name': 'マスタにない品目を配布する場合はこちらに入力してください。',
+            'location_name': '「避難所」を選択した場合は入力不要です。',
         }
 
         widgets = {
             'related_item': forms.Select(attrs={'class': 'w-full p-2 border rounded bg-white'}),
+
+            # ★追加: 新規入力欄のデザイン
+            'new_item_name': forms.TextInput(attrs={
+                'class': 'w-full p-2 border rounded',
+                'placeholder': '例: 菓子パン（マスタにない場合）'
+            }),
+
             'title': forms.TextInput(attrs={
                 'class': 'w-full p-2 border rounded',
                 'placeholder': '例: おにぎりの配布、給水活動'
@@ -367,13 +377,48 @@ class DistributionInfoForm(forms.ModelForm):
             'end_time': forms.DateTimeInput(attrs={'class': 'w-full p-2 border rounded', 'type': 'datetime-local'}),
         }
 
-        def clean(self):
-            """
-            バリデーション: 既存リスト選択か、新規入力のどちらかは必須にしたい場合など
-            （今回は任意なので、特になにもしなくてもOKですが、両方入力された場合の優先度などを決められます）
-            """
-            cleaned_data = super().clean()
-            return cleaned_data
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # ★ここに追加します (super().__init__ の後)
+        self.fields['related_item'].required = False
+        self.fields['new_item_name'].required = False
+        self.fields['shelter'].required = False
+        self.fields['location_name'].required = False
+
+        # ★★★ ここが重要な修正ポイント ★★★
+
+    def clean(self):
+        """
+        複数フィールドにまたがるバリデーション
+        """
+        cleaned_data = super().clean()
+
+        # 1. 値の取得
+        related_item = cleaned_data.get('related_item')
+        new_item_name = cleaned_data.get('new_item_name')
+
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+
+        # 2. 品目のチェック: どちらか一方が必須
+        # (両方空ならエラー、両方入っていてもOKとするならこのままで良いですが、
+        #  どちらか一つに絞りたい場合は if related_item and new_item_name: ... も追加します)
+        if not related_item and not new_item_name:
+            # フォーム全体のエラーとして表示する場合
+            raise ValidationError("「リストから選択」または「品目名の手入力」のどちらかは必須です。")
+
+            # もし特定のフィールドにエラーを出したい場合は以下のように書く
+            # self.add_error('related_item', 'どちらかを入力してください')
+            # self.add_error('new_item_name', 'どちらかを入力してください')
+
+        # 3. 日時の前後関係チェック
+        if start_time and end_time:
+            if start_time > end_time:
+                # end_time フィールドに対してエラーを追加する
+                self.add_error('end_time', "終了日時は開始日時より後に設定してください。")
+
+        return cleaned_data
 
 
 # --- 配布物資マスタ用のフォーム ---

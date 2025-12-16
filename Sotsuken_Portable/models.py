@@ -979,6 +979,7 @@ class DistributionInfo(UUIDModel):
     location_name = models.CharField(
         verbose_name="場所名",
         max_length=100,
+        blank=True,  # ★追加: これがないとDB保存時にエラーになります
         help_text="避難所を選択しない場合は具体的な場所名を入力（例: 〇〇公園）"
     )
 
@@ -988,6 +989,14 @@ class DistributionInfo(UUIDModel):
         null=True,
         blank=True,
         verbose_name="配布品目 (マスタ)"
+    )
+
+    # ★追加: フォームで定義していた手入力用のフィールド
+    new_item_name = models.CharField(
+        verbose_name="配布品目名 (手入力)",
+        max_length=100,
+        blank=True,  # 必須ではない
+        help_text="マスタにない品目を配布する場合に入力"
     )
 
     # 内容

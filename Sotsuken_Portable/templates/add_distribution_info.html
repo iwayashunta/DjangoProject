@@ -1,37 +1,115 @@
-{% extends "base.html" %}
-
-{% block title %}配布情報の追加{% endblock %}
-{% block header_title %}配布情報の追加{% endblock %}
+{% extends 'base.html' %}
+{% block title %}炊き出し・物資配布の登録{% endblock %}
+{% block header_title %}炊き出し・物資配布の登録{% endblock %}
 
 {% block content %}
-<div class="p-4 md:p-8 max-w-2xl mx-auto">
-    <div class="bg-white p-6 rounded-xl shadow-lg">
-        <h2 class="text-xl font-bold mb-4 text-orange-600 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            新しい配布情報を登録
+<div class="p-4 md:p-8 max-w-3xl mx-auto">
+    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+        <h2 class="text-lg font-bold mb-6 text-gray-800 border-b pb-2">
+            配布スケジュールの登録
         </h2>
-        
-        <form method="post" class="space-y-4" onsubmit="return disableButton(this)">
-            {% csrf_token %}
-            
-            {% for field in form %}
-            <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ field.errors.as_text }}</p>
-                {% endif %}
-            </div>
-            {% endfor %}
 
-            <div class="flex gap-4 pt-4">
-                <a href="{% url 'Sotsuken_Portable:admin_menu' %}" class="flex-1 bg-gray-500 text-white text-center py-3 rounded-lg hover:bg-gray-600 font-bold transition-colors">
-                    キャンセル
+        <form method="post" onsubmit="return disableButton(this)">
+            {% csrf_token %}
+
+            <!-- ★★★ フォーム全体のエラー表示 (clean()でのチェック結果など) ★★★ -->
+            {% if form.non_field_errors %}
+                <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded shadow-sm">
+                    <p class="font-bold flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        入力エラーがあります
+                    </p>
+                    <ul class="list-disc list-inside text-sm mt-1">
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <!-- 1. 基本情報 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">{{ form.title.label }} <span class="text-red-500">*</span></label>
+                    {{ form.title }}
+                    {% if form.title.errors %}<p class="text-red-500 text-xs mt-1">{{ form.title.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">{{ form.info_type.label }}</label>
+                    {{ form.info_type }}
+                </div>
+            </div>
+
+            <!-- 2. 品目選択エリア (グループ化して見やすく) -->
+            <div class="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <label class="block text-gray-800 text-sm font-bold mb-2">配布する品目 <span class="text-xs font-normal text-gray-500 ml-2">※どちらか必須</span></label>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">A. マスタから選択</label>
+                        {{ form.related_item }}
+                        {% if form.related_item.errors %}<p class="text-red-500 text-xs mt-1">{{ form.related_item.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="hidden md:block text-center pt-6 text-gray-400 font-bold">OR</div> <!-- PC用セパレータ -->
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">B. 手入力 (マスタにない場合)</label>
+                        {{ form.new_item_name }}
+                        {% if form.new_item_name.errors %}<p class="text-red-500 text-xs mt-1">{{ form.new_item_name.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 場所エリア -->
+            <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <label class="block text-gray-800 text-sm font-bold mb-2">配布場所 <span class="text-xs font-normal text-gray-500 ml-2">※どちらか必須</span></label>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">避難所を選択</label>
+                        {{ form.shelter }}
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">場所名を手入力 (公園など)</label>
+                        {{ form.location_name }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 日時設定 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">{{ form.start_time.label }}</label>
+                    {{ form.start_time }}
+                    {% if form.start_time.errors %}<p class="text-red-500 text-xs mt-1">{{ form.start_time.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">{{ form.end_time.label }}</label>
+                    {{ form.end_time }}
+                    <!-- clean()で追加したエラーはここに表示される -->
+                    {% if form.end_time.errors %}<p class="text-red-500 text-xs mt-1 font-bold">{{ form.end_time.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- 詳細・状況 -->
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">{{ form.status.label }}</label>
+                {{ form.status }}
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2">{{ form.description.label }}</label>
+                {{ form.description }}
+            </div>
+
+            <!-- ボタンエリア -->
+            <div class="flex justify-between items-center mt-8 pt-4 border-t border-gray-100">
+                <a href="{% url 'Sotsuken_Portable:admin_menu' %}"
+                   class="text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors">
+                   キャンセル
                 </a>
-                <button type="submit" class="flex-1 bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 font-bold transition-colors">
-                    登録する
+                <button type="submit"
+                        class="bg-blue-600 text-white px-8 py-3 rounded-lg shadow-md hover:bg-blue-700 font-bold transition-all transform hover:scale-105">
+                    登録して公開
                 </button>
             </div>
         </form>
