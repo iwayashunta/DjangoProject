@@ -1,25 +1,58 @@
 {% extends "base.html" %}
+
 {% block title %}コミュニティ掲示板{% endblock %}
 {% block header_title %}コミュニティ掲示板{% endblock %}
 
 {% block content %}
-<div class="bg-white p-6 rounded-xl shadow-lg">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold">投稿一覧</h2>
-        <a href="{% url 'Sotsuken_Portable:community_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">新規投稿</a>
-    </div>
+<div class="p-4 md:p-8">
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800">地域の情報掲示板</h2>
+            <a href="{% url 'Sotsuken_Portable:community_create' %}" class="bg-pink-500 text-white py-2 px-4 rounded-lg hover:bg-pink-600 font-bold shadow transition-colors flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                新規投稿
+            </a>
+        </div>
 
-    <div class="space-y-4">
-        {% for post in post_list %}
-        <a href="{% url 'Sotsuken_Portable:community_detail' post.pk %}" class="block p-4 border rounded-lg hover:bg-gray-50">
-            <h3 class="text-lg font-semibold">{{ post.title }}</h3>
-            <p class="text-sm text-gray-600">投稿者: {{ post.author.username }} | {{ post.posted_at|date:"Y/m/d H:i" }}</p>
-        </a>
-        {% empty %}
-        <p>まだ投稿はありません。</p>
-        {% endfor %}
-    </div>
-    
+        <div class="space-y-4">
+            {% for post in post_list %}
+            <a href="{% url 'Sotsuken_Portable:community_detail' post.pk %}" class="block p-4 border border-gray-200 rounded-xl hover:bg-pink-50 transition-colors shadow-sm group">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 group-hover:text-pink-600 mb-1">
+                            {{ post.title }}
+                        </h3>
+                        <p class="text-xs text-gray-500 flex items-center gap-2">
+                            <span>👤 {{ post.author.full_name|default:post.author.username }}</span>
+                            <span>🕒 {{ post.posted_at|date:"Y/m/d H:i" }}</span>
+                            {% if post.region_tag %}
+                                <span class="bg-gray-100 px-2 py-0.5 rounded text-gray-600 border">{{ post.region_tag }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
 
+                    <!-- コメント数バッジ (モデルにメソッドがあれば。なければ省略可) -->
+                    <div class="flex items-center text-gray-400 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                        <span>{{ post.comments.count }}</span>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="text-center py-10 text-gray-500 bg-gray-50 rounded-lg">
+                <p>まだ投稿はありません。</p>
+                <p class="text-sm mt-2">地域の情報を共有しましょう！</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-6">
+            <a href="{% url 'Sotsuken_Portable:user_menu' %}" class="text-gray-500 hover:underline">← メニューに戻る</a>
+        </div>
+    </div>
 </div>
 {% endblock %}
