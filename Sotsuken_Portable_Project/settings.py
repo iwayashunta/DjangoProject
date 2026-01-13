@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 from pathlib import Path
 import os
+import ssl
 
 from corsheaders.defaults import default_headers
 
@@ -228,3 +229,15 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-user-login-id',  # ★現場アプリで使っている認証用ヘッダーを許可
 ]
+
+EMAIL_BACKEND = 'Sotsuken_Portable.email_backend.CustomEmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = '221036@std.hi-joho.ac.jp'
+EMAIL_HOST_PASSWORD = 'nwpcjqelltgiqhon' # スペースはあってもなくてもOK
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+EMAIL_SSL_CONTEXT = ssl.create_default_context()
+EMAIL_SSL_CONTEXT.check_hostname = False
+EMAIL_SSL_CONTEXT.verify_mode = ssl.CERT_NONE
