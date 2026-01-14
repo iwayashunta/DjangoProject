@@ -37,7 +37,11 @@
     const submitBtn = document.getElementById('submit-btn');
     const spinner = document.getElementById('spinner');
 
+    let isSubmitting = false; // 二重送信防止フラグ
+
     function success(position) {
+        if (isSubmitting) return; // 既に送信中なら何もしない
+
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
 
@@ -45,10 +49,14 @@
         lonInput.value = lon;
 
         statusMsg.textContent = "位置情報を取得しました。送信中...";
+
+        isSubmitting = true;
         form.submit();
     }
 
     function error(err) {
+        if (isSubmitting) return;
+
         console.warn(`ERROR(${err.code}): ${err.message}`);
         let msg = "位置情報の取得に失敗しました。";
 
@@ -60,16 +68,26 @@
             msg = "位置情報の取得がタイムアウトしました。";
         }
 
-        // HTTPSチェック
         if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
              msg += "<br>※セキュリティ制限により、HTTPS以外の通信では位置情報が取得できない場合があります。";
         }
 
-        statusMsg.innerHTML = msg; // HTMLタグを有効にするためinnerHTML
-        spinner.classList.add('hidden'); // スピナーを隠す
-        submitBtn.classList.remove('hidden'); // 手動送信ボタンを表示
+        statusMsg.innerHTML = msg;
+        spinner.classList.add('hidden');
+        submitBtn.classList.remove('hidden');
         submitBtn.textContent = "位置情報なしで発信する";
     }
+
+    // 手動送信ボタンのクリックイベント
+    form.addEventListener('submit', function(e) {
+        if (isSubmitting) {
+            e.preventDefault(); // 既に送信中ならキャンセル
+            return;
+        }
+        isSubmitting = true;
+        submitBtn.disabled = true; // ボタンを無効化
+        submitBtn.textContent = "送信中...";
+    });
 
     if (!navigator.geolocation) {
         statusMsg.textContent = "お使いのブラウザは位置情報に対応していません。";
@@ -78,7 +96,7 @@
     } else {
         navigator.geolocation.getCurrentPosition(success, error, {
             enableHighAccuracy: true,
-            timeout: 15000, // タイムアウトを15秒に延長
+            timeout: 15000,
             maximumAge: 0
         });
     }
