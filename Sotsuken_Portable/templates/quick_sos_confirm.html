@@ -37,10 +37,11 @@
     const submitBtn = document.getElementById('submit-btn');
     const spinner = document.getElementById('spinner');
 
-    let isSubmitting = false; // 二重送信防止フラグ
+    let isProcessed = false; // 処理済みフラグ（送信開始またはエラー表示済み）
 
     function success(position) {
-        if (isSubmitting) return; // 既に送信中なら何もしない
+        if (isProcessed) return; // 既に処理済みなら無視
+        isProcessed = true;
 
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
@@ -50,12 +51,16 @@
 
         statusMsg.textContent = "位置情報を取得しました。送信中...";
 
-        isSubmitting = true;
+        // 二重送信防止のためボタンも無効化
+        submitBtn.disabled = true;
+
         form.submit();
     }
 
     function error(err) {
-        if (isSubmitting) return;
+        if (isProcessed) return; // 既に成功して送信中ならエラーは無視
+        // ただし、エラーの場合は再試行（手動送信）の可能性があるので、
+        // isProcessedはtrueにせず、手動送信を許可する状態にする
 
         console.warn(`ERROR(${err.code}): ${err.message}`);
         let msg = "位置情報の取得に失敗しました。";
@@ -80,13 +85,25 @@
 
     // 手動送信ボタンのクリックイベント
     form.addEventListener('submit', function(e) {
-        if (isSubmitting) {
-            e.preventDefault(); // 既に送信中ならキャンセル
+        if (isProcessed && latInput.value) {
+            // 自動送信中ならそのまま通す
             return;
         }
-        isSubmitting = true;
-        submitBtn.disabled = true; // ボタンを無効化
+
+        // 手動送信の場合
+        e.preventDefault(); // 一旦止める
+
+        if (isProcessed && !latInput.value) {
+             // 既に処理済み（送信中）だが値がない＝手動送信ボタン連打の可能性
+             return;
+        }
+
+        isProcessed = true;
+        submitBtn.disabled = true;
         submitBtn.textContent = "送信中...";
+
+        // フォーム送信
+        e.target.submit();
     });
 
     if (!navigator.geolocation) {
