@@ -21,6 +21,7 @@ from django.views.decorators.http import require_POST
 # generic から、使いたいクラスを直接インポートする
 from django.views.generic import ListView, DetailView, CreateView, TemplateView, UpdateView, DeleteView
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
+from django.core.cache import cache # ★追加
 
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm, \
@@ -1528,6 +1529,15 @@ def quick_sos_view(request, user_id, token):
     GET: 位置情報取得ページを表示
     POST: 位置情報を受け取ってSOS発信
     """
+    # ★ キャッシュキーの生成 (トークンをキーにする)
+    cache_key = f"quick_sos_processed_{token}"
+    
+    # ★ 既に処理済みかチェック
+    if cache.get(cache_key):
+        # 処理済みなら、エラーではなく「既に発信済みです」という画面を出すか、完了画面にリダイレクト
+        # ここでは簡易的に完了画面（ただしレポートオブジェクトはないのでメッセージのみ）を表示
+        return render(request, 'quick_sos_done.html', {'already_processed': True})
+
     signer = TimestampSigner()
     try:
         # トークンの検証 (24時間有効)
@@ -1545,8 +1555,6 @@ def quick_sos_view(request, user_id, token):
             lon = request.POST.get('longitude')
             
             if not lat or not lon:
-                # 位置情報が取れなかった場合は、最終確認位置を使用するか、エラーにする
-                # ここでは最終確認位置を使用するフォールバックを入れる
                 lat = user.last_known_latitude or 0
                 lon = user.last_known_longitude or 0
             
@@ -1557,15 +1565,17 @@ def quick_sos_view(request, user_id, token):
                 situation_notes="メールリンクからのワンクリックSOS (GPS取得)"
             )
             
+            # ★ 処理完了としてキャッシュに保存 (有効期限はトークンと同じか、短くても良い)
+            cache.set(cache_key, True, timeout=60 * 60 * 24)
+            
             # 完了画面へ
             request.session['last_sos_id'] = str(report.id)
             return render(request, 'quick_sos_done.html', {'report': report})
 
         # GETリクエスト（リンクをクリックした直後）の場合
-        # 位置情報取得ページを表示する
         context = {
             'user': user,
-            'token': token, # POST時に必要
+            'token': token,
         }
         return render(request, 'quick_sos_confirm.html', context)
 
