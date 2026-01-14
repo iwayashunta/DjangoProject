@@ -5,119 +5,103 @@
 {% block content %}
 <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl m-4">
     <div class="p-8 text-center">
-        <h1 class="text-2xl font-bold text-gray-900 mb-4">位置情報を取得中...</h1>
+        <h1 class="text-2xl font-bold text-gray-900 mb-4">SOS発信の確認</h1>
 
         <p class="text-gray-600 mb-6" id="status-message">
-            現在地を取得してSOSを発信します。<br>
-            ブラウザの位置情報利用を許可してください。
+            以下のボタンを押すと、現在地を取得してSOSを発信します。<br>
+            <span class="text-sm text-red-500">※位置情報の利用を許可してください。</span>
         </p>
 
-        <div class="flex justify-center mb-6" id="spinner">
-            <!-- ローディングスピナー -->
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+        <!-- 初期状態: 発信ボタン -->
+        <button id="start-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-lg shadow-lg text-xl focus:outline-none focus:shadow-outline transform transition hover:scale-105">
+            SOSを発信する
+        </button>
+
+        <!-- 送信中: ローディング -->
+        <div id="loading-area" class="hidden flex flex-col items-center justify-center mt-4">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mb-2"></div>
+            <p class="text-gray-500 text-sm">位置情報を取得中...</p>
         </div>
 
-        <form id="sos-form" method="post" action="">
+        <form id="sos-form" method="post" action="" class="hidden">
             {% csrf_token %}
             <input type="hidden" name="latitude" id="latitude">
             <input type="hidden" name="longitude" id="longitude">
-
-            <button type="submit" id="submit-btn" class="hidden w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline">
-                位置情報なしで発信する
-            </button>
         </form>
+
+        <!-- エラー時: 強制送信ボタン -->
+        <button id="force-submit-btn" class="hidden mt-4 w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline">
+            位置情報なしで発信する
+        </button>
     </div>
 </div>
 
 <script>
     const statusMsg = document.getElementById('status-message');
+    const startBtn = document.getElementById('start-btn');
+    const loadingArea = document.getElementById('loading-area');
+    const forceSubmitBtn = document.getElementById('force-submit-btn');
+    const form = document.getElementById('sos-form');
     const latInput = document.getElementById('latitude');
     const lonInput = document.getElementById('longitude');
-    const form = document.getElementById('sos-form');
-    const submitBtn = document.getElementById('submit-btn');
-    const spinner = document.getElementById('spinner');
 
-    let isProcessed = false; // 処理済みフラグ
-    let successCount = 0; // ★デバッグ用: 成功コールバックの呼び出し回数
+    let isProcessed = false;
+
+    // 発信ボタンクリック時の処理
+    startBtn.addEventListener('click', function() {
+        startBtn.classList.add('hidden'); // ボタンを隠す
+        loadingArea.classList.remove('hidden'); // ローディングを表示
+        statusMsg.textContent = "現在地を取得しています...";
+
+        if (!navigator.geolocation) {
+            handleError({code: 0, message: "Geolocation not supported"});
+        } else {
+            navigator.geolocation.getCurrentPosition(success, handleError, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
+        }
+    });
 
     function success(position) {
-        successCount++;
+        if (isProcessed) return;
+        isProcessed = true;
+
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
-
-        console.log(`[DEBUG] success callback called (${successCount}回目)`);
-        console.log(`[DEBUG] 座標: ${lat}, ${lon}`);
-
-        if (isProcessed) {
-            console.log("[DEBUG] 既に処理済みのためスキップします");
-            return;
-        }
-        isProcessed = true;
 
         latInput.value = lat;
         lonInput.value = lon;
 
         statusMsg.textContent = "位置情報を取得しました。送信中...";
-
-        submitBtn.disabled = true;
-
-        console.log("[DEBUG] フォームを送信します");
         form.submit();
     }
 
-    function error(err) {
+    function handleError(err) {
         if (isProcessed) return;
 
         console.warn(`ERROR(${err.code}): ${err.message}`);
+
+        loadingArea.classList.add('hidden'); // ローディングを隠す
+
         let msg = "位置情報の取得に失敗しました。";
+        if (err.code === 1) msg = "位置情報の利用が許可されませんでした。";
+        else if (err.code === 2) msg = "位置情報を取得できませんでした。";
+        else if (err.code === 3) msg = "位置情報の取得がタイムアウトしました。";
 
-        if (err.code === 1) {
-            msg = "位置情報の利用が許可されませんでした。";
-        } else if (err.code === 2) {
-            msg = "位置情報を取得できませんでした（電波状況など）。";
-        } else if (err.code === 3) {
-            msg = "位置情報の取得がタイムアウトしました。";
-        }
+        statusMsg.innerHTML = msg + "<br>以下のボタンで発信してください。";
 
-        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-             msg += "<br>※セキュリティ制限により、HTTPS以外の通信では位置情報が取得できない場合があります。";
-        }
-
-        statusMsg.innerHTML = msg;
-        spinner.classList.add('hidden');
-        submitBtn.classList.remove('hidden');
-        submitBtn.textContent = "位置情報なしで発信する";
+        forceSubmitBtn.classList.remove('hidden'); // 強制送信ボタンを表示
     }
 
-    form.addEventListener('submit', function(e) {
-        if (isProcessed && latInput.value) {
-            return;
-        }
-
-        e.preventDefault();
-
-        if (isProcessed && !latInput.value) {
-             return;
-        }
-
+    // 強制送信ボタンクリック時の処理
+    forceSubmitBtn.addEventListener('click', function() {
+        if (isProcessed) return;
         isProcessed = true;
-        submitBtn.disabled = true;
-        submitBtn.textContent = "送信中...";
-
-        e.target.submit();
+        statusMsg.textContent = "送信中...";
+        forceSubmitBtn.disabled = true;
+        form.submit();
     });
-
-    if (!navigator.geolocation) {
-        statusMsg.textContent = "お使いのブラウザは位置情報に対応していません。";
-        spinner.classList.add('hidden');
-        submitBtn.classList.remove('hidden');
-    } else {
-        console.log("[DEBUG] 位置情報の取得を開始します...");
-        navigator.geolocation.getCurrentPosition(success, error, {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0
-        });
-    }
 </script>
 {% endblock %}
