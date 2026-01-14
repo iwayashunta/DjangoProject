@@ -20,7 +20,7 @@ from django.views import generic
 from django.views.decorators.http import require_POST
 # generic から、使いたいクラスを直接インポートする
 from django.views.generic import ListView, DetailView, CreateView, TemplateView, UpdateView, DeleteView
-from django.core.signing import TimestampSigner, BadSignature, SignatureExpired # ★追加
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm, \
@@ -29,7 +29,7 @@ from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Sh
     CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection, \
     DistributionInfo, DistributionItem, ReadState, SafetyStatusHistory
 from Sotsuken_Portable.decorators import admin_required
-from Sotsuken_Portable.utils import send_sos_notification # ★追加
+from Sotsuken_Portable.utils import send_sos_notification
 
 
 # Create your views here.
@@ -1521,10 +1521,12 @@ class OfficialAlertDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView
     template_name = 'common_confirm_delete.html'
     success_url = reverse_lazy('Sotsuken_Portable:official_alert_list')
 
-# ★★★ ワンクリックSOS用のビューを追加 ★★★
+# ★★★ ワンクリックSOS用のビューを修正 ★★★
 def quick_sos_view(request, user_id, token):
     """
     メールのリンクからワンクリックでSOSを発信するビュー
+    GET: 位置情報取得ページを表示
+    POST: 位置情報を受け取ってSOS発信
     """
     signer = TimestampSigner()
     try:
@@ -1536,35 +1538,36 @@ def quick_sos_view(request, user_id, token):
             raise BadSignature()
             
         user = get_object_or_404(User, id=user_id)
-        
-        # SOSレポートを作成
-        # 位置情報はメールリンクからは取得できないため、登録済みの最終位置情報を使用
-        lat = user.last_known_latitude
-        lon = user.last_known_longitude
-        
-        if not lat or not lon:
-            # 位置情報がない場合は、SOSは発信するが位置不明とする
-            # (モデルの定義によっては必須かもしれないので注意。今回は必須なのでダミーを入れるか、エラーにする)
-            # ここでは0,0を入れて「位置不明」扱いにする
-            lat = 0
-            lon = 0
+
+        # POSTリクエスト（位置情報が送信された）の場合
+        if request.method == 'POST':
+            lat = request.POST.get('latitude')
+            lon = request.POST.get('longitude')
             
-        report = SOSReport.objects.create(
-            reporter=user,
-            latitude=lat,
-            longitude=lon,
-            situation_notes="メールリンクからのワンクリックSOS"
-        )
-        
-        # 完了画面へ (ログインしていなくてもOKな画面を用意するか、既存の完了画面を使う)
-        # 既存の完了画面はログイン必須なので、一時的にセッションに入れてリダイレクト
-        request.session['last_sos_id'] = str(report.id)
-        
-        # ログインさせる（セキュリティ的に問題なければ）
-        # from django.contrib.auth import login
-        # login(request, user)
-        
-        return render(request, 'quick_sos_done.html', {'report': report})
+            if not lat or not lon:
+                # 位置情報が取れなかった場合は、最終確認位置を使用するか、エラーにする
+                # ここでは最終確認位置を使用するフォールバックを入れる
+                lat = user.last_known_latitude or 0
+                lon = user.last_known_longitude or 0
+            
+            report = SOSReport.objects.create(
+                reporter=user,
+                latitude=lat,
+                longitude=lon,
+                situation_notes="メールリンクからのワンクリックSOS (GPS取得)"
+            )
+            
+            # 完了画面へ
+            request.session['last_sos_id'] = str(report.id)
+            return render(request, 'quick_sos_done.html', {'report': report})
+
+        # GETリクエスト（リンクをクリックした直後）の場合
+        # 位置情報取得ページを表示する
+        context = {
+            'user': user,
+            'token': token, # POST時に必要
+        }
+        return render(request, 'quick_sos_confirm.html', context)
 
     except (BadSignature, SignatureExpired):
         return HttpResponse("リンクが無効か、期限切れです。", status=400)
