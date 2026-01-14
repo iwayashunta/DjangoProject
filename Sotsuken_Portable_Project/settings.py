@@ -241,3 +241,8 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 EMAIL_SSL_CONTEXT = ssl.create_default_context()
 EMAIL_SSL_CONTEXT.check_hostname = False
 EMAIL_SSL_CONTEXT.verify_mode = ssl.CERT_NONE
+
+if DEBUG:
+    SITE_URL = 'http://127.0.0.1:8000'
+else:
+    SITE_URL = 'https://www.sotsusotsu.com'

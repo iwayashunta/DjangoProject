@@ -1,5 +1,5 @@
 import math
-from decimal import Decimal  # ★ Decimalをインポート
+from decimal import Decimal
 
 import requests
 from django.core.management.base import BaseCommand
@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 from Sotsuken_Portable.models import OfficialAlert, JmaArea
-from Sotsuken_Portable.utils import send_email_to_users
+from Sotsuken_Portable.utils import send_quick_sos_email  # ★ send_quick_sos_email に変更
 
 User = get_user_model()
 
@@ -108,14 +108,12 @@ class Command(BaseCommand):
     def process_updates(self, areas):
         self.stdout.write(self.style.SUCCESS(f"計 {len(areas)} 箇所のエリアで更新がありました。対象ユーザーへの通知を開始します。"))
         
-        # ★ 修正: Decimal型として定義
         SEARCH_RADIUS = Decimal('0.1')
 
         for area in areas:
             area_lat = area.latitude
             area_lon = area.longitude
             
-            # Decimal同士の計算になるのでエラーにならない
             nearby_users = User.objects.filter(
                 last_known_latitude__range=(area_lat - SEARCH_RADIUS, area_lat + SEARCH_RADIUS),
                 last_known_longitude__range=(area_lon - SEARCH_RADIUS, area_lon + SEARCH_RADIUS),
@@ -126,15 +124,20 @@ class Command(BaseCommand):
             count = nearby_users.count()
             if count > 0:
                 self.stdout.write(f"エリア[{area.name}]周辺の対象ユーザー: {count}名")
-                subject = f"【防災速報】{area.name}周辺で気象警報が発表されました"
-                body = (
-                    f"{area.name}周辺で新しい気象警報が発表されました。\n"
-                    f"直ちに最新の情報を確認し、身の安全を確保してください。\n\n"
-                    f"確認日時: {timezone.now().strftime('%Y/%m/%d %H:%M')}\n"
-                    "※このメールは自動送信されています。"
-                )
-                result = send_email_to_users(nearby_users, subject, body)
-                self.stdout.write(f"  -> 送信成功: {result['success']}, 失敗: {result['failure']}")
+                
+                # ★ 修正: 一斉送信ではなく、個別にワンクリックSOSメールを送信
+                success_count = 0
+                for user in nearby_users:
+                    # send_quick_sos_email は内部で個別のトークン付きURLを生成して送信する
+                    success, msg = send_quick_sos_email(user)
+                    if success:
+                        success_count += 1
+                        self.stdout.write(f"  -> {user.username}: 送信成功")
+                    else:
+                        self.stdout.write(self.style.ERROR(f"  -> {user.username}: 送信失敗 ({msg})"))
+                
+                self.stdout.write(f"  [完了] 成功: {success_count} / 対象: {count}")
+
             else:
                 self.stdout.write(f"エリア[{area.name}]周辺に対象ユーザーはいませんでした。")
 
@@ -143,7 +146,6 @@ class Command(BaseCommand):
         nearest = None
         all_areas = JmaArea.objects.all()
         for area in all_areas:
-            # ここはfloat計算のままでOK（Decimalとfloatの混在計算は、floatにキャストすれば可能）
             d_lat = float(area.latitude) - lat
             d_lon = float(area.longitude) - lon
             distance = math.sqrt(d_lat ** 2 + d_lon ** 2)

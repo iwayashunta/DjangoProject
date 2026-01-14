@@ -11,6 +11,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from Sotsuken_Portable.utils import send_sos_notification  # ★追加: メール送信関数をインポート
 
 
 # =========================================================
@@ -1126,6 +1127,9 @@ def notify_sos_alert(sender, instance, created, **kwargs):
         )
         print(f"[Signal] SOS Alert sent for {reporter_name}")
 
-
-
-
+        # ★追加: メール送信処理
+        try:
+            send_sos_notification(instance)
+            print(f"[Signal] SOS Email sent for {reporter_name}")
+        except Exception as e:
+            print(f"[Signal] SOS Email failed: {e}")

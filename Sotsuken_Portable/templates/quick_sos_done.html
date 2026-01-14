@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}SOS発信完了{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl m-4">
+    <div class="p-8 text-center">
+        <div class="uppercase tracking-wide text-sm text-red-500 font-semibold mb-4">緊急SOS</div>
+
+        <h1 class="text-2xl font-bold text-gray-900 mb-4">SOSを発信しました</h1>
+
+        <p class="text-gray-600 mb-6">
+            救助要請を受け付けました。<br>
+            救助隊および管理者に通知が送信されました。
+        </p>
+
+        <div class="bg-gray-100 p-4 rounded-lg text-left mb-6">
+            <p><strong>レポートID:</strong> {{ report.id }}</p>
+            <p><strong>発信日時:</strong> {{ report.reported_at|date:"Y/m/d H:i" }}</p>
+            <p><strong>位置情報:</strong> {{ report.latitude }}, {{ report.longitude }}</p>
+        </div>
+
+        <p class="text-sm text-gray-500 mb-6">
+            身の安全を確保して、救助をお待ちください。
+        </p>
+
+        <a href="{% url 'Sotsuken_Portable:index' %}" class="block w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline">
+            トップページへ戻る
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+        .header {
+            background-color: #d9534f;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            padding: 20px;
+            text-align: center;
+        }
+        .sos-button {
+            display: inline-block;
+            background-color: #d9534f;
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 20px 40px;
+            text-decoration: none;
+            border-radius: 10px;
+            margin: 30px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .note {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 20px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>緊急SOS発信リンク</h2>
+        </div>
+        <div class="content">
+            <p>{{ user.full_name }} さん</p>
+            <p>緊急時に以下のボタンを押すだけで、あなたの位置情報（最終確認地点）と共にSOSを発信できます。</p>
+
+            <a href="{{ sos_url }}" class="sos-button">
+                SOSを発信する
+            </a>
+
+            <div class="note">
+                <p>※このリンクは発行から{{ expiration_hours }}時間有効です。</p>
+                <p>※誤って押さないようご注意ください。</p>
+                <p>※位置情報は、システムに最後に記録された場所が使用されます。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
