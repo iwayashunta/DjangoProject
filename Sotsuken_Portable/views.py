@@ -1532,25 +1532,24 @@ def quick_sos_view(request, user_id, token):
     # ★ キャッシュキーの生成 (トークンをキーにする)
     cache_key = f"quick_sos_processed_{token}"
     
-    # ★ 既に処理済みかチェック
-    if cache.get(cache_key):
-        # 処理済みなら、エラーではなく「既に発信済みです」という画面を出すか、完了画面にリダイレクト
-        # ここでは簡易的に完了画面（ただしレポートオブジェクトはないのでメッセージのみ）を表示
-        return render(request, 'quick_sos_done.html', {'already_processed': True})
+    # ★ POSTリクエスト（位置情報が送信された）の場合
+    if request.method == 'POST':
+        # ★★★ ここでアトミックにチェック＆セット ★★★
+        # cache.add はキーが存在しない場合のみTrueを返し、存在すればFalseを返す
+        if not cache.add(cache_key, True, timeout=60 * 60 * 24):
+            # 既に処理済み（他のリクエストが先にaddした）
+            return render(request, 'quick_sos_done.html', {'already_processed': True})
 
-    signer = TimestampSigner()
-    try:
-        # トークンの検証 (24時間有効)
-        original_value = signer.unsign(token, max_age=60 * 60 * 24)
-        
-        # トークンに含まれるユーザーIDとURLのユーザーIDが一致するか確認
-        if original_value != str(user_id):
-            raise BadSignature()
+        signer = TimestampSigner()
+        try:
+            # トークンの検証 (24時間有効)
+            original_value = signer.unsign(token, max_age=60 * 60 * 24)
             
-        user = get_object_or_404(User, id=user_id)
+            if original_value != str(user_id):
+                raise BadSignature()
+                
+            user = get_object_or_404(User, id=user_id)
 
-        # POSTリクエスト（位置情報が送信された）の場合
-        if request.method == 'POST':
             lat = request.POST.get('latitude')
             lon = request.POST.get('longitude')
             
@@ -1565,19 +1564,19 @@ def quick_sos_view(request, user_id, token):
                 situation_notes="メールリンクからのワンクリックSOS (GPS取得)"
             )
             
-            # ★ 処理完了としてキャッシュに保存 (有効期限はトークンと同じか、短くても良い)
-            cache.set(cache_key, True, timeout=60 * 60 * 24)
-            
-            # 完了画面へ
             request.session['last_sos_id'] = str(report.id)
             return render(request, 'quick_sos_done.html', {'report': report})
 
-        # GETリクエスト（リンクをクリックした直後）の場合
-        context = {
-            'user': user,
-            'token': token,
-        }
-        return render(request, 'quick_sos_confirm.html', context)
+        except (BadSignature, SignatureExpired):
+            return HttpResponse("リンクが無効か、期限切れです。", status=400)
 
-    except (BadSignature, SignatureExpired):
-        return HttpResponse("リンクが無効か、期限切れです。", status=400)
+    # GETリクエスト（リンクをクリックした直後）の場合
+    # ここでもチェックしても良いが、POST時に厳密にチェックするので必須ではない
+    if cache.get(cache_key):
+         return render(request, 'quick_sos_done.html', {'already_processed': True})
+
+    context = {
+        'user': get_object_or_404(User, id=user_id),
+        'token': token,
+    }
+    return render(request, 'quick_sos_confirm.html', context)

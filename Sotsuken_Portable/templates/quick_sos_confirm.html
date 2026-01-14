@@ -37,30 +37,36 @@
     const submitBtn = document.getElementById('submit-btn');
     const spinner = document.getElementById('spinner');
 
-    let isProcessed = false; // 処理済みフラグ（送信開始またはエラー表示済み）
+    let isProcessed = false; // 処理済みフラグ
+    let successCount = 0; // ★デバッグ用: 成功コールバックの呼び出し回数
 
     function success(position) {
-        if (isProcessed) return; // 既に処理済みなら無視
-        isProcessed = true;
-
+        successCount++;
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
+
+        console.log(`[DEBUG] success callback called (${successCount}回目)`);
+        console.log(`[DEBUG] 座標: ${lat}, ${lon}`);
+
+        if (isProcessed) {
+            console.log("[DEBUG] 既に処理済みのためスキップします");
+            return;
+        }
+        isProcessed = true;
 
         latInput.value = lat;
         lonInput.value = lon;
 
         statusMsg.textContent = "位置情報を取得しました。送信中...";
 
-        // 二重送信防止のためボタンも無効化
         submitBtn.disabled = true;
 
+        console.log("[DEBUG] フォームを送信します");
         form.submit();
     }
 
     function error(err) {
-        if (isProcessed) return; // 既に成功して送信中ならエラーは無視
-        // ただし、エラーの場合は再試行（手動送信）の可能性があるので、
-        // isProcessedはtrueにせず、手動送信を許可する状態にする
+        if (isProcessed) return;
 
         console.warn(`ERROR(${err.code}): ${err.message}`);
         let msg = "位置情報の取得に失敗しました。";
@@ -83,18 +89,14 @@
         submitBtn.textContent = "位置情報なしで発信する";
     }
 
-    // 手動送信ボタンのクリックイベント
     form.addEventListener('submit', function(e) {
         if (isProcessed && latInput.value) {
-            // 自動送信中ならそのまま通す
             return;
         }
 
-        // 手動送信の場合
-        e.preventDefault(); // 一旦止める
+        e.preventDefault();
 
         if (isProcessed && !latInput.value) {
-             // 既に処理済み（送信中）だが値がない＝手動送信ボタン連打の可能性
              return;
         }
 
@@ -102,7 +104,6 @@
         submitBtn.disabled = true;
         submitBtn.textContent = "送信中...";
 
-        // フォーム送信
         e.target.submit();
     });
 
@@ -111,6 +112,7 @@
         spinner.classList.add('hidden');
         submitBtn.classList.remove('hidden');
     } else {
+        console.log("[DEBUG] 位置情報の取得を開始します...");
         navigator.geolocation.getCurrentPosition(success, error, {
             enableHighAccuracy: true,
             timeout: 15000,
