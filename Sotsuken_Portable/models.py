@@ -11,7 +11,8 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
-from Sotsuken_Portable.utils import send_sos_notification  # ★追加: メール送信関数をインポート
+from django.utils import timezone # ★追加
+from Sotsuken_Portable.utils import send_sos_notification
 
 
 # =========================================================
@@ -1116,7 +1117,7 @@ def notify_sos_alert(sender, instance, created, **kwargs):
             'type': 'sos_alert',  # Consumerのメソッド名に対応
             'report_id': str(instance.id),
             'reporter_name': reporter_name,
-            'timestamp': instance.reported_at.strftime('%H:%M'),
+            'timestamp': timezone.localtime(instance.reported_at).strftime('%H:%M'), # ★修正: JSTに変換
             'location': f"{instance.latitude}, {instance.longitude}",
         }
 
