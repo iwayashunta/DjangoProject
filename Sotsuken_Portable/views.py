@@ -1,3 +1,4 @@
+import base64
 import csv
 import datetime
 import json
@@ -1264,8 +1265,19 @@ def my_status_qr_view(request):
     except SafetyStatus.DoesNotExist:
         qr_data = {"t": "us", "uid": str(user.id), "fn": user.full_name, "ss": "unknown"}
 
-    context = {'qr_data_json': json.dumps(qr_data)}
-    return render(request, 'my_status_qr.html', context)
+        # 1. JSON文字列にする (ensure_ascii=False でOK。UTF-8バイト列にするため)
+        json_str = json.dumps(qr_data, ensure_ascii=False)
+
+        # 2. UTF-8バイト列をBase64エンコード
+        b64_data = base64.b64encode(json_str.encode('utf-8')).decode('utf-8')
+
+        # 3. 識別子をつける (例: "SQ:" = Sotsuken QR)
+        # これでスキャナー側が「これはウチのアプリのQRだ」と判別しやすくなる
+        final_data = "SQ:" + b64_data
+
+        # テンプレートには生の文字列として渡す
+        context = {'qr_string': final_data}
+        return render(request, 'my_status_qr.html', context)
 
 
 # --- 2. グループ招待用QRコード用ビュー (新規作成) ---
