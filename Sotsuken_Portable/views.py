@@ -325,7 +325,7 @@ def map_view(request):
             'capacity': shelter.max_capacity,
             'occupancy': shelter.current_occupancy,
         })
-    shelters_json = json.dumps(shelters_data, ensure_ascii=False)
+    shelters_json = json.dumps(shelters_data, ensure_ascii=True)
 
     context = {
         'shelters_json': shelters_json,
@@ -1264,7 +1264,7 @@ def my_status_qr_view(request):
     except SafetyStatus.DoesNotExist:
         qr_data = {"t": "us", "uid": str(user.id), "fn": user.full_name, "ss": "unknown"}
 
-    context = {'qr_data_json': json.dumps(qr_data, ensure_ascii=False)}
+    context = {'qr_data_json': json.dumps(qr_data, ensure_ascii=True)}
     return render(request, 'my_status_qr.html', context)
 
 
