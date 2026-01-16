@@ -9,29 +9,28 @@ from channels.layers import channel_layers
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import login_required  # ログイン必須にするためのデコレータ
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.cache import cache  # ★追加
 from django.core.exceptions import PermissionDenied
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required # ログイン必須にするためのデコレータ
 from django.urls import reverse_lazy, reverse
-from django.db.models import Q
 from django.utils import timezone
 from django.views import generic
 from django.views.decorators.http import require_POST
 # generic から、使いたいクラスを直接インポートする
-from django.views.generic import ListView, DetailView, CreateView, TemplateView, UpdateView, DeleteView
-from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
-from django.core.cache import cache # ★追加
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
+from Sotsuken_Portable.decorators import admin_required
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm, \
     DistributionItemForm, OfficialAlertForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
     CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection, \
     DistributionInfo, DistributionItem, ReadState, SafetyStatusHistory
-from Sotsuken_Portable.decorators import admin_required
-from Sotsuken_Portable.utils import send_sos_notification
 
 
 # Create your views here.
@@ -236,7 +235,6 @@ def resolve_support_request_view(request, pk):
     return redirect('Sotsuken_Portable:safety_check')
 
 
-
 def emergency_sos_view(request):
     """
     緊急SOS発信ページの表示と、SOS情報の受付処理
@@ -388,12 +386,14 @@ def user_menu_view(request):
     """
     return render(request, 'user_menu.html')
 
-@admin_required # ← この1行を追加するだけで、このビューは管理者/救助者しかアクセスできなくなる
+
+@admin_required  # ← この1行を追加するだけで、このビューは管理者/救助者しかアクセスできなくなる
 def admin_menu_view(request):
     """
     管理者向けメニューページを表示するビュー
     """
     return render(request, 'admin_menu.html')
+
 
 @admin_required
 def user_management_view(request):
@@ -437,14 +437,15 @@ def user_delete_view(request, user_id):
     }
     return render(request, 'user_confirm_delete.html', context)
 
-@require_POST # このビューはPOSTリクエストしか受け付けない
+
+@require_POST  # このビューはPOSTリクエストしか受け付けない
 @admin_required
 def user_change_role_view(request, user_id):
     """
     ユーザーのロールを変更する処理を行うビュー
     """
     user_to_change = get_object_or_404(User, pk=user_id)
-    new_role = request.POST.get('role') # テンプレートから送られてきた新しいロールを取得
+    new_role = request.POST.get('role')  # テンプレートから送られてきた新しいロールを取得
 
     # 有効なロールかどうかの簡単なチェック
     valid_roles = [role[0] for role in User.ROLE_CHOICES]
@@ -455,7 +456,8 @@ def user_change_role_view(request, user_id):
         else:
             user_to_change.role = new_role
             user_to_change.save()
-            messages.success(request, f"ユーザー「{user_to_change.username}」のロールを「{user_to_change.get_role_display()}」に変更しました。")
+            messages.success(request,
+                             f"ユーザー「{user_to_change.username}」のロールを「{user_to_change.get_role_display()}」に変更しました。")
     else:
         messages.error(request, "無効なロールが指定されました。")
 
@@ -595,6 +597,7 @@ def sos_report_delete_view(request, report_id):
     }
     return render(request, 'sos_report_confirm_delete.html', context)
 
+
 @admin_required
 def sos_report_export_csv_view(request):
     """
@@ -635,11 +638,12 @@ def sos_report_export_csv_view(request):
             report.reporter.full_name if report.reporter else '(削除されたユーザー)',
             report.latitude,
             report.longitude,
-            report.get_status_display(), # 'pending' -> '未対応' のように変換
+            report.get_status_display(),  # 'pending' -> '未対応' のように変換
             report.situation_notes
         ])
 
     return response
+
 
 @login_required
 def chat_group_list_view(request):
@@ -940,8 +944,6 @@ def approve_connection_request_view(request, user_id):
     return redirect('Sotsuken_Portable:dm_user_list')
 
 
-
-
 def _internal_post_message(sender_user, group_id, message):
     try:
         channel_layer = channel_layers['default']
@@ -958,13 +960,12 @@ def _internal_post_message(sender_user, group_id, message):
         return False, str(e)
 
 
-
 # 1. 投稿一覧ビュー
 class CommunityPostListView(LoginRequiredMixin, ListView):
     model = CommunityPost
     template_name = 'community_list.html'
-    context_object_name = 'post_list' # テンプレートで使う変数名を指定
-    paginate_by = 10 # 1ページに10件まで表示（ページネーション）
+    context_object_name = 'post_list'  # テンプレートで使う変数名を指定
+    paginate_by = 10  # 1ページに10件まで表示（ページネーション）
 
 
 # 2. 投稿詳細ビュー
@@ -1014,7 +1015,7 @@ class CommunityPostCreateView(LoginRequiredMixin, CreateView):
     model = CommunityPost
     form_class = CommunityPostForm
     template_name = 'community_form.html'
-    success_url = reverse_lazy('Sotsuken_Portable:community_list') # 成功時のリダイレクト先
+    success_url = reverse_lazy('Sotsuken_Portable:community_list')  # 成功時のリダイレクト先
 
     # フォームが送信されて、内容が正しい場合に呼ばれるメソッド
     def form_valid(self, form):
@@ -1047,6 +1048,7 @@ class CommunityPostDeleteView(LoginRequiredMixin, generic.DeleteView):
         # 権限があれば、通常の処理を続ける
         return super().dispatch(request, *args, **kwargs)
 
+
 class CommentDeleteView(LoginRequiredMixin, generic.DeleteView):
     model = Comment
     template_name = 'comment_confirm_delete.html'
@@ -1071,6 +1073,7 @@ class CommentDeleteView(LoginRequiredMixin, generic.DeleteView):
 
         return super().dispatch(request, *args, **kwargs)
 
+
 # 1. 自分が所属するグループ一覧ビュー
 class GroupListView(LoginRequiredMixin, ListView):
     model = Group
@@ -1093,7 +1096,7 @@ class GroupCreateView(LoginRequiredMixin, generic.CreateView):
     model = Group
     form_class = GroupCreateForm
     template_name = 'group_form.html'
-    success_url = reverse_lazy('Sotsuken_Portable:group_list') # 成功後は一覧ページへ
+    success_url = reverse_lazy('Sotsuken_Portable:group_list')  # 成功後は一覧ページへ
 
     def form_valid(self, form):
         # グループの作成者をログインユーザーに設定
@@ -1102,9 +1105,9 @@ class GroupCreateView(LoginRequiredMixin, generic.CreateView):
         response = super().form_valid(form)
         # ★重要: グループ作成者を、自動的にそのグループの最初のメンバー（管理者）として追加
         GroupMember.objects.create(
-            group=self.object, # self.objectには作成されたGroupインスタンスが入っている
+            group=self.object,  # self.objectには作成されたGroupインスタンスが入っている
             member=self.request.user,
-            role='admin' # グループ作成者はグループ管理者に設定
+            role='admin'  # グループ作成者はグループ管理者に設定
         )
         return response
 
@@ -1145,7 +1148,7 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
 
 class GroupDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Group
-    template_name = 'common_confirm_delete.html' # 先ほど作った共通テンプレートを使い回せます！
+    template_name = 'common_confirm_delete.html'  # 先ほど作った共通テンプレートを使い回せます！
     success_url = reverse_lazy('Sotsuken_Portable:group_list')
 
     def test_func(self):
@@ -1205,6 +1208,7 @@ class GroupLeaveView(LoginRequiredMixin, generic.View):
         messages.success(request, f'グループ「{group.name}」から脱退しました。')
         return redirect('Sotsuken_Portable:group_list')
 
+
 @login_required
 def settings_view(request):
     """
@@ -1252,32 +1256,33 @@ def user_profile_edit(request):
 @login_required
 def my_status_qr_view(request):
     user = request.user
-    qr_data = {}
+
+    # データの準備
     try:
         safety_status = user.safety_status_record
         qr_data = {
-            "t": "us",  # type: user_status
+            "t": "us",
             "uid": str(user.id),
             "fn": user.full_name,
-            "ss": safety_status.status, # 'safe' や 'help' などの内部コード
-            "lu": safety_status.last_updated.strftime('%Y%m%d%H%M') # ハイフン等も削除
+            "ss": safety_status.status,
+            "lu": safety_status.last_updated.strftime('%Y%m%d%H%M')
         }
     except SafetyStatus.DoesNotExist:
-        qr_data = {"t": "us", "uid": str(user.id), "fn": user.full_name, "ss": "unknown"}
+        qr_data = {
+            "t": "us",
+            "uid": str(user.id),
+            "fn": user.full_name,
+            "ss": "unknown"
+        }
 
-        # 1. JSON文字列にする (ensure_ascii=False でOK。UTF-8バイト列にするため)
-        json_str = json.dumps(qr_data, ensure_ascii=False)
+    # JSON化 & Base64化
+    json_str = json.dumps(qr_data, ensure_ascii=False)
+    b64_data = base64.b64encode(json_str.encode('utf-8')).decode('utf-8')
+    final_data = "SQ:" + b64_data
 
-        # 2. UTF-8バイト列をBase64エンコード
-        b64_data = base64.b64encode(json_str.encode('utf-8')).decode('utf-8')
+    context = {'qr_string': final_data}
 
-        # 3. 識別子をつける (例: "SQ:" = Sotsuken QR)
-        # これでスキャナー側が「これはウチのアプリのQRだ」と判別しやすくなる
-        final_data = "SQ:" + b64_data
-
-        # テンプレートには生の文字列として渡す
-        context = {'qr_string': final_data}
-        return render(request, 'my_status_qr.html', context)
+    return render(request, 'my_status_qr.html', context)
 
 
 # --- 2. グループ招待用QRコード用ビュー (新規作成) ---
@@ -1297,6 +1302,7 @@ def group_invite_qr_view(request, group_id):
     }
     return render(request, 'group_invite_qr.html', context)
 
+
 # --- 3. QRコードスキャナー用ビュー (新規作成) ---
 @login_required
 def qr_scan_view(request):
@@ -1305,6 +1311,7 @@ def qr_scan_view(request):
     このビューはテンプレートを表示するだけで、特別なロジックは不要。
     """
     return render(request, 'qr_scanner.html')
+
 
 @login_required
 def join_group_by_code_view(request, invitation_code):
@@ -1331,6 +1338,7 @@ def join_group_by_code_view(request, invitation_code):
         messages.error(request, "無効な招待コードです。")
         return redirect('Sotsuken_Portable:group_list')  # エラー時はグループ一覧へ
 
+
 # --- ユーザーID QRコード用ビュー ---
 @login_required
 def user_id_qr_view(request):
@@ -1349,6 +1357,7 @@ def user_id_qr_view(request):
     }
     return render(request, 'user_id_qr.html', context)
 
+
 @login_required
 def manual_list(request):
     """
@@ -1359,6 +1368,7 @@ def manual_list(request):
         'manuals': manuals,
     }
     return render(request, 'manual_list.html', context)
+
 
 @login_required
 # @user_passes_test(lambda u: u.is_superuser)  # 管理者のみに制限する場合
@@ -1373,6 +1383,7 @@ def rpi_checkin_log_view(request):
         'title': '避難所受付データ連携ログ'
     }
     return render(request, 'rpi_data_log.html', context)
+
 
 # --- 2. 炊き出し配布記録の確認 ---
 @login_required
@@ -1478,10 +1489,12 @@ def get_nearby_alerts_view(request):
         'alerts': alert_data
     }, json_dumps_params={'ensure_ascii': False})
 
+
 # --- 管理者権限チェック用Mixin ---
 class AdminRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.role in ['admin', 'rescuer'] or self.request.user.is_superuser
+
 
 # ==========================================
 # 1. 配布物資マスタ管理 (DistributionItem)
@@ -1491,11 +1504,13 @@ class DistributionItemListView(LoginRequiredMixin, AdminRequiredMixin, ListView)
     template_name = 'distribution_item_list.html'
     context_object_name = 'items'
 
+
 class DistributionItemCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
     model = DistributionItem
     form_class = DistributionItemForm
     template_name = 'distribution_item_form.html'
     success_url = reverse_lazy('Sotsuken_Portable:distribution_item_list')
+
 
 class DistributionItemUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
     model = DistributionItem
@@ -1503,10 +1518,12 @@ class DistributionItemUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateV
     template_name = 'distribution_item_form.html'
     success_url = reverse_lazy('Sotsuken_Portable:distribution_item_list')
 
+
 class DistributionItemDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
     model = DistributionItem
-    template_name = 'common_confirm_delete.html' # 共通の削除確認画面を使うと楽
+    template_name = 'common_confirm_delete.html'  # 共通の削除確認画面を使うと楽
     success_url = reverse_lazy('Sotsuken_Portable:distribution_item_list')
+
 
 # ==========================================
 # 2. 公式アナウンス管理 (OfficialAlert)
@@ -1517,11 +1534,13 @@ class OfficialAlertListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
     context_object_name = 'alerts'
     ordering = ['-published_at']
 
+
 class OfficialAlertCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
     model = OfficialAlert
     form_class = OfficialAlertForm
     template_name = 'official_alert_form.html'
     success_url = reverse_lazy('Sotsuken_Portable:official_alert_list')
+
 
 class OfficialAlertUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
     model = OfficialAlert
@@ -1529,10 +1548,12 @@ class OfficialAlertUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView
     template_name = 'official_alert_form.html'
     success_url = reverse_lazy('Sotsuken_Portable:official_alert_list')
 
+
 class OfficialAlertDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
     model = OfficialAlert
     template_name = 'common_confirm_delete.html'
     success_url = reverse_lazy('Sotsuken_Portable:official_alert_list')
+
 
 # ★★★ ワンクリックSOS用のビューを修正 ★★★
 def quick_sos_view(request, user_id, token):
@@ -1543,7 +1564,7 @@ def quick_sos_view(request, user_id, token):
     """
     # ★ キャッシュキーの生成 (トークンをキーにする)
     cache_key = f"quick_sos_processed_{token}"
-    
+
     # ★ POSTリクエスト（位置情報が送信された）の場合
     if request.method == 'POST':
         # ★★★ ここでアトミックにチェック＆セット ★★★
@@ -1556,26 +1577,26 @@ def quick_sos_view(request, user_id, token):
         try:
             # トークンの検証 (24時間有効)
             original_value = signer.unsign(token, max_age=60 * 60 * 24)
-            
+
             if original_value != str(user_id):
                 raise BadSignature()
-                
+
             user = get_object_or_404(User, id=user_id)
 
             lat = request.POST.get('latitude')
             lon = request.POST.get('longitude')
-            
+
             if not lat or not lon:
                 lat = user.last_known_latitude or 0
                 lon = user.last_known_longitude or 0
-            
+
             report = SOSReport.objects.create(
                 reporter=user,
                 latitude=lat,
                 longitude=lon,
                 situation_notes="メールリンクからのワンクリックSOS (GPS取得)"
             )
-            
+
             request.session['last_sos_id'] = str(report.id)
             return render(request, 'quick_sos_done.html', {'report': report})
 
@@ -1585,7 +1606,7 @@ def quick_sos_view(request, user_id, token):
     # GETリクエスト（リンクをクリックした直後）の場合
     # ここでもチェックしても良いが、POST時に厳密にチェックするので必須ではない
     if cache.get(cache_key):
-         return render(request, 'quick_sos_done.html', {'already_processed': True})
+        return render(request, 'quick_sos_done.html', {'already_processed': True})
 
     context = {
         'user': get_object_or_404(User, id=user_id),

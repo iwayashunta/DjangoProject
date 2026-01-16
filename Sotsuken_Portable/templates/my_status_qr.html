@@ -36,8 +36,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // JSONデータを受け取る
-    const qrData = JSON.parse('{{ qr_data_json|escapejs }}');
-    const jsonString = JSON.stringify(qrData);
+    // const qrData = JSON.parse('{{ qr_data_json|escapejs }}');
+    // const jsonString = JSON.stringify(qrData);
+
+    const qrString = "{{ qr_string|escapejs }}";
 
     // 2. QRiousを使ってQRコードを生成
     // (unescape... のおまじないは不要です！そのまま渡せます)
