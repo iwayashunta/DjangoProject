@@ -9,25 +9,37 @@
     <div class="bg-white p-6 rounded-xl shadow-lg text-center">
         <h3 class="text-lg font-semibold mb-4">QRコードを読み取る</h3>
         
+        <!-- 初期UI -->
         <div id="scanner-ui-container">
-            <p id="scan-instruction" class="text-gray-600 mb-4">下のボタンを押して、<br>カメラでQRコードをスキャンしてください。</p>
-            <button id="start-qr-scan-button" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors font-semibold">
-                カメラを起動
+            <p class="text-gray-600 mb-4">下のボタンを押して、<br>カメラでQRコードをスキャンしてください。</p>
+            <button id="start-qr-scan-button" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors font-semibold shadow-md">
+                📷 カメラを起動
             </button>
         </div>
 
-        <!-- スキャナーが表示されるエリア (普段は非表示) -->
-        <div id="qr-scanner-container" class="mt-4 border-4 rounded-lg overflow-hidden" style="display: none;">
+        <!-- スキャナーエリア (初期非表示) -->
+        <div id="qr-scanner-container" class="mt-4 rounded-lg overflow-hidden border-4 border-gray-300 hidden">
             <div id="qr-reader" style="width: 100%;"></div>
         </div>
-        
-        <!-- スキャン停止ボタン (普段は非表示) -->
-        <button id="stop-qr-scan-button" class="w-full bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors font-semibold mt-4" style="display: none;">
+
+        <!-- 停止ボタン (初期非表示) -->
+        <button id="stop-qr-scan-button" class="w-full bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors font-semibold mt-4 shadow-md hidden">
             スキャンを停止
         </button>
+
+        <!-- ★★★ 結果表示エリア (初期非表示) ★★★ -->
+        <div id="scan-result-container" class="mt-6 hidden animate-fade-in-up">
+            <!-- ここにJSで結果を流し込む -->
+        </div>
+    </div>
+
+    <div class="text-center mt-6">
+        <a href="{% url 'Sotsuken_Portable:user_menu' %}" class="text-gray-500 hover:underline">戻る</a>
     </div>
 </div>
 {% endblock %}
+
+
 
 {% block body_extra %}
 <!-- QRコード読み取りライブラリ (html5-qrcode) -->
@@ -38,96 +50,137 @@ document.addEventListener('DOMContentLoaded', function() {
     const startButton = document.getElementById('start-qr-scan-button');
     const stopButton = document.getElementById('stop-qr-scan-button');
     const scannerContainer = document.getElementById('qr-scanner-container');
-    const scannerUiContainer = document.getElementById('scanner-ui-container');
+    const uiContainer = document.getElementById('scanner-ui-container');
+
+    // ★追加: 結果表示コンテナ
+    const resultContainer = document.getElementById('scan-result-container');
 
     const html5QrCode = new Html5Qrcode("qr-reader");
 
-    // ★★★ スキャン成功時の処理 ★★★
+    // XSS対策用エスケープ関数
+    function escapeHtml(text) {
+        if (!text) return "";
+        return text.replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+        });
+    }
+
+    // ★★★ スキャン成功時の処理 (修正版) ★★★
     const onScanSuccess = (decodedText, decodedResult) => {
-    stopScan();
+        // スキャンを止める
+        stopScan();
 
-    // まず、URL形式（グループ招待）かどうかをチェック
-    if (decodedText.includes('/groups/join-by-code/')) {
-        const confirmJoin = confirm(
-            `グループ招待用のURLを読み取りました。\n\nこの招待を受けてグループに参加しますか？`
-        );
-        if (confirmJoin) {
-            window.location.href = decodedText; // そのままURLに移動する
+        // UIを結果表示モードに切り替え
+        uiContainer.style.display = 'none'; // 「カメラを起動」ボタンを消す
+        resultContainer.classList.remove('hidden'); // 結果エリアを表示
+
+        // 1. グループ招待URLの場合
+        if (decodedText.includes('/groups/join-by-code/')) {
+            resultContainer.innerHTML = `
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 text-left">
+                    <p class="font-bold text-blue-700 mb-2">グループ招待QRを読み取りました</p>
+                    <p class="text-sm text-gray-600 mb-4">このグループに参加しますか？</p>
+                    <div class="flex gap-2">
+                        <a href="${decodedText}" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 flex-1 text-center font-bold">参加する</a>
+                        <button onclick="location.reload()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">キャンセル</button>
+                    </div>
+                </div>
+            `;
+            return;
         }
-        return; // 処理を終了
-    }
 
-    // 次に、JSON形式（安否情報など）かどうかを試す
-    try {
-        const data = JSON.parse(decodedText);
-        if (data.t === 'us') { // t: 'us' (user_status) なら
+        // 2. JSONデータ (安否情報) の場合
+        try {
+            const data = JSON.parse(decodedText);
+            if (data.t === 'us') { // t: 'us' (user_status)
 
-            // 短縮コードを日本語に戻すための対応表
-            const statusMap = {
-                'safe': '無事',
-                'help': '要支援',
-                'unknown': '未確認'
-            };
-            const statusText = statusMap[data.ss] || '不明';
+                // ステータスに応じた色とテキスト
+                let statusHtml = "";
+                if (data.ss === 'safe') {
+                    statusHtml = '<span class="text-green-600 font-bold text-xl">✅ 無事</span>';
+                } else if (data.ss === 'help') {
+                    statusHtml = '<span class="text-red-600 font-bold text-xl animate-pulse">🆘 要救助</span>';
+                } else {
+                    statusHtml = '<span class="text-gray-500 font-bold text-xl">❓ 未確認</span>';
+                }
 
-            const message = `安否情報を読み取りました:\n` +
-                            `------------------------\n` +
-                            `氏名: ${data.fn}\n` +
-                            `状況: ${statusText}\n` +
-                            `更新日時: ${data.lu || 'N/A'}`; // lu: last_updated
-            alert(message);
+                // 日時の整形 (例: 202512251030 -> 12/25 10:30)
+                let dateStr = "不明";
+                if (data.lu && data.lu.length >= 12) {
+                    const Y = data.lu.substring(0,4);
+                    const M = data.lu.substring(4,6);
+                    const D = data.lu.substring(6,8);
+                    const h = data.lu.substring(8,10);
+                    const m = data.lu.substring(10,12);
+                    dateStr = `${Y}/${M}/${D} ${h}:${m}`;
+                }
 
-        } else {
-            alert(`非対応のQRデータです。`);
+                resultContainer.innerHTML = `
+                    <div class="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-md">
+                        <h4 class="text-gray-500 text-sm mb-1">安否情報</h4>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">${escapeHtml(data.fn)} さん</h2>
+
+                        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                            <p class="text-sm text-gray-500 mb-1">現在の状況</p>
+                            ${statusHtml}
+                        </div>
+
+                        <p class="text-xs text-gray-400 text-right">最終更新: ${dateStr}</p>
+
+                        <button onclick="location.reload()" class="mt-6 w-full bg-blue-500 text-white py-2 rounded-lg font-bold hover:bg-blue-600">
+                            続けてスキャンする
+                        </button>
+                    </div>
+                `;
+
+            } else {
+                throw new Error("Unknown JSON format");
+            }
+        } catch (e) {
+            // 3. その他のテキストデータ
+            resultContainer.innerHTML = `
+                <div class="bg-gray-100 p-4 rounded text-left break-all">
+                    <p class="font-bold text-gray-700 mb-2">テキストデータを読み取りました</p>
+                    <p class="text-gray-800">${escapeHtml(decodedText)}</p>
+                    <button onclick="location.reload()" class="mt-4 w-full bg-gray-300 text-gray-800 py-2 rounded hover:bg-gray-400">
+                        戻る
+                    </button>
+                </div>
+            `;
         }
-    } catch (e) {
-        // どちらでもない、ただのテキストの場合
-        alert(`読み取ったデータ:\n${decodedText}`);
-    }
-};
-    /**
-     * スキャン失敗時のコールバック関数
-     * (QRコードがカメラに映っていないフレームごとに呼ばれるので、
-     *  基本的には何もしなくてOK)
-     */
-    const onScanFailure = (error) => {
-        // 意図的に空のままにします。
-        // console.warn(`QR error = ${error}`); // デバッグしたい場合はこの行を有効化
     };
 
-    // スキャンを開始する処理
-    function startScan() {
-        // UIの表示を切り替え
-        scannerContainer.style.display = 'block';
-        stopButton.style.display = 'block';
-        startButton.style.display = 'none';
+    const onScanFailure = (error) => {
+        // 読み取り失敗時は何もしない
+    };
 
-        // カメラを起動してスキャンを開始
+    // --- 以下、開始・停止処理 (変更なし、クラス操作だけ微修正) ---
+    function startScan() {
+        scannerContainer.classList.remove('hidden'); // style.display = 'block' の代わり
+        stopButton.classList.remove('hidden');
+        uiContainer.style.display = 'none';
+        resultContainer.classList.add('hidden'); // 結果を隠す
+
         html5QrCode.start(
-            { facingMode: "environment" }, // 背面カメラを使用
-            {
-                fps: 10, // 1秒あたりのスキャン回数
-                qrbox: { width: 250, height: 250 } // スキャン範囲のUIサイズ
-            },
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
             onScanSuccess,
             onScanFailure
         ).catch(err => {
-            alert('カメラの起動に失敗しました。カメラのアクセスを許可してください。');
-            console.error("Unable to start scanning.", err);
-            stopScan(); // 失敗時もUIを元に戻す
+            alert('カメラの起動に失敗しました。');
+            stopScan();
         });
     }
 
-    // スキャンを停止する処理
     function stopScan() {
-        html5QrCode.stop().then(ignore => {
-            // UIの表示を元に戻す
-            scannerContainer.style.display = 'none';
-            stopButton.style.display = 'none';
-            startButton.style.display = 'block';
-        }).catch(err => {
-            console.error("Unable to stop scanning.", err);
-        });
+        html5QrCode.stop().then(() => {
+            scannerContainer.classList.add('hidden');
+            stopButton.classList.add('hidden');
+            // 結果が出ていなければ、初期UIに戻す
+            if (resultContainer.classList.contains('hidden')) {
+                uiContainer.style.display = 'block';
+            }
+        }).catch(console.error);
     }
 
     startButton.addEventListener('click', startScan);
