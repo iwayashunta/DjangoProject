@@ -707,6 +707,14 @@ class CommunityPost(UUIDModel):
         auto_now=True
     )
 
+    # 8. 画像フィールド
+    image = models.ImageField(
+        verbose_name="添付画像",
+        upload_to='community_images/',  # media/community_images/ に保存
+        blank=True,
+        null=True
+    )
+
     class Meta:
         verbose_name = "コミュニティ投稿"
         verbose_name_plural = "コミュニティ投稿一覧"

@@ -80,11 +80,12 @@ class CommunityPostForm(forms.ModelForm):
         model = CommunityPost
         # フォームでユーザーに入力させるフィールドを指定
         # authorはビューで自動的に設定するので、ここには含めない
-        fields = ('title', 'content', 'region_tag')
+        fields = ('title', 'content', 'region_tag', 'image')
         labels = {
             'title': 'タイトル',
             'content': '内容',
             'region_tag': '地域タグ (任意、例: 〇〇地区)',
+            'image': '画像 (任意)',  # ★追加
         }
         # ウィジェットで入力欄にCSSクラスを適用
         widgets = {
@@ -97,6 +98,9 @@ class CommunityPostForm(forms.ModelForm):
             }),
             'region_tag': forms.TextInput(attrs={
                 'class': 'mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }),
+            'image': forms.ClearableFileInput(attrs={
+                'class': 'mt-1 p-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white'
             }),
         }
 
