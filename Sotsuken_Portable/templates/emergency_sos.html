@@ -45,37 +45,50 @@
             // 1. フォームの通常の送信を一旦停止
             event.preventDefault();
 
-            // 2. ボタンを無効化し、メッセージを変更して二重送信を防ぐ
+            // 2. ボタンを無効化
             sosButton.disabled = true;
             statusMessage.textContent = '位置情報を取得しています...';
+            statusMessage.classList.remove('text-gray-600');
             statusMessage.classList.add('text-blue-600');
 
-            // 3. ブラウザに位置情報を問い合わせる
+            // --- 位置情報取得処理 ---
             if (!navigator.geolocation) {
-                statusMessage.textContent = 'お使いのブラウザは位置情報機能に対応していません。';
-                statusMessage.classList.add('text-red-600');
-                sosButton.disabled = false;
+                // 非対応の場合 -> デモ送信へ
+                handleGeoError("Geolocation not supported");
             } else {
                 navigator.geolocation.getCurrentPosition(
-                    // 成功した場合の処理
+                    // 成功時
                     function (position) {
                         statusMessage.textContent = '位置情報を取得しました。SOSを発信します...';
-
-                        // 4. 取得した緯度・経度を隠しフィールドに設定
                         latitudeInput.value = position.coords.latitude;
                         longitudeInput.value = position.coords.longitude;
-
-                        // 5. フォームを送信
                         sosForm.submit();
                     },
-                    // 失敗した場合の処理
-                    function () {
-                        statusMessage.textContent = '位置情報の取得を許可してください。';
-                        statusMessage.classList.add('text-red-600');
-                        sosButton.disabled = false; // 再度押せるようにボタンを有効化
-                    }
+                    // 失敗時 -> デモ送信へ
+                    function (error) {
+                        handleGeoError(error);
+                    },
+                    // オプション (タイムアウト設定など)
+                    { timeout: 10000 }
                 );
             }
         });
+
+        // ★追加: エラー時の救済処置（デモ送信）
+        function handleGeoError(error) {
+            console.warn("位置情報エラー:", error);
+
+            // ユーザーへの通知（本番っぽく見せるならアラートは出さなくても良いが、デモだと分かるように出す）
+            alert("【デモモード】位置情報が取得できないため、\n自動的にデモ用座標を設定してSOSを発信します。");
+
+            statusMessage.textContent = 'デモ用座標でSOSを発信します...';
+
+            // 固定値を入れる
+            latitudeInput.value = 34.380780;
+            longitudeInput.value = 132.468517;
+
+            // そのまま送信！
+            sosForm.submit();
+        }
     </script>
 {% endblock %}

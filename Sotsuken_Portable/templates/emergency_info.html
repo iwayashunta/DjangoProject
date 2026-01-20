@@ -197,75 +197,100 @@
         </div>
     </div>
     <script>
+        // デモ用座標
+        const DEMO_LAT = 34.380780;
+        const DEMO_LON = 132.468517;
+
+        // --- 1. ハザードマップ用スクリプト ---
         document.addEventListener('DOMContentLoaded', function () {
             const linkElement = document.getElementById('hazard-map-link');
             const statusElement = document.getElementById('gps-status');
 
+            function updateHazardMapLink(lat, lon, isDemo=false) {
+                // 国土交通省「重ねるハザードマップ」へのダイレクトリンクを作成
+                const mapUrl = `https://disaportal.gsi.go.jp/maps/?ll=${lat},${lon}&z=15`;
+                linkElement.href = mapUrl;
+
+                if (isDemo) {
+                    statusElement.textContent = "位置情報オフのため、デモ地点を設定しました";
+                    statusElement.classList.add("text-orange-500");
+                } else {
+                    statusElement.textContent = "現在地が設定されました";
+                    statusElement.classList.add("text-green-500");
+                }
+            }
+
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition(
                     function (position) {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-
-                        // 国土交通省「重ねるハザードマップ」へのダイレクトリンクを作成
-                        // ズームレベル(zl)は15くらいが見やすい
-                        const mapUrl = `https://disaportal.gsi.go.jp/maps/?ll=${lat},${lon}&z=15`;
-
-                        linkElement.href = mapUrl;
-                        statusElement.textContent = "現在地が設定されました";
-                        statusElement.classList.add("text-green-500");
+                        updateHazardMapLink(position.coords.latitude, position.coords.longitude, false);
                     },
                     function (error) {
-                        console.error("位置情報の取得に失敗:", error);
-                        statusElement.textContent = "位置情報を取得できませんでした（標準トップページを開きます）";
+                        console.warn("ハザードマップ位置取得失敗:", error);
+                        // 失敗時はデモ地点へ
+                        updateHazardMapLink(DEMO_LAT, DEMO_LON, true);
                     }
                 );
             } else {
-                statusElement.textContent = "お使いのブラウザは位置情報に対応していません";
+                // 非対応時もデモ地点へ
+                updateHazardMapLink(DEMO_LAT, DEMO_LON, true);
             }
         });
 
+        // --- 2. 行政情報（アラート）用スクリプト ---
         document.addEventListener('DOMContentLoaded', function () {
             const container = document.getElementById('alert-container');
             const label = document.getElementById('area-label');
 
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(async function (position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
+            async function fetchAlerts(lat, lon, isDemo = false) {
+                try {
+                    const response = await fetch(`/ajax/get-nearby-alerts/?lat=${lat}&lon=${lon}`);
+                    const data = await response.json();
 
-                    try {
-                        // APIに問い合わせ
-                        const response = await fetch(`/ajax/get-nearby-alerts/?lat=${lat}&lon=${lon}`);
-                        const data = await response.json();
+                    if (data.status === 'success') {
+                        const prefix = isDemo ? "【デモ】" : "";
+                        label.textContent = `${prefix}(${data.area_name} 周辺)`;
+                        container.innerHTML = ''; // クリア
 
-                        if (data.status === 'success') {
-                            label.textContent = `(${data.area_name} 周辺)`;
-                            container.innerHTML = ''; // クリア
+                        if (data.alerts.length === 0) {
+                            container.innerHTML = '<p class="text-gray-500">現在、有効な警報はありません。</p>';
+                        } else {
+                            data.alerts.forEach(alert => {
+                                let severityColor = "text-gray-800";
+                                if(alert.severity === 'emergency') severityColor = "text-red-600 animate-pulse";
+                                else if(alert.severity === 'warning') severityColor = "text-orange-600";
 
-                            if (data.alerts.length === 0) {
-                                container.innerHTML = '<p class="text-gray-500">現在、有効な警報はありません。</p>';
-                            } else {
-                                data.alerts.forEach(alert => {
-                                    const html = `
-                                <div class="border-b pb-2 border-red-200">
-                                    <p class="font-bold text-gray-800">[${alert.severity}] ${alert.title}</p>
-                                    <p class="text-sm text-gray-700 whitespace-pre-line">${alert.content}</p>
-                                    <p class="text-xs text-right text-gray-500">${alert.date}</p>
+                                const html = `
+                                <div class="border-b pb-2 border-red-200 last:border-0">
+                                    <p class="font-bold ${severityColor}">[${alert.severity}] ${alert.title}</p>
+                                    <p class="text-sm text-gray-700 whitespace-pre-line mt-1">${alert.content}</p>
+                                    <p class="text-xs text-right text-gray-500 mt-1">${alert.date}</p>
                                 </div>
                             `;
-                                    container.insertAdjacentHTML('beforeend', html);
-                                });
-                            }
+                                container.insertAdjacentHTML('beforeend', html);
+                            });
                         }
-                    } catch (e) {
-                        console.error(e);
-                        container.innerHTML = '<p class="text-red-500">情報の取得に失敗しました。</p>';
                     }
-                }, function (error) {
-                    label.textContent = "(位置情報オフ)";
-                    container.innerHTML = '<p class="text-gray-500">位置情報を許可すると、周辺の警報を表示します。</p>';
-                });
+                } catch (e) {
+                    console.error(e);
+                    container.innerHTML = '<p class="text-red-500 text-sm">情報の取得に失敗しました。</p>';
+                }
+            }
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        fetchAlerts(position.coords.latitude, position.coords.longitude, false);
+                    },
+                    function (error) {
+                        console.warn("アラート位置取得失敗:", error);
+                        // 失敗時はデモ地点へ
+                        fetchAlerts(DEMO_LAT, DEMO_LON, true);
+                    },
+                    { timeout: 5000 }
+                );
+            } else {
+                fetchAlerts(DEMO_LAT, DEMO_LON, true);
             }
         });
     </script>

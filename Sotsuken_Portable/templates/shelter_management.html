@@ -169,38 +169,51 @@
     <!-- ★★★ 追加: 位置情報取得スクリプト ★★★ -->
     <script>
         function getLocation() {
-            if (!navigator.geolocation) {
-                alert("このブラウザは位置情報に対応していません。");
-                return;
-            }
+            // デモ用座標（広島市南区役所）
+            const DEMO_LAT = 34.380780;
+            const DEMO_LON = 132.468517;
 
-            // ボタンの見た目を変えて処理中であることを示す
             const btn = document.querySelector('button[onclick="getLocation()"]');
             const originalText = btn.innerText;
             btn.innerText = "取得中...";
             btn.disabled = true;
 
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    // 成功時
-                    document.getElementById('id_latitude').value = position.coords.latitude.toFixed(6);
-                    document.getElementById('id_longitude').value = position.coords.longitude.toFixed(6);
+            // 共通の入力処理関数
+            const setLocation = (lat, lon, isDemo = false) => {
+                document.getElementById('id_latitude').value = lat.toFixed(6);
+                document.getElementById('id_longitude').value = lon.toFixed(6);
 
+                if (isDemo) {
+                    alert("【デモモード】位置情報が取得できないため、\n自動的にデモ地点を設定しました。");
+                    btn.innerText = "デモ地点設定";
+                } else {
                     btn.innerText = "完了！";
-                    setTimeout(() => {
-                        btn.innerText = originalText;
-                        btn.disabled = false;
-                    }, 2000);
-                },
-                (error) => {
-                    // エラー時
-                    console.error(error);
-                    alert("位置情報を取得できませんでした。\nGPSが有効か確認してください。");
+                }
+
+                setTimeout(() => {
                     btn.innerText = originalText;
                     btn.disabled = false;
+                }, 2000);
+            };
+
+            if (!navigator.geolocation) {
+                // 非対応ブラウザなら即デモ
+                setLocation(DEMO_LAT, DEMO_LON, true);
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                // 成功時
+                (position) => {
+                    setLocation(position.coords.latitude, position.coords.longitude, false);
+                },
+                // 失敗時（デモへ）
+                (error) => {
+                    console.warn("位置情報エラー:", error);
+                    setLocation(DEMO_LAT, DEMO_LON, true);
                 },
                 {
-                    enableHighAccuracy: true, // 高精度モード
+                    enableHighAccuracy: true,
                     timeout: 5000,
                     maximumAge: 0
                 }

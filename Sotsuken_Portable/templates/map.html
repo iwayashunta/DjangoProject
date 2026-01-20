@@ -56,39 +56,52 @@
 
         // --- ★ ここからWebSocketと位置情報監視のロジック ---
         function startRealtimeLocation() {
+            const DEMO_LAT = 34.380780;
+            const DEMO_LON = 132.468517;
+
             if (!navigator.geolocation) {
-                alert("お使いのブラウザは位置情報機能に対応していません。");
+                handleGeoError("Geolocation not supported", DEMO_LAT, DEMO_LON);
                 return;
             }
 
-            // 1. WebSocket接続をセットアップ
             const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
             const wsUrl = wsProtocol + window.location.host + '/ws/location/';
             locationSocket = new WebSocket(wsUrl);
 
-            locationSocket.onopen = () => console.log("Location WebSocket connection established.");
-            locationSocket.onclose = () => console.error('Location WebSocket closed.');
-            locationSocket.onerror = (err) => console.error('WebSocket error:', err);
+            locationSocket.onopen = () => console.log("Location WS connected.");
+            locationSocket.onclose = () => console.error('Location WS closed.');
+            locationSocket.onerror = (err) => console.error('WS error:', err);
 
-            // 2. 位置情報の継続的な監視を開始
             navigator.geolocation.watchPosition(
                 (position) => {
                     const userPos = {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude,
                     };
-
-                    // WebSocketでサーバーに位置情報を送信
                     if (locationSocket.readyState === WebSocket.OPEN) {
                         locationSocket.send(JSON.stringify(userPos));
                     }
-
-                    // 地図上のマーカーを更新
                     updateUserMarker(userPos);
                 },
-                () => { alert("位置情報の取得に失敗しました。"); },
-                { enableHighAccuracy: true }
+                // ★修正: エラー時はデモモードへ
+                (err) => {
+                    handleGeoError(err, DEMO_LAT, DEMO_LON);
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
             );
+        }
+
+        function handleGeoError(err, lat, lon) {
+            console.warn("位置情報取得エラー (デモモード):", err);
+
+            // デモ位置でマーカー更新
+            const userPos = { lat: lat, lng: lon };
+            updateUserMarker(userPos);
+
+            // WebSocket送信 (接続できていれば)
+            if (locationSocket && locationSocket.readyState === WebSocket.OPEN) {
+                locationSocket.send(JSON.stringify(userPos));
+            }
         }
 
         function updateUserMarker(position) {
