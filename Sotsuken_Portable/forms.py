@@ -305,10 +305,46 @@ class SignUpForm(UserCreationForm):
 
 
 class UserSearchForm(forms.Form):
-    query = forms.CharField(label="ユーザー検索", max_length=100, widget=forms.TextInput(attrs={
-        'placeholder': 'ログインID または 氏名',
-        'class': 'w-full p-2 border rounded'
-    }))
+    q = forms.CharField(
+        label='キーワード',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': '検索ワードを入力...',
+            'class': 'w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+        })
+    )
+
+    # ★追加: 検索対象の選択
+    TARGET_CHOICES = [
+        ('all', 'すべて (ID/氏名/メール)'),
+        ('username', 'ログインID'),
+        ('full_name', '氏名'),
+        ('email', 'メールアドレス'),
+    ]
+    search_target = forms.ChoiceField(
+        label='検索対象',
+        choices=TARGET_CHOICES,
+        initial='all',
+        widget=forms.Select(attrs={
+            'class': 'w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+        })
+    )
+
+    # 安否状況での絞り込み
+    status_filter = forms.ChoiceField(
+        label='安否状況',
+        required=False,
+        choices=[
+            ('', '全て'),
+            ('safe', '無事'),
+            ('help', '要支援'),
+            ('unknown', '未確認'),
+            ('unregistered', '未登録'),  # レコード自体がない場合
+        ],
+        widget=forms.Select(attrs={
+            'class': 'w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+        })
+    )
 
 
 class DistributionInfoForm(forms.ModelForm):

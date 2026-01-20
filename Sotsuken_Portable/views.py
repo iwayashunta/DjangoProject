@@ -395,16 +395,51 @@ def admin_menu_view(request):
     return render(request, 'admin_menu.html')
 
 
-@admin_required
+@login_required
 def user_management_view(request):
-    """
-    登録ユーザーの一覧と安否情報を表示する管理者向けビュー
-    """
-    # select_related を使って、User と SafetyStatus を効率的に一括取得
-    user_list = User.objects.select_related('safety_status_record').order_by('username')
+    # 管理者チェック
+    if request.user.role not in ['admin', 'rescuer'] and not request.user.is_superuser:
+        return redirect('Sotsuken_Portable:user_menu')
+
+    # 全ユーザー取得（デフォルト）
+    user_list = User.objects.all().order_by('username')
+
+    # フォームの初期化
+    form = UserSearchForm(request.GET)
+
+    if form.is_valid():
+        q = form.cleaned_data.get('q')
+        target = form.cleaned_data.get('search_target')  # ★追加
+        status_filter = form.cleaned_data.get('status_filter')
+
+        if q:
+            # ★修正: 対象に応じた絞り込み
+            if target == 'username':
+                user_list = user_list.filter(username__icontains=q)
+            elif target == 'full_name':
+                user_list = user_list.filter(full_name__icontains=q)
+            elif target == 'email':
+                user_list = user_list.filter(email__icontains=q)
+            else:
+                # 'all' の場合は今まで通りOR検索
+                user_list = user_list.filter(
+                    Q(username__icontains=q) |
+                    Q(full_name__icontains=q) |
+                    Q(email__icontains=q)
+                )
+
+        # 2. 安否状況フィルター
+        if status_filter:
+            if status_filter == 'unregistered':
+                # 安否レコードがない人
+                user_list = user_list.filter(safety_status_record__isnull=True)
+            else:
+                # 指定されたステータスの人
+                user_list = user_list.filter(safety_status_record__status=status_filter)
 
     context = {
-        'user_list': user_list
+        'user_list': user_list,
+        'search_form': form,  # テンプレートに渡す
     }
     return render(request, 'user_management.html', context)
 
