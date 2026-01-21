@@ -13,6 +13,30 @@
                 データ同期が正しく行われているかの確認に使用します。
             </p>
 
+            <!-- ★★★ 検索フォーム ★★★ -->
+            <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <form method="get" class="flex flex-col md:flex-row gap-4 items-end"
+                      onsubmit="return disableButton(this)">
+                    <div class="w-full md:w-48">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">検索対象</label>
+                        {{ search_form.search_target }}
+                    </div>
+                    <div class="flex-1 w-full">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">キーワード</label>
+                        {{ search_form.q }}
+                    </div>
+                    <button type="submit"
+                            class="bg-gray-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-gray-700 h-[42px]">
+                        検索
+                    </button>
+                    <a href="{% url 'Sotsuken_Portable:rpi_checkin_logs' %}"
+                       class="bg-white border border-gray-300 text-gray-600 px-4 py-2 rounded-lg font-bold hover:bg-gray-50 h-[42px] flex items-center">
+                        クリア
+                    </a>
+                </form>
+            </div>
+
+
             <div class="overflow-x-auto border rounded-lg">
                 <table class="w-full min-w-[800px]">
                     <thead class="bg-gray-50">

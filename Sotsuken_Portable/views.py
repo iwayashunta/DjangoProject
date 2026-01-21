@@ -27,7 +27,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from Sotsuken_Portable.decorators import admin_required
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm, \
-    DistributionItemForm, OfficialAlertForm, ShelterSearchForm, GroupSearchForm, SosReportSearchForm
+    DistributionItemForm, OfficialAlertForm, ShelterSearchForm, GroupSearchForm, SosReportSearchForm, RPiLogSearchForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
     CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection, \
     DistributionInfo, DistributionItem, ReadState, SafetyStatusHistory
@@ -1452,14 +1452,35 @@ def manual_list(request):
 @login_required
 # @user_passes_test(lambda u: u.is_superuser)  # 管理者のみに制限する場合
 def rpi_checkin_log_view(request):
-    # チェックイン系のログのみを抽出
-    logs = RPiData.objects.filter(
-        data_type__in=['shelter_checkin', 'sync_checkin', 'sync_checkout']
-    ).order_by('-received_at')
+    # 初期クエリ: 'sync_' で始まるもの（チェックイン/アウト）
+    logs = RPiData.objects.filter(data_type__startswith='sync_').order_by('-received_at')
+
+    # 検索フォーム
+    search_form = RPiLogSearchForm(request.GET)
+    if search_form.is_valid():
+        q = search_form.cleaned_data.get('q')
+        target = search_form.cleaned_data.get('search_target')
+
+        if q:
+            # JSONFieldの中身を検索
+            if target == 'username':
+                logs = logs.filter(payload__username__icontains=q)
+            elif target == 'shelter_id':
+                logs = logs.filter(payload__shelter_management_id__icontains=q)
+            elif target == 'device_id':
+                # device_idはモデルのフィールド
+                logs = logs.filter(device_id__icontains=q)
+            else:  # all
+                logs = logs.filter(
+                    Q(payload__username__icontains=q) |
+                    Q(payload__shelter_management_id__icontains=q) |
+                    Q(device_id__icontains=q)
+                )
 
     context = {
+        'title': '避難所受付データ連携ログ',
         'logs': logs,
-        'title': '避難所受付データ連携ログ'
+        'search_form': search_form,  # テンプレートへ
     }
     return render(request, 'rpi_data_log.html', context)
 

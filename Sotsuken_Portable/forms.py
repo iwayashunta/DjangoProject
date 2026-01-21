@@ -568,3 +568,30 @@ class SosReportSearchForm(forms.Form):
             'class': 'w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
         })
     )
+
+
+class RPiLogSearchForm(forms.Form):
+    q = forms.CharField(
+        label='キーワード',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'IDなどを入力...',
+            'class': 'w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+        })
+    )
+
+    TARGET_CHOICES = [
+        ('all', 'すべて'),
+        ('username', '対象者ログインID'),
+        ('shelter_id', '避難所管理ID'),
+        ('device_id', 'デバイスID'),
+    ]
+    search_target = forms.ChoiceField(
+        label='検索対象',
+        choices=TARGET_CHOICES,
+        initial='all',
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+        })
+    )
