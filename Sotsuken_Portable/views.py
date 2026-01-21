@@ -27,7 +27,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from Sotsuken_Portable.decorators import admin_required
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm, \
-    DistributionItemForm, OfficialAlertForm, ShelterSearchForm, GroupSearchForm
+    DistributionItemForm, OfficialAlertForm, ShelterSearchForm, GroupSearchForm, SosReportSearchForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
     CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection, \
     DistributionInfo, DistributionItem, ReadState, SafetyStatusHistory
@@ -591,15 +591,30 @@ def shelter_delete_view(request, management_id):
 
 @admin_required
 def sos_report_list_view(request):
-    """
-    SOSレポートの一覧を表示するビュー
-    """
-    # select_related('reporter') を使って、SOSReportと発信者(User)の情報を効率的に一括取得
-    # 新しいレポートが上に来るように、 reported_at の降順で並び替え
-    report_list = SOSReport.objects.select_related('reporter').order_by('-reported_at')
+    # 初期クエリセット
+    report_list = SOSReport.objects.all().order_by('-reported_at')
+
+    # 検索フォーム処理
+    search_form = SosReportSearchForm(request.GET)
+    if search_form.is_valid():
+        q = search_form.cleaned_data.get('q')
+        status_filter = search_form.cleaned_data.get('status_filter')
+
+        # 1. キーワード検索 (ID or 氏名)
+        if q:
+            report_list = report_list.filter(
+                Q(reporter__username__icontains=q) |
+                Q(reporter__full_name__icontains=q) |
+                Q(guest_name__icontains=q)  # ゲスト名も含める
+            )
+
+        # 2. ステータス絞り込み
+        if status_filter:
+            report_list = report_list.filter(status=status_filter)
 
     context = {
-        'report_list': report_list
+        'report_list': report_list,
+        'search_form': search_form,  # テンプレートに渡す
     }
     return render(request, 'sos_report_list.html', context)
 
@@ -646,49 +661,36 @@ def sos_report_delete_view(request, report_id):
 
 @admin_required
 def sos_report_export_csv_view(request):
-    """
-    SOSレポートをCSVファイルとしてエクスポートするビュー
-    """
-    # HTTPレスポンスのヘッダーを設定
-    response = HttpResponse(content_type='text/csv')
-    # 日本語のファイル名が文字化けしないように設定
-    current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"sos_reports_{current_time}.csv"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')  # Excelで文字化けしないようBOM付き
+    response['Content-Disposition'] = 'attachment; filename="sos_reports.csv"'
 
-    # ★重要: Excelで日本語が文字化けしないように、BOM付きUTF-8でエンコード
-    response.write('\ufeff'.encode('utf8'))
-
-    # CSVライターを作成
     writer = csv.writer(response)
+    writer.writerow(['ID', '発信日時', '発信者', '緯度', '経度', '状況', '対応ステータス'])
 
-    # 1. ヘッダー行を書き込む
-    writer.writerow([
-        'レポートID',
-        '発信日時',
-        '発信者ログインID',
-        '発信者氏名',
-        '緯度',
-        '経度',
-        '対応状況',
-        '状況メモ'
-    ])
+    reports = SOSReport.objects.all().order_by('-reported_at')
 
-    # 2. データ行を書き込む
-    reports = SOSReport.objects.select_related('reporter').all()
     for report in reports:
+        # 発信者名の解決
+        reporter_name = report.guest_name or "不明"
+        if report.reporter:
+            reporter_name = f"{report.reporter.full_name} ({report.reporter.username})"
+
+        # ★修正: タイムゾーン変換 (UTC -> JST)
+        local_time = timezone.localtime(report.reported_at)
+        time_str = local_time.strftime('%Y-%m-%d %H:%M:%S')
+
         writer.writerow([
-            report.id,
-            report.reported_at.strftime('%Y-%m-%d %H:%M:%S'),
-            report.reporter.username if report.reporter else '',
-            report.reporter.full_name if report.reporter else '(削除されたユーザー)',
+            str(report.id),
+            time_str,  # 変換後の時刻
+            reporter_name,
             report.latitude,
             report.longitude,
-            report.get_status_display(),  # 'pending' -> '未対応' のように変換
-            report.situation_notes
+            report.situation_notes,
+            report.get_status_display(),
         ])
 
     return response
+
 
 
 @login_required

@@ -8,7 +8,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
 from .models import User, SafetyStatus, SupportRequest, CommunityPost, Comment, Group, Shelter, \
-    DistributionInfo, DistributionItem, OfficialAlert  # カスタムUserモデルをインポート
+    DistributionInfo, DistributionItem, OfficialAlert, SOSReport  # カスタムUserモデルをインポート
 
 User = get_user_model()
 
@@ -543,6 +543,27 @@ class GroupSearchForm(forms.Form):
         choices=TARGET_CHOICES,
         required=False,
         initial='all',
+        widget=forms.Select(attrs={
+            'class': 'w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+        })
+    )
+
+
+class SosReportSearchForm(forms.Form):
+    q = forms.CharField(
+        label='キーワード',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'ID または 氏名',
+            'class': 'w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+        })
+    )
+
+    status_filter = forms.ChoiceField(
+        label='対応状況',
+        required=False,
+        # 空の選択肢 + モデルの選択肢
+        choices=[('', '全て')] + SOSReport.STATUS_CHOICES,
         widget=forms.Select(attrs={
             'class': 'w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
         })
