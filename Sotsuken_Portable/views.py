@@ -27,7 +27,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from Sotsuken_Portable.decorators import admin_required
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm, \
-    DistributionItemForm, OfficialAlertForm
+    DistributionItemForm, OfficialAlertForm, ShelterSearchForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
     CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection, \
     DistributionInfo, DistributionItem, ReadState, SafetyStatusHistory
@@ -517,14 +517,25 @@ def shelter_management_view(request):
     else:
         form = ShelterForm()
 
-    # 登録済みの全避難所を取得
-    shelter_list = Shelter.objects.all().order_by('name')
+        # --- 検索処理 ---
+        search_form = ShelterSearchForm(request.GET)
+        shelter_list = Shelter.objects.all().order_by('management_id')  # デフォルトは全件
 
-    context = {
-        'form': form,
-        'shelter_list': shelter_list
-    }
-    return render(request, 'shelter_management.html', context)
+        if search_form.is_valid():
+            query = search_form.cleaned_data.get('q')
+            if query:
+                # ID または 名前 で部分一致検索
+                shelter_list = shelter_list.filter(
+                    Q(management_id__icontains=query) |
+                    Q(name__icontains=query)
+                )
+
+        context = {
+            'form': form,  # 登録用フォーム
+            'search_form': search_form,  # ★追加: 検索用フォーム
+            'shelter_list': shelter_list,
+        }
+        return render(request, 'shelter_management.html', context)
 
 
 # --- 避難所編集ビュー ---

@@ -100,26 +100,46 @@
         <!-- 既存避難所リスト -->
         <div class="bg-white p-6 rounded-xl shadow-lg">
             <h3 class="text-lg font-semibold mb-2">登録済み避難所リスト</h3>
-            <div class="overflow-x-auto">
-                <table class="w-full min-w-[600px]">
-                    <thead>
-                    <tr class="border-b">
-                        <th class="p-2 text-left">避難所名</th>
-                        <th class="p-2 text-center">最大収容人数</th>
-                        <th class="p-2 text-center">現在の収容人数</th>
-                        <th class="p-2 text-center">ペット可否</th>
-                        <th class="p-2 text-center">操作</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% for shelter in shelter_list %}
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="p-2 font-semibold">{{ shelter.name }}</td>
-                            <td class="p-2 text-center">{{ shelter.max_capacity }}人</td>
-                            <td class="p-2 text-center">{{ shelter.current_occupancy }}人</td>
-                            <td class="p-2 text-center">
-                                {% if shelter.is_pet_friendly %}
-                                    <span class="inline-flex items-center px-3 py-1 text-sm rounded-full font-semibold bg-cyan-100 text-cyan-800">
+            <form method="get" class="flex gap-2" onsubmit="return disableButton(this)">
+                {{ search_form.q }}
+                <button type="submit"
+                        class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 shadow-sm">
+                    検索
+                </button>
+                <a href="{% url 'Sotsuken_Portable:shelter_management' %}"
+                   class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 flex items-center">
+                    リセット
+                </a>
+            </form>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[700px]">
+                <thead>
+                <tr class="border-b">
+                    <th class="p-2 text-left w-24">ID</th>
+                    <th class="p-2 text-left">避難所名</th>
+                    <th class="p-2 text-center">最大収容人数</th>
+                    <th class="p-2 text-center">現在の収容人数</th>
+                    <th class="p-2 text-center">ペット可否</th>
+                    <th class="p-2 text-center">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for shelter in shelter_list %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 font-mono text-sm text-gray-600 font-bold">
+                            {{ shelter.management_id }}
+                        </td>
+
+                        <td class="p-2 font-semibold">
+                            {{ shelter.name }}
+                            <div class="text-xs text-gray-400 font-normal">{{ shelter.address|truncatechars:20 }}</div>
+                        </td>
+                        <td class="p-2 text-center">{{ shelter.max_capacity }}人</td>
+                        <td class="p-2 text-center">{{ shelter.current_occupancy }}人</td>
+                        <td class="p-2 text-center">
+                            {% if shelter.is_pet_friendly %}
+                                <span class="inline-flex items-center px-3 py-1 text-sm rounded-full font-semibold bg-cyan-100 text-cyan-800">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20"
                                      fill="currentColor">
                                     <path fill-rule="evenodd"
@@ -128,29 +148,29 @@
                                 </svg>
                                 可
                             </span>
-                                {% else %}
-                                    <span class="inline-flex items-center px-3 py-1 text-sm rounded-full font-semibold bg-gray-200 text-gray-700">
+                            {% else %}
+                                <span class="inline-flex items-center px-3 py-1 text-sm rounded-full font-semibold bg-gray-200 text-gray-700">
                                 不可
                             </span>
-                                {% endif %}
-                            </td>
-                            <td class="p-2 text-center space-x-2">
-                                <!-- 次のステップで実装する編集・削除ボタンを配置 -->
-                                <a href="{% url 'Sotsuken_Portable:shelter_edit' shelter.management_id %}"
-                                   class="inline-block bg-blue-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-blue-700">編集</a>
-                                <a href="{% url 'Sotsuken_Portable:shelter_delete' shelter.management_id %}"
-                                   class="inline-block bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-red-700">削除</a>
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="5" class="p-4 text-center text-gray-500">登録されている避難所はありません。</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            {% endif %}
+                        </td>
+                        <td class="p-2 text-center space-x-2">
+                            <!-- 次のステップで実装する編集・削除ボタンを配置 -->
+                            <a href="{% url 'Sotsuken_Portable:shelter_edit' shelter.management_id %}"
+                               class="inline-block bg-blue-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-blue-700">編集</a>
+                            <a href="{% url 'Sotsuken_Portable:shelter_delete' shelter.management_id %}"
+                               class="inline-block bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-red-700">削除</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="p-4 text-center text-gray-500">登録されている避難所はありません。</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
         </div>
+    </div>
     </div>
 {% endblock %}
 

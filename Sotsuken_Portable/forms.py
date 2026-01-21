@@ -511,3 +511,14 @@ class OfficialAlertForm(forms.ModelForm):
         # チェックボックスは少し違うスタイルで
         self.fields['is_active'].widget.attrs[
             'class'] = "h-5 w-5 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+
+class ShelterSearchForm(forms.Form):
+    q = forms.CharField(
+        label='キーワード',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': '避難所名 または ID',
+            'class': 'w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+        })
+    )
+
