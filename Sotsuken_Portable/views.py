@@ -27,7 +27,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from Sotsuken_Portable.decorators import admin_required
 from Sotsuken_Portable.forms import SignUpForm, SafetyStatusForm, SupportRequestForm, CommunityPostForm, CommentForm, \
     GroupCreateForm, UserUpdateForm, MyPasswordChangeForm, ShelterForm, UserSearchForm, DistributionInfoForm, \
-    DistributionItemForm, OfficialAlertForm, ShelterSearchForm
+    DistributionItemForm, OfficialAlertForm, ShelterSearchForm, GroupSearchForm
 from Sotsuken_Portable.models import SafetyStatus, SupportRequest, SOSReport, Shelter, OfficialAlert, Group, Message, \
     CommunityPost, Comment, GroupMember, User, Manual, RPiData, DistributionRecord, JmaArea, Connection, \
     DistributionInfo, DistributionItem, ReadState, SafetyStatusHistory
@@ -1128,13 +1128,44 @@ class GroupListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
+        queryset = Group.objects.none()
 
-        # システム管理者 または スーパーユーザー なら「全てのグループ」を返す
+        # 1. 基本のクエリセット取得
         if user.role == 'admin' or user.is_superuser:
-            return Group.objects.all().order_by('-created_at')
+            queryset = Group.objects.all().order_by('-created_at')
+        else:
+            queryset = Group.objects.filter(memberships__member=user).order_by('-created_at')
 
-        # 一般ユーザーなら「自分が参加しているグループ」のみ返す
-        return Group.objects.filter(memberships__member=user).order_by('-created_at')
+        # 2. 検索フィルタリング (管理者のみ、または全員許可するかはポリシー次第)
+        # ここでは「管理者だけ検索できる」ようにします
+        if user.role == 'admin' or user.is_superuser:
+            form = GroupSearchForm(self.request.GET)
+            if form.is_valid():
+                q = form.cleaned_data.get('q')
+                target = form.cleaned_data.get('search_target')
+
+                if q:
+                    if target == 'name':
+                        queryset = queryset.filter(name__icontains=q)
+                    elif target == 'creator':
+                        queryset = queryset.filter(
+                            Q(creator__username__icontains=q) |
+                            Q(creator__full_name__icontains=q)
+                        )
+                    else: # all
+                        queryset = queryset.filter(
+                            Q(name__icontains=q) |
+                            Q(creator__username__icontains=q) |
+                            Q(creator__full_name__icontains=q)
+                        )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # 管理者の場合のみフォームを渡す
+        if self.request.user.role == 'admin' or self.request.user.is_superuser:
+            context['search_form'] = GroupSearchForm(self.request.GET)
+        return context
 
 
 # 2. 新規グループ作成ビュー

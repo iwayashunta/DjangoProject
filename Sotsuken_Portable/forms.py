@@ -522,3 +522,28 @@ class ShelterSearchForm(forms.Form):
         })
     )
 
+
+class GroupSearchForm(forms.Form):
+    q = forms.CharField(
+        label='キーワード',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': '検索ワード...',
+            'class': 'w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+        })
+    )
+
+    TARGET_CHOICES = [
+        ('all', 'すべて'),
+        ('name', 'グループ名'),
+        ('creator', '作成者 (ID/氏名)'),
+    ]
+    search_target = forms.ChoiceField(
+        label='対象',
+        choices=TARGET_CHOICES,
+        required=False,
+        initial='all',
+        widget=forms.Select(attrs={
+            'class': 'w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+        })
+    )

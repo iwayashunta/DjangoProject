@@ -18,6 +18,27 @@
         </a>
     </div>
 
+    {% if search_form %}
+    <div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+        <form method="get" class="flex flex-col md:flex-row gap-4 items-end" onsubmit="return disableButton(this)">
+            <div class="w-full md:w-40">
+                <label class="block text-xs font-bold text-gray-500 mb-1">検索対象</label>
+                {{ search_form.search_target }}
+            </div>
+            <div class="flex-1 w-full">
+                <label class="block text-xs font-bold text-gray-500 mb-1">キーワード</label>
+                {{ search_form.q }}
+            </div>
+            <button type="submit" class="bg-gray-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-gray-700 h-[42px]">
+                検索
+            </button>
+            <a href="{% url 'Sotsuken_Portable:group_list' %}" class="bg-gray-200 text-gray-600 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 h-[42px] flex items-center">
+                クリア
+            </a>
+        </form>
+    </div>
+    {% endif %}
+
     <div class="space-y-3">
         {% for group in group_list %}
         <a href="{% url 'Sotsuken_Portable:group_detail' group.pk %}" class="block p-4 border rounded-lg hover:bg-blue-50 transition-colors flex justify-between items-center group">
